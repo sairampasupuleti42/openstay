@@ -32,7 +32,7 @@ Trust-based hosting builds stronger connections (like Couchsurfing, but safer an
 
 2. Scalable Market
 
-You can target:
+It can target:
 
 Solo travelers
 
@@ -98,9 +98,9 @@ Feature	Idea
 Group Hosting	Allow hosts to accept small groups (e.g., students, friends)
 Culture Mode	Hosts can tag their culture/traditions and offer related activities
 Verified Vibes	Travelers can search by host "vibes" (e.g., chill, explorer, spiritual, foodie)
-Matchmaking	Suggest hosts and guests by personality/interests (like a social-travel blend)
+Matchmaking	suggest hosts and guests by personality/interests (like a social-travel blend)
 Event Sync	Travelers can host/join events in the area
-Safety Shield	Optional insurance, SOS check-ins, and verified profiles
+Safety Shield	optional insurance, SOS check-ins, and verified profiles
 ✅ Next Steps:
 
 1. Define your target market (e.g., budget travelers, students, families, digital nomads).
@@ -109,7 +109,7 @@ Safety Shield	Optional insurance, SOS check-ins, and verified profiles
 2. Outline core features vs. future features (e.g., start simple: host matching + verification).
 
 
-3. Consider whether you want a web app, mobile app, or both.
+3. Consider whether you want a web app, a mobile app, or both.
 
 
 4. Build a basic landing page or MVP to validate interest and collect early adopters.
