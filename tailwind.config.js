@@ -32,7 +32,18 @@ export default {
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))"
+          foreground: "hsl(var(--primary-foreground))",
+          50: "#f7fcf0",
+          100: "#ecf7dc",
+          200: "#ddefbc",
+          300: "#c5e291",
+          400: "#acd366",
+          500: "#92c10c", // Main primary color
+          600: "#7ba009",
+          700: "#627d07",
+          800: "#4f640a",
+          900: "#43540c",
+          950: "#222e04"
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -59,6 +70,19 @@ export default {
           "3": "hsl(var(--chart-3))",
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))"
+        },
+        // Additional theme colors
+        brand: {
+          50: "#f7fcf0",
+          100: "#ecf7dc", 
+          200: "#ddefbc",
+          300: "#c5e291",
+          400: "#acd366",
+          500: "#92c10c",
+          600: "#7ba009",
+          700: "#627d07",
+          800: "#4f640a", 
+          900: "#43540c"
         }
       }
     }
