@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import Title from "@/helpers/Title";
+import Logo from "@/helpers/Logo";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header 
+    <header
       className="bg-white/95 backdrop-blur-sm border-b border-primary-200 sticky top-0 z-50"
       role="banner"
       aria-label="Site header"
@@ -15,22 +15,30 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <a 
-              href="/" 
+            <a
+              href="/"
               className="flex items-center"
               aria-label="Openstay - Go to homepage"
             >
               <div className="inline-flex items-center justify-center w-10 h-10 bg-primary-500 rounded-full mr-3">
-                <span className="text-lg font-bold text-white" aria-hidden="true">O</span>
+                <span
+                  className="text-lg font-bold text-white"
+                  aria-hidden="true"
+                >
+                  O
+                </span>
               </div>
-              <Title>
-                Openstay
-              </Title>
+              <Logo
+                width={240}
+                height={60}
+                className="hover:opacity-80 transition-opacity"
+                alt="OpenStay Company Logo"
+              />
             </a>
           </div>
 
           {/* Desktop Navigation */}
-          <nav 
+          <nav
             className="hidden md:flex items-center space-x-8"
             role="navigation"
             aria-label="Main navigation"

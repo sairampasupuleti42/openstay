@@ -1,7 +1,8 @@
 import React from 'react';
 import Layout from '@/components/Layout';
-import Title from '@/helpers/Title';
+import Logo from '@/helpers/Logo';
 import SEOMeta from '@/helpers/SEOMeta';
+import Title from '@/helpers/Title';
 
 const HomePage: React.FC = () => {
   return (
@@ -17,7 +18,7 @@ const HomePage: React.FC = () => {
           {/* Hero Section */}
           <section aria-labelledby="hero-heading" className="text-center mb-12">
             <h1 id="hero-heading" className="text-5xl font-bold mb-6 font-heading">
-              Host or Travel with <Title size="xl">OpenStay</Title>
+              Host or Travel with <Title variant="solid" className="text-primary-400 text-6xl">OpenStay</Title>
             </h1>
             <p className="text-xl text-muted-foreground font-sans max-w-2xl mx-auto">
               Connect with verified local hosts for authentic cultural experiences. 

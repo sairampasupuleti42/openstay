@@ -1,5 +1,5 @@
 import React from 'react';
-import Title from '@/helpers/Title';
+import Logo from '@/helpers/Logo';
 
 const Footer: React.FC = () => {
   return (
@@ -16,7 +16,9 @@ const Footer: React.FC = () => {
               <div className="inline-flex items-center justify-center w-10 h-10 bg-primary-500 rounded-full mr-3">
                 <span className="text-lg font-bold text-white" aria-hidden="true">O</span>
               </div>
-              <Title variant="solid" className="text-white" id="brand-heading">Openstay</Title>
+              <Logo>
+                
+              </Logo>
             </div>
             <p className="text-primary-200 text-sm mb-4 max-w-sm">
               Your trusted platform for seamless accommodation experiences. 
