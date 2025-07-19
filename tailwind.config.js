@@ -10,9 +10,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        heading: ['Poppins', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        mono: ['ui-monospace', 'SFMono-Regular', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+        sans: ['Nunito Sans', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        heading: ['Nunito', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['Roboto', 'ui-monospace', 'SFMono-Regular', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -41,8 +41,8 @@ export default {
           500: "#92c10c", // Main primary color
           600: "#7ba009",
           700: "#627d07",
-          800: "#4f640a",
-          900: "#43540c",
+          800: "#555555", // Changed to be closer to #545454 but with slight green tint
+          900: "#484848", // Darker version of the gray tone
           950: "#222e04"
         },
         secondary: {
@@ -83,6 +83,20 @@ export default {
           700: "#627d07",
           800: "#4f640a", 
           900: "#43540c"
+        },
+        // Custom dark gray to replace black
+        dark: {
+          DEFAULT: "#545454",
+          50: "#f6f6f6",
+          100: "#e7e7e7",
+          200: "#d1d1d1",
+          300: "#b0b0b0",
+          400: "#888888",
+          500: "#6d6d6d",
+          600: "#545454", // Main replacement for black
+          700: "#3d3d3d",
+          800: "#262626",
+          900: "#171717"
         }
       }
     }

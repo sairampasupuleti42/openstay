@@ -6,15 +6,15 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 33%;  /* #545454 instead of near-black */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 33%;  /* #545454 instead of near-black */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 33%;  /* #545454 instead of near-black */
     --primary: 81 66% 41%;  /* #92c10c converted to HSL */
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
+    --secondary-foreground: 0 0% 33%;  /* #545454 instead of near-black */
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 81 66% 95%;  /* Light green accent */
@@ -76,5 +76,20 @@
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+  }
+}
+
+/* Custom utility classes for specific color needs */
+@layer utilities {
+  .text-custom-dark {
+    color: #545454;
+  }
+  
+  .bg-custom-dark {
+    background-color: #545454;
+  }
+  
+  .border-custom-dark {
+    border-color: #545454;
   }
 }
