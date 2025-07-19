@@ -6,8 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:dev": "npm run build",
+    "build:prod": "npm run build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:dev": "npm run build:dev && firebase deploy --only hosting:dev",
+    "deploy:prod": "npm run build:prod && firebase deploy --only hosting:prod",
+    "deploy:all": "npm run build && firebase deploy"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "open-stay"
-  }
+  },
+  "targets": {
+    "open-stay": {
+      "hosting": {
+         "dev": [
+          "open-stay"
+        ],
+        "prod": [
+          "open-stay"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
