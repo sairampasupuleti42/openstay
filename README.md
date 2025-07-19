@@ -290,6 +290,114 @@ Location | Date | Group Size | Host Language | Type
 - Edit Profile
 - Inbox (Messages)
 - Calendar View
+---------------------------
+# OpenStay UI Dev
+
+A modern React application built with Vite, featuring TailwindCSS, Shadcn/ui, Zod forms, and Firebase integration.
+
+## 🚀 Tech Stack
+
+- **React 19** - UI library
+- **Vite** - Build tool and dev server
+- **TypeScript** - Type safety
+- **TailwindCSS** - Utility-first CSS framework
+- **Shadcn/ui** - Modern UI components
+- **React Hook Form** - Form handling
+- **Zod** - Schema validation
+- **Firebase** - Backend services (Auth, Firestore, Storage)
+
+## 📦 What's Included
+
+- ✅ Vite React TypeScript setup
+- ✅ TailwindCSS with custom configuration
+- ✅ Shadcn/ui components (Button, Input, Form)
+- ✅ React Hook Form with Zod validation
+- ✅ Firebase configuration setup
+- ✅ TypeScript path mapping (@/* aliases)
+- ✅ Dark/Light theme support
+- ✅ Responsive design
+
+## 🛠️ Installation
+
+1. Install dependencies:
+```bash
+npm install
+```
+
+2. Start the development server:
+```bash
+npm run dev
+```
+
+3. Build for production:
+```bash
+npm run build
+```
+
+## 🔥 Firebase Setup
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a new project
+3. Enable Authentication, Firestore, and Storage
+4. Get your config object from Project Settings
+5. Replace the placeholder values in `src/lib/firebase.ts`
+
+```typescript
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-auth-domain",
+  projectId: "your-project-id",
+  storageBucket: "your-storage-bucket",
+  messagingSenderId: "your-messaging-sender-id",
+  appId: "your-app-id"
+};
+```
+
+## 📝 Adding More Shadcn/ui Components
+
+To add more components from Shadcn/ui:
+
+```bash
+npx shadcn@latest add [component-name]
+```
+
+Available components include: card, dialog, dropdown-menu, select, toast, and many more.
+
+## 🎨 Customizing Theme
+
+Modify the CSS variables in `src/index.css` to customize the theme colors. The setup includes both light and dark mode support.
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   └── ui/          # Shadcn/ui components
+├── lib/
+│   ├── firebase.ts  # Firebase configuration
+│   └── utils.ts     # Utility functions
+├── App.tsx          # Main application component
+├── main.tsx         # Application entry point
+└── index.css        # Global styles with Tailwind
+```
+
+## 🔧 Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm run preview` - Preview production build
+
+## 📚 Learn More
+
+- [Vite Documentation](https://vite.dev/guide/)
+- [React Documentation](https://react.dev/)
+- [TailwindCSS Documentation](https://tailwindcss.com/docs)
+- [Shadcn/ui Documentation](https://ui.shadcn.com/)
+- [React Hook Form Documentation](https://react-hook-form.com/)
+- [Zod Documentation](https://zod.dev/)
+- [Firebase Documentation](https://firebase.google.com/docs)
+
 
 
 
