@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import Logo from "@/helpers/Logo";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <header
@@ -15,26 +17,19 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <a
-              href="/"
+            <Link
+              to="/"
               className="flex items-center"
               aria-label="Openstay - Go to homepage"
             >
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-primary-500 rounded-full mr-3">
-                <span
-                  className="text-lg font-bold text-white"
-                  aria-hidden="true"
-                >
-                  O
-                </span>
-              </div>
+              
               <Logo
                 width={240}
                 height={60}
                 className="hover:opacity-80 transition-opacity"
                 alt="OpenStay Company Logo"
               />
-            </a>
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
@@ -43,19 +38,24 @@ const Header: React.FC = () => {
             role="navigation"
             aria-label="Main navigation"
           >
-            <a
-              href="#home"
-              className="text-foreground hover:text-primary-600 transition-colors font-medium"
-              aria-current="page"
+            <Link
+              to="/"
+              className={cn(
+                "text-foreground hover:text-primary-600 transition-colors font-medium",
+                location.pathname === "/" && "text-primary-600 font-semibold"
+              )}
             >
               Home
-            </a>
-            <a
-              href="#about"
-              className="text-foreground hover:text-primary-600 transition-colors font-medium"
+            </Link>
+            <Link
+              to="/about"
+              className={cn(
+                "text-foreground hover:text-primary-600 transition-colors font-medium",
+                location.pathname === "/about" && "text-primary-600 font-semibold"
+              )}
             >
               About
-            </a>
+            </Link>
             <a
               href="#services"
               className="text-foreground hover:text-primary-600 transition-colors font-medium"
@@ -126,18 +126,26 @@ const Header: React.FC = () => {
           role="navigation"
         >
           <div className="py-4 space-y-4 border-t border-primary-200">
-            <a
-              href="#home"
-              className="block text-foreground hover:text-primary-600 transition-colors font-medium"
+            <Link
+              to="/"
+              className={cn(
+                "block text-foreground hover:text-primary-600 transition-colors font-medium",
+                location.pathname === "/" && "text-primary-600 font-semibold"
+              )}
+              onClick={() => setIsMenuOpen(false)}
             >
               Home
-            </a>
-            <a
-              href="#about"
-              className="block text-foreground hover:text-primary-600 transition-colors font-medium"
+            </Link>
+            <Link
+              to="/about"
+              className={cn(
+                "block text-foreground hover:text-primary-600 transition-colors font-medium",
+                location.pathname === "/about" && "text-primary-600 font-semibold"
+              )}
+              onClick={() => setIsMenuOpen(false)}
             >
               About
-            </a>
+            </Link>
             <a
               href="#services"
               className="block text-foreground hover:text-primary-600 transition-colors font-medium"
