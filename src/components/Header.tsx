@@ -7,6 +7,13 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <header
       className="bg-white/95 backdrop-blur-sm border-b border-primary-200 sticky top-0 z-50"
@@ -40,6 +47,7 @@ const Header: React.FC = () => {
           >
             <Link
               to="/"
+              onClick={scrollToTop}
               className={cn(
                 "text-foreground hover:text-primary-600 transition-colors font-medium",
                 location.pathname === "/" && "text-primary-600 font-semibold"
@@ -49,6 +57,7 @@ const Header: React.FC = () => {
             </Link>
             <Link
               to="/about"
+              onClick={scrollToTop}
               className={cn(
                 "text-foreground hover:text-primary-600 transition-colors font-medium",
                 location.pathname === "/about" && "text-primary-600 font-semibold"
@@ -56,29 +65,33 @@ const Header: React.FC = () => {
             >
               About
             </Link>
-            <a
+            {/* <a
               href="#services"
               className="text-foreground hover:text-primary-600 transition-colors font-medium"
             >
               Services
-            </a>
-            <a
-              href="#contact"
-              className="text-foreground hover:text-primary-600 transition-colors font-medium"
+            </a> */}
+            <Link
+              to="/contact"
+              onClick={scrollToTop}
+              className={cn(
+                "text-foreground hover:text-primary-600 transition-colors font-medium",
+                location.pathname === "/contact" && "text-primary-600 font-semibold"
+              )}
             >
               Contact
-            </a>
+            </Link>
           </nav>
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center space-x-4">
-            <a
-              href="mailto:sairampasupuleti.42@gmail.com"
+            <button
+              
               className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               aria-label="Send email to get in touch"
             >
-              Get In Touch
-            </a>
+              Sign In
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -132,7 +145,10 @@ const Header: React.FC = () => {
                 "block text-foreground hover:text-primary-600 transition-colors font-medium",
                 location.pathname === "/" && "text-primary-600 font-semibold"
               )}
-              onClick={() => setIsMenuOpen(false)}
+              onClick={() => {
+                setIsMenuOpen(false);
+                scrollToTop();
+              }}
             >
               Home
             </Link>
@@ -142,7 +158,10 @@ const Header: React.FC = () => {
                 "block text-foreground hover:text-primary-600 transition-colors font-medium",
                 location.pathname === "/about" && "text-primary-600 font-semibold"
               )}
-              onClick={() => setIsMenuOpen(false)}
+              onClick={() => {
+                setIsMenuOpen(false);
+                scrollToTop();
+              }}
             >
               About
             </Link>
@@ -152,12 +171,19 @@ const Header: React.FC = () => {
             >
               Services
             </a>
-            <a
-              href="#contact"
-              className="block text-foreground hover:text-primary-600 transition-colors font-medium"
+            <Link
+              to="/contact"
+              className={cn(
+                "block text-foreground hover:text-primary-600 transition-colors font-medium",
+                location.pathname === "/contact" && "text-primary-600 font-semibold"
+              )}
+              onClick={() => {
+                setIsMenuOpen(false);
+                scrollToTop();
+              }}
             >
               Contact
-            </a>
+            </Link>
             <a
               href="mailto:sairampasupuleti.42@gmail.com"
               className="inline-block bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"

@@ -1,7 +1,15 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Logo from "@/helpers/Logo";
 
 const Footer: React.FC = () => {
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
   return (
     <footer
       className="bg-primary-800 text-primary-foreground"
@@ -53,36 +61,39 @@ const Footer: React.FC = () => {
             <nav aria-label="Footer navigation">
               <ul className="space-y-2">
                 <li>
-                  <a
-                    href="#home"
+                  <Link
+                    to="/"
+                    onClick={scrollToTop}
                     className="text-primary-200 hover:text-white transition-colors text-sm"
                   >
                     Home
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a
-                    href="#about"
+                  <Link
+                    to="/about"
+                    onClick={scrollToTop}
                     className="text-primary-200 hover:text-white transition-colors text-sm"
                   >
                     About
-                  </a>
+                  </Link>
                 </li>
-                <li>
+                {/* <li>
                   <a
                     href="#services"
                     className="text-primary-200 hover:text-white transition-colors text-sm"
                   >
                     Services
                   </a>
-                </li>
+                </li> */}
                 <li>
-                  <a
-                    href="#contact"
+                  <Link
+                    to="/contact"
+                    onClick={scrollToTop}
                     className="text-primary-200 hover:text-white transition-colors text-sm"
                   >
                     Contact
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </nav>

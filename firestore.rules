@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to contacts_messages collection for testing
+    // WARNING: These rules allow anyone to read/write to your database
+    // Make sure to secure them before deploying to production
+    match /contacts_messages/{document} {
+      allow read, write: if true;
+    }
+    
+    // Deny all other document access by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

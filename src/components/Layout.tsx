@@ -1,14 +1,14 @@
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import Header from './Header';
 import Footer from './Footer';
 
 interface LayoutProps {
-  children: React.ReactNode;
   className?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, className }) => {
+const Layout: React.FC<LayoutProps> = ({ className }) => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-primary-50 to-white">
       {/* Skip to main content for accessibility */}
@@ -29,7 +29,7 @@ const Layout: React.FC<LayoutProps> = ({ children, className }) => {
         role="main"
         aria-label="Main content"
       >
-        {children}
+        <Outlet />
       </main>
       
       {/* Footer */}
