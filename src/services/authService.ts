@@ -18,6 +18,10 @@ googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
 
+// Add required scopes for Google Sign-In
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
+
 // Sign up with email and password
 export const signUpWithEmailPassword = async (data: SignUpFormData): Promise<{ user: User | null; success: boolean; message: string }> => {
   try {
@@ -123,6 +127,9 @@ export const signInWithGoogle = async (): Promise<{ user: User | null; success: 
     let message = 'Failed to sign in with Google. Please try again.';
     
     switch (firebaseError.code) {
+      case 'auth/configuration-not-found':
+        message = 'Google Sign-In is not properly configured. Please check Firebase Console settings.';
+        break;
       case 'auth/account-exists-with-different-credential':
         message = 'An account already exists with the same email address but different sign-in credentials.';
         break;
@@ -134,6 +141,9 @@ export const signInWithGoogle = async (): Promise<{ user: User | null; success: 
         break;
       case 'auth/popup-closed-by-user':
         message = 'Sign in was cancelled.';
+        break;
+      case 'auth/unauthorized-domain':
+        message = 'This domain is not authorized for Google Sign-In. Please add it to Firebase Console.';
         break;
     }
 
