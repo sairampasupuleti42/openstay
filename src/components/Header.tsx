@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import Logo from "@/helpers/Logo";
+import { useAuth } from "@/contexts/AuthContext";
+import UserProfileDropdown from "@/components/UserProfileDropdown";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { currentUser, loading } = useAuth();
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -83,15 +86,27 @@ const Header: React.FC = () => {
             </Link>
           </nav>
 
-          {/* CTA Button */}
+          {/* CTA Button / User Profile */}
           <div className="hidden md:flex items-center space-x-4">
-            <button
-              
-              className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              aria-label="Send email to get in touch"
-            >
-              Sign In
-            </button>
+            {loading ? (
+              // Loading skeleton
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            ) : currentUser ? (
+              // Show user profile when logged in
+              <UserProfileDropdown />
+            ) : (
+              // Show Sign In button when not logged in
+              <Link
+                to="/auth/signin"
+                className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                aria-label="Sign in to your account"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -184,13 +199,29 @@ const Header: React.FC = () => {
             >
               Contact
             </Link>
-            <a
-              href="mailto:sairampasupuleti.42@gmail.com"
-              className="inline-block bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              aria-label="Send email to get in touch"
-            >
-              Get In Touch
-            </a>
+            
+            {/* Mobile Auth Section */}
+            {loading ? (
+              <div className="pt-4 border-t border-primary-200">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            ) : currentUser ? (
+              <div className="pt-4 border-t border-primary-200">
+                <UserProfileDropdown />
+              </div>
+            ) : (
+              <Link
+                to="/auth/signin"
+                className="inline-block bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-colors mt-4"
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="Sign in to your account"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </nav>
       </div>
