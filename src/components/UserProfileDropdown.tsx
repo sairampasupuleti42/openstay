@@ -87,9 +87,9 @@ const UserProfileDropdown: React.FC<{ isMobile?: boolean }> = ({ isMobile = fals
           <p className="text-sm font-medium text-foreground">
             {displayName}
           </p>
-          <p className="text-xs text-muted-foreground truncate max-w-32">
+          {/* <p className="text-xs text-muted-foreground truncate max-w-32">
             {email}
-          </p>
+          </p> */}
         </div>
 
         {/* Dropdown Arrow */}
