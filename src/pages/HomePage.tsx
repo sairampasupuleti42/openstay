@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 
 import SEOMeta from "@/helpers/SEOMeta";
@@ -29,11 +30,25 @@ const HomePage: React.FC = () => {
                   OpenStay
                 </Title>
               </h1>
-              <p className="text-xl text-muted-foreground font-sans max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground font-sans max-w-2xl mx-auto mb-8">
                 Connect with verified local hosts for authentic cultural
                 experiences. Join our community-based platform for meaningful
                 travel and group accommodation.
               </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Link
+                  to="/about"
+                  className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Learn More About Us
+                </Link>
+                <a
+                  href="mailto:sairampasupuleti.42@gmail.com"
+                  className="bg-transparent border-2 border-primary-500 text-primary-600 hover:bg-primary-50 px-8 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Get Early Access
+                </a>
+              </div>
             </section>
 
             {/* Feature Cards */}
