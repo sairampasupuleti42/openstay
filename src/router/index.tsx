@@ -15,6 +15,8 @@ const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
 // Lazy load profile component
 const Profile = lazy(() => import('@/pages/Profile'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const OnboardingPage = lazy(() => import('@/pages/OnboardingPage'));
+const SearchPage = lazy(() => import('@/pages/SearchPage'));
 
 export const router = createBrowserRouter([
   {
@@ -46,6 +48,22 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<LazyLoadSpinner />}>
             <Settings />
+          </Suspense>
+        )
+      },
+      {
+        path: '/onboarding',
+        element: (
+          <Suspense fallback={<LazyLoadSpinner />}>
+            <OnboardingPage />
+          </Suspense>
+        )
+      },
+      {
+        path: '/search',
+        element: (
+          <Suspense fallback={<LazyLoadSpinner />}>
+            <SearchPage />
           </Suspense>
         )
       }

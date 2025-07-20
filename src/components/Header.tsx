@@ -1,20 +1,27 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import Logo from "@/helpers/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
+import SearchInput from "@/components/SearchInput";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentUser, loading } = useAuth();
 
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: "smooth",
     });
+  };
+
+  const handleSearch = (query: string) => {
+    // Navigate to search results page
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -32,7 +39,6 @@ const Header: React.FC = () => {
               className="flex items-center"
               aria-label="Openstay - Go to homepage"
             >
-              
               <Logo
                 width={240}
                 height={60}
@@ -48,42 +54,68 @@ const Header: React.FC = () => {
             role="navigation"
             aria-label="Main navigation"
           >
-            <Link
-              to="/"
-              onClick={scrollToTop}
-              className={cn(
-                "text-foreground hover:text-primary-600 transition-colors font-medium",
-                location.pathname === "/" && "text-primary-600 font-semibold"
-              )}
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              onClick={scrollToTop}
-              className={cn(
-                "text-foreground hover:text-primary-600 transition-colors font-medium",
-                location.pathname === "/about" && "text-primary-600 font-semibold"
-              )}
-            >
-              About
-            </Link>
-            {/* <a
-              href="#services"
-              className="text-foreground hover:text-primary-600 transition-colors font-medium"
-            >
-              Services
-            </a> */}
-            <Link
-              to="/contact"
-              onClick={scrollToTop}
-              className={cn(
-                "text-foreground hover:text-primary-600 transition-colors font-medium",
-                location.pathname === "/contact" && "text-primary-600 font-semibold"
-              )}
-            >
-              Contact
-            </Link>
+            {!currentUser && (
+              <>
+                <Link
+                  to="/auth/signup"
+                  className="text-foreground hover:text-primary-600 transition-colors font-medium"
+                >
+                  Sign Up
+                </Link>
+                <Link
+                  to="/auth/signin"
+                  className="text-foreground hover:text-primary-600 transition-colors font-medium"
+                >
+                  Sign In
+                </Link>
+              </>
+            )}
+            {!currentUser ? (
+              <>
+                <Link
+                  to="/"
+                  onClick={scrollToTop}
+                  className={cn(
+                    "text-foreground hover:text-primary-600 transition-colors font-medium",
+                    location.pathname === "/" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/about"
+                  onClick={scrollToTop}
+                  className={cn(
+                    "text-foreground hover:text-primary-600 transition-colors font-medium",
+                    location.pathname === "/about" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                >
+                  About
+                </Link>
+
+                <Link
+                  to="/contact"
+                  onClick={scrollToTop}
+                  className={cn(
+                    "text-foreground hover:text-primary-600 transition-colors font-medium",
+                    location.pathname === "/contact" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                >
+                  Contact
+                </Link>
+              </>
+            ) : (
+              <div className="flex-1 max-w-2xl mx-6">
+                <SearchInput 
+                  onSearch={handleSearch}
+                  placeholder="Search destinations..."
+                  className="w-full"
+                />
+              </div>
+            )}
           </nav>
 
           {/* CTA Button / User Profile */}
@@ -154,43 +186,57 @@ const Header: React.FC = () => {
           role="navigation"
         >
           <div className="py-4 space-y-4 border-t border-primary-200">
-            <Link
-              to="/"
-              className={cn(
-                "block text-foreground hover:text-primary-600 transition-colors font-medium",
-                location.pathname === "/" && "text-primary-600 font-semibold"
-              )}
-              onClick={() => {
-                setIsMenuOpen(false);
-                scrollToTop();
-              }}
-            >
-              Home
-            </Link>
-            <Link
-              to="/about"
-              className={cn(
-                "block text-foreground hover:text-primary-600 transition-colors font-medium",
-                location.pathname === "/about" && "text-primary-600 font-semibold"
-              )}
-              onClick={() => {
-                setIsMenuOpen(false);
-                scrollToTop();
-              }}
-            >
-              About
-            </Link>
-            <a
-              href="#services"
-              className="block text-foreground hover:text-primary-600 transition-colors font-medium"
-            >
-              Services
-            </a>
+            {/* Mobile Search */}
+            {currentUser && (
+              <div className="px-2">
+                <SearchInput 
+                  onSearch={handleSearch}
+                  placeholder="Search destinations..."
+                  className="w-full"
+                  isMobile={true}
+                />
+              </div>
+            )}
+            
+            {!currentUser && (
+              <>
+                <Link
+                  to="/"
+                  className={cn(
+                    "block text-foreground hover:text-primary-600 transition-colors font-medium",
+                    location.pathname === "/" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    scrollToTop();
+                  }}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/about"
+                  className={cn(
+                    "block text-foreground hover:text-primary-600 transition-colors font-medium",
+                    location.pathname === "/about" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    scrollToTop();
+                  }}
+                >
+                  About
+                </Link>
+              </>
+            )}
+
             <Link
               to="/contact"
               className={cn(
                 "block text-foreground hover:text-primary-600 transition-colors font-medium",
-                location.pathname === "/contact" && "text-primary-600 font-semibold"
+                location.pathname === "/contact" &&
+                  "text-primary-600 font-semibold"
               )}
               onClick={() => {
                 setIsMenuOpen(false);
@@ -199,7 +245,7 @@ const Header: React.FC = () => {
             >
               Contact
             </Link>
-            
+
             {/* Mobile Auth Section */}
             {loading ? (
               <div className="pt-4 border-t border-primary-200">
