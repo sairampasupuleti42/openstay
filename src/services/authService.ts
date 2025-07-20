@@ -9,7 +9,8 @@ import {
   updateProfile,
   type User
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import type { SignInFormData, SignUpFormData } from '@/schemas/authSchemas';
 
 // Google Auth Provider
@@ -31,6 +32,21 @@ export const signUpWithEmailPassword = async (data: SignUpFormData): Promise<{ u
     // Update user profile with name
     await updateProfile(user, {
       displayName: `${data.firstName} ${data.lastName}`
+    });
+
+    // Create user profile in Firestore
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      displayName: `${data.firstName} ${data.lastName}`,
+      email: user.email,
+      photoURL: user.photoURL || null,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      followers: [],
+      following: [],
+      createdAt: new Date().toISOString(),
+      isOnboardingComplete: false,
+      emailVerified: false
     });
 
     // Send email verification
@@ -115,6 +131,26 @@ export const signInWithEmailPassword = async (data: SignInFormData): Promise<{ u
 export const signInWithGoogle = async (): Promise<{ user: User | null; success: boolean; message: string }> => {
   try {
     const userCredential = await signInWithPopup(auth, googleProvider);
+    const user = userCredential.user;
+
+    // Check if this is a new user and create profile if needed
+    const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
+    
+    if (isNewUser) {
+      // Create user profile in Firestore for new Google users
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        displayName: user.displayName || 'User',
+        email: user.email,
+        photoURL: user.photoURL,
+        followers: [],
+        following: [],
+        createdAt: new Date().toISOString(),
+        isOnboardingComplete: false,
+        emailVerified: user.emailVerified
+      });
+    }
+
     return {
       user: userCredential.user,
       success: true,

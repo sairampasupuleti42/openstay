@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import Header from './Header';
 import Footer from './Footer';
+import OnboardingRedirect from './OnboardingRedirect';
 
 interface LayoutProps {
   className?: string;
@@ -29,7 +30,9 @@ const Layout: React.FC<LayoutProps> = ({ className }) => {
         role="main"
         aria-label="Main content"
       >
-        <Outlet />
+        <OnboardingRedirect>
+          <Outlet />
+        </OnboardingRedirect>
       </main>
       
       {/* Footer */}
