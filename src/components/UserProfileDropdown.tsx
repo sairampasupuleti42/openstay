@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { signOutUser } from '@/services/authService';
 import { cn } from '@/lib/utils';
 
-const UserProfileDropdown: React.FC = () => {
+const UserProfileDropdown: React.FC<{ isMobile?: boolean }> = ({ isMobile = false }) => {
   const { currentUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -57,7 +57,10 @@ const UserProfileDropdown: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-3 p-2 rounded-lg hover:bg-primary-50 transition-colors"
+        className={cn(
+          "flex items-center space-x-3 p-2 rounded-lg hover:bg-primary-50 transition-colors",
+          isMobile ? "w-full justify-start" : ""
+        )}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -76,8 +79,11 @@ const UserProfileDropdown: React.FC = () => {
           )}
         </div>
 
-        {/* User Name */}
-        <div className="hidden md:block text-left">
+        {/* User Name - Show on desktop and mobile */}
+        <div className={cn(
+          "text-left flex-1",
+          isMobile ? "block" : "hidden md:block"
+        )}>
           <p className="text-sm font-medium text-foreground">
             {displayName}
           </p>
@@ -107,7 +113,10 @@ const UserProfileDropdown: React.FC = () => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+        <div className={cn(
+          "absolute mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50",
+          isMobile ? "left-0 right-0 w-full" : "right-0 w-64"
+        )}>
           {/* User Info Header */}
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center space-x-3">

@@ -210,7 +210,7 @@ const Header: React.FC = () => {
               </div>
             ) : currentUser ? (
               <div className="pt-4 border-t border-primary-200">
-                <UserProfileDropdown />
+                <UserProfileDropdown isMobile={true} />
               </div>
             ) : (
               <Link

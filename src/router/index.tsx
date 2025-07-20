@@ -12,6 +12,10 @@ const SignIn = lazy(() => import('@/pages/auth/SignIn'));
 const SignUp = lazy(() => import('@/pages/auth/SignUp'));
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
 
+// Lazy load profile component
+const Profile = lazy(() => import('@/pages/Profile'));
+const Settings = lazy(() => import('@/pages/Settings'));
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -28,6 +32,22 @@ export const router = createBrowserRouter([
       {
         path: '/contact',
         element: <Contact />
+      },
+      {
+        path: '/profile',
+        element: (
+          <Suspense fallback={<LazyLoadSpinner />}>
+            <Profile />
+          </Suspense>
+        )
+      },
+      {
+        path: '/settings',
+        element: (
+          <Suspense fallback={<LazyLoadSpinner />}>
+            <Settings />
+          </Suspense>
+        )
       }
     ]
   },
