@@ -85,13 +85,13 @@ const Header: React.FC = () => {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center space-x-4">
-            <button
-              
+            <Link
+              to="/auth/signin"
               className="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              aria-label="Send email to get in touch"
+              aria-label="Sign in to your account"
             >
               Sign In
-            </button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
