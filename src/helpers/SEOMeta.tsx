@@ -11,13 +11,13 @@ interface SEOMetaProps {
 }
 
 const SEOMeta: React.FC<SEOMetaProps> = ({
-  title = "OpenStay - Connect Travelers with Local Hosts for Authentic Experiences",
+  title = "Openstay - Connect Travelers with Local Hosts for Authentic Experiences",
   description = "Host or travel with real people around the world. Join our verified community-based platform for authentic cultural exchanges and group travel experiences.",
   keywords = "community hosting, cultural exchange, travel groups, local hosts, verified hosting, authentic travel, budget travel, digital nomads, student groups, backpackers, group accommodation, cultural immersion, social travel, trust-based hosting, travel community, homestay alternative, couchsurfing alternative, group travel, verified hosts, travel experiences",
   ogTitle,
   ogDescription,
-  ogImage = "/openstay-og-image.jpg",
-  canonicalUrl = "https://openstay.in",
+  ogImage = "/Openstay-og-image.jpg",
+  canonicalUrl = "https://Openstay.in",
 }) => {
   React.useEffect(() => {
     // Update document title
@@ -104,7 +104,7 @@ const SEOMeta: React.FC<SEOMetaProps> = ({
     const structuredData = {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "OpenStay",
+      name: "Openstay",
       url: canonicalUrl,
       description: description,
       logo: `${canonicalUrl}/logo.png`,

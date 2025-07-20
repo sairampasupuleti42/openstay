@@ -88,9 +88,9 @@ const SignIn: React.FC = () => {
   return (
     <>
       <SEOMeta
-        title="Sign In - OpenStay"
-        description="Sign in to your OpenStay account to access exclusive features and connect with local hosts around the world."
-        keywords="sign in, login, authentication, OpenStay account"
+        title="Sign In - Openstay"
+        description="Sign in to your Openstay account to access exclusive features and connect with local hosts around the world."
+        keywords="sign in, login, authentication, Openstay account"
         canonicalUrl="/auth/signin"
       />
       
@@ -100,7 +100,7 @@ const SignIn: React.FC = () => {
             Welcome Back
           </Title>
           <p className="text-muted-foreground">
-            Sign in to your OpenStay account
+            Sign in to your Openstay account
           </p>
         </div>
 

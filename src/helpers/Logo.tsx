@@ -14,7 +14,7 @@ const Logo: React.FC<LogoProps> = ({
   width = 240, 
   height = 60, 
   className = "",
-  alt = "OpenStay Logo" 
+  alt = "Openstay Logo" 
 }) => {
   return (
     <span className={`font-heading font-bold ${className}`}>

@@ -65,7 +65,7 @@ const UserDiscovery: React.FC<UserDiscoveryProps> = ({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center space-y-4 py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
         <p className="text-gray-600">Finding interesting people to follow...</p>
       </div>
     );
@@ -124,7 +124,7 @@ const UserDiscovery: React.FC<UserDiscoveryProps> = ({
                   className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     followingUsers.has(user.uid)
                       ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      : 'bg-blue-100 text-primary-700 hover:bg-primary-200'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {followingInProgress.has(user.uid) ? (
@@ -150,19 +150,12 @@ const UserDiscovery: React.FC<UserDiscoveryProps> = ({
       <div className="flex flex-col space-y-3 pt-4">
         <button
           onClick={onComplete}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium ml-auto"
         >
           Continue to OpenStay
         </button>
 
-        {onSkip && (
-          <button
-            onClick={onSkip}
-            className="text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            Skip this step
-          </button>
-        )}
+        
       </div>
     </div>
   );

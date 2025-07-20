@@ -143,11 +143,11 @@ const Profile: React.FC = () => {
 
   return (
     <>
-      <Title>Profile - OpenStay</Title>
+      <Title>Profile - Openstay</Title>
       <SEOMeta
-        title="Profile - OpenStay"
-        description="Manage your OpenStay profile and account settings"
-        keywords="profile, account, settings, OpenStay"
+        title="Profile - Openstay"
+        description="Manage your Openstay profile and account settings"
+        keywords="profile, account, settings, Openstay"
       />
       
       <div className="min-h-screen bg-gray-50 py-8">

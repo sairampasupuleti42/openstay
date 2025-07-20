@@ -187,9 +187,9 @@ export default function Contact() {
   return (
     <>
       <SEOMeta
-        title="Contact Us - OpenStay"
-        description="Get in touch with OpenStay. Send us a message and we'll get back to you as soon as possible. We're here to help with all your accommodation needs."
-        keywords="contact, support, help, customer service, OpenStay"
+        title="Contact Us - Openstay"
+        description="Get in touch with Openstay. Send us a message and we'll get back to you as soon as possible. We're here to help with all your accommodation needs."
+        keywords="contact, support, help, customer service, Openstay"
         canonicalUrl="/contact"
       />
 
@@ -267,7 +267,7 @@ export default function Contact() {
                         <div>
                           <h4 className="font-medium text-gray-900">Email</h4>
                           <p className="text-muted-foreground">
-                            info@openstay.com
+                            info@Openstay.com
                           </p>
                         </div>
                       </div>

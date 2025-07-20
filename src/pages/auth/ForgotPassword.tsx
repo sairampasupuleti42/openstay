@@ -58,7 +58,7 @@ const ForgotPassword: React.FC = () => {
     return (
       <>
         <SEOMeta
-          title="Password Reset Email Sent - OpenStay"
+          title="Password Reset Email Sent - Openstay"
           description="Check your email for password reset instructions."
           keywords="password reset, forgot password, email sent"
           canonicalUrl="/auth/forgot-password"
@@ -110,9 +110,9 @@ const ForgotPassword: React.FC = () => {
   return (
     <>
       <SEOMeta
-        title="Forgot Password - OpenStay"
-        description="Reset your OpenStay password. Enter your email address and we'll send you a link to reset your password."
-        keywords="forgot password, password reset, OpenStay password recovery"
+        title="Forgot Password - Openstay"
+        description="Reset your Openstay password. Enter your email address and we'll send you a link to reset your password."
+        keywords="forgot password, password reset, Openstay password recovery"
         canonicalUrl="/auth/forgot-password"
       />
       

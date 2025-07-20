@@ -43,7 +43,7 @@ const Header: React.FC = () => {
                 width={240}
                 height={60}
                 className="hover:opacity-80 transition-opacity"
-                alt="OpenStay Company Logo"
+                alt="Openstay Company Logo"
               />
             </Link>
           </div>

@@ -8,7 +8,7 @@ const HomePage: React.FC = () => {
   return (
     <>
       <SEOMeta
-        title="OpenStay - Connect Travelers with Local Hosts for Authentic Experiences"
+        title="Openstay - Connect Travelers with Local Hosts for Authentic Experiences"
         description="Host or travel with real people around the world. Join our verified community-based platform for authentic cultural exchanges and group travel experiences."
         keywords="community hosting, cultural exchange, travel groups, local hosts, verified hosting, authentic travel, budget travel, digital nomads, student groups, backpackers, group accommodation, cultural immersion, social travel, trust-based hosting, travel community, homestay alternative, couchsurfing alternative, group travel, verified hosts, travel experiences"
       />
@@ -22,7 +22,7 @@ const HomePage: React.FC = () => {
             >
               Host or Travel with{" "}
               <Title variant="solid" className="text-primary-400 text-6xl">
-                OpenStay
+                Openstay
               </Title>
             </h1>
             <p className="text-xl text-muted-foreground font-sans max-w-2xl mx-auto mb-8">
@@ -108,7 +108,7 @@ const HomePage: React.FC = () => {
               <div className="w-8 h-8 bg-primary-500 rounded animate-pulse"></div>
             </div>
             <h2 className="text-3xl font-semibold mb-4 font-heading text-primary-800">
-              Join the OpenStay Community
+              Join the Openstay Community
             </h2>
             <p className="text-muted-foreground font-sans mb-6 max-w-md mx-auto">
               We're building the future of community-based travel. Be part of

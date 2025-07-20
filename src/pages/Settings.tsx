@@ -21,11 +21,11 @@ const SettingsPage: React.FC = () => {
 
   return (
     <>
-      <Title>Settings - OpenStay</Title>
+      <Title>Settings - Openstay</Title>
       <SEOMeta
-        title="Settings - OpenStay"
-        description="Manage your OpenStay account settings and preferences"
-        keywords="settings, account, preferences, security, OpenStay"
+        title="Settings - Openstay"
+        description="Manage your Openstay account settings and preferences"
+        keywords="settings, account, preferences, security, Openstay"
       />
       
       <div className="min-h-screen bg-gray-50 py-8">

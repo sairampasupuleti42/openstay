@@ -113,9 +113,9 @@ const SignUp: React.FC = () => {
     return (
       <>
         <SEOMeta
-          title="Check Your Email - OpenStay"
-          description="Please check your email to verify your OpenStay account."
-          keywords="email verification, account confirmation, OpenStay"
+          title="Check Your Email - Openstay"
+          description="Please check your email to verify your Openstay account."
+          keywords="email verification, account confirmation, Openstay"
           canonicalUrl="/auth/signup"
         />
         
@@ -157,16 +157,16 @@ const SignUp: React.FC = () => {
   return (
     <>
       <SEOMeta
-        title="Sign Up - OpenStay"
-        description="Create your OpenStay account and start connecting with local hosts for authentic travel experiences around the world."
-        keywords="sign up, register, create account, OpenStay registration"
+        title="Sign Up - Openstay"
+        description="Create your Openstay account and start connecting with local hosts for authentic travel experiences around the world."
+        keywords="sign up, register, create account, Openstay registration"
         canonicalUrl="/auth/signup"
       />
       
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
           <Title variant="gradient" className="text-3xl mb-2">
-            Join OpenStay
+            Join Openstay
           </Title>
           <p className="text-muted-foreground">
             Create your account to start your journey

@@ -5,7 +5,7 @@ import React from 'react';
 describe('HomePage', () => {
   test('renders the main heading', () => {
     render(<HomePage />);
-    const headingElement = screen.getByRole('heading', { name: /Host or Travel with OpenStay/i });
+    const headingElement = screen.getByRole('heading', { name: /Host or Travel with Openstay/i });
     expect(headingElement).toBeInTheDocument();
   });
 

@@ -6,9 +6,9 @@ const AboutPage: React.FC = () => {
   return (
     <>
       <SEOMeta
-        title="About OpenStay - Community-Based Travel Platform"
-        description="Learn about OpenStay's mission to connect travelers with verified local hosts for authentic cultural experiences. Discover our vision for community-driven travel."
-        keywords="about openstay, community travel, cultural exchange, verified hosts, authentic travel experiences, travel platform mission"
+        title="About Openstay - Community-Based Travel Platform"
+        description="Learn about Openstay's mission to connect travelers with verified local hosts for authentic cultural experiences. Discover our vision for community-driven travel."
+        keywords="about Openstay, community travel, cultural exchange, verified hosts, authentic travel experiences, travel platform mission"
       />
       <div className="container mx-auto py-16 px-4">
         <div className="max-w-4xl mx-auto">
@@ -21,7 +21,7 @@ const AboutPage: React.FC = () => {
               id="about-heading"
               className="text-4xl md:text-5xl font-bold mb-6 font-heading"
             >
-              About <Title size="xl">OpenStay</Title>
+              About <Title size="xl">Openstay</Title>
             </h1>
             <p className="text-xl text-muted-foreground font-sans max-w-3xl mx-auto leading-relaxed">
               We're building the future of community-based travel, connecting
@@ -40,7 +40,7 @@ const AboutPage: React.FC = () => {
                 🌍 Our Vision
               </h2>
               <p className="text-lg text-primary-700 leading-relaxed mb-6">
-                OpenStay is a platform where individuals and families can host
+                Openstay is a platform where individuals and families can host
                 travelers or travel groups, similar to Couchsurfing or Workaway,
                 but with enhanced layers of safety, verification, and cultural
                 immersion.
