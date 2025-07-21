@@ -242,14 +242,16 @@ const Header: React.FC = () => {
                   )} />
                 </Link>
                 
-                {/* Search bar for authenticated users */}
-                <div className="flex-1 max-w-md mx-6">
-                  <SearchInput 
-                    onSearch={handleSearch}
-                    placeholder="Search destinations..."
-                    className="w-full"
-                  />
-                </div>
+                {/* Search bar for authenticated users - hidden on home page */}
+                {location.pathname !== "/" && (
+                  <div className="flex-1 max-w-md mx-6">
+                    <SearchInput 
+                      onSearch={handleSearch}
+                      placeholder="Search destinations..."
+                      className="w-full"
+                    />
+                  </div>
+                )}
               </>
             )}
           </nav>
@@ -353,8 +355,8 @@ const Header: React.FC = () => {
           aria-hidden={!isMenuOpen}
         >
           <div className="py-4 space-y-4 border-t border-primary-200 bg-gradient-to-b from-white to-gray-50">
-            {/* Mobile Search */}
-            {currentUser && (
+            {/* Mobile Search - hidden on home page */}
+            {currentUser && location.pathname !== "/" && (
               <div className="px-4 mb-4">
                 <SearchInput 
                   onSearch={handleSearch}
