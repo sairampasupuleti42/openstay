@@ -497,7 +497,7 @@ const IncidentDetails: React.FC<IncidentDetailsProps> = ({
                   <div className="flex items-center space-x-2 mt-1">
                     <Flag className={cn(
                       "w-4 h-4",
-                      incident.priority === 'urgent' ? "text-red-600" :
+                      incident.priority === 'high' ? "text-red-600" :
                       incident.priority === 'high' ? "text-orange-600" :
                       incident.priority === 'medium' ? "text-yellow-600" : "text-green-600"
                     )} />

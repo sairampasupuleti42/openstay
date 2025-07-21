@@ -153,6 +153,8 @@ const Header: React.FC = () => {
                     location.pathname === "/contact" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
                   )} />
                 </Link>
+                {/* Admin menu temporarily hidden */}
+                {/*
                 <Link
                   to="/admin/incidents"
                   onClick={scrollToTop}
@@ -169,6 +171,7 @@ const Header: React.FC = () => {
                     location.pathname.startsWith("/admin") ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
                   )} />
                 </Link>
+                */}
               </>
             ) : (
               <>
@@ -378,6 +381,8 @@ const Header: React.FC = () => {
                   >
                     Contact
                   </Link>
+                  {/* Admin menu temporarily hidden */}
+                  {/*
                   <Link
                     to="/admin/incidents"
                     className={cn(
@@ -393,6 +398,7 @@ const Header: React.FC = () => {
                   >
                     Admin
                   </Link>
+                  */}
                 </>
               ) : (
                 <>

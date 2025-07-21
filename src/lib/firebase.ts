@@ -23,16 +23,6 @@ const envFirebaseConfig = {
 // Use environment variables if available, otherwise fallback to production config
 const firebaseConfig = envFirebaseConfig.apiKey ? envFirebaseConfig : prodFirebaseConfig;
 
-// Debug logging for production
-console.log('Firebase Config Debug:', {
-  hasApiKey: !!firebaseConfig.apiKey,
-  hasAuthDomain: !!firebaseConfig.authDomain,
-  hasProjectId: !!firebaseConfig.projectId,
-  apiKeyPrefix: firebaseConfig.apiKey ? firebaseConfig.apiKey.substring(0, 10) + '...' : 'missing',
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  environment: import.meta.env.MODE
-});
 
 // Validate Firebase configuration
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {

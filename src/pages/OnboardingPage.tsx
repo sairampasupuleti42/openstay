@@ -7,6 +7,7 @@ import { updateProfilePicture, completeOnboarding } from '@/services/userService
 import Stepper from '@/components/Stepper';
 import ProfilePictureUpload from '@/components/ProfilePictureUpload';
 import UserDiscovery from '@/components/UserDiscovery';
+import Title from '@/helpers/Title';
 
 const OnboardingPage: React.FC = () => {
   const { currentUser: user } = useAuth();
@@ -18,56 +19,15 @@ const OnboardingPage: React.FC = () => {
     {
       id: 0,
       title: 'Welcome',
-      description: 'Get started with OpenStay'
-    },
-    {
-      id: 1,
-      title: 'Profile Picture',
-      description: 'Add your photo'
-    },
-    {
-      id: 2,
-      title: 'Personal Info',
-      description: 'Tell us about yourself'
-    },
-    {
-      id: 3,
-      title: 'Discover People',
-      description: 'Connect with others'
-    },
-    {
-      id: 4,
-      title: 'Preferences',
-      description: 'Set your travel preferences'
-    }
-  ];
-import { storage } from '@/lib/firebase';
-import { useAuth } from '@/contexts/AuthContext';
-import { updateProfilePicture, completeOnboarding } from '@/services/userService';
-import Stepper from '@/components/Stepper';
-import ProfilePictureUpload from '@/components/ProfilePictureUpload';
-import UserDiscovery from '@/components/UserDiscovery';
-import Title from '@/helpers/Title';
-
-const OnboardingPage: React.FC = () => {
-  const { currentUser: user } = useAuth();
-  const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const steps = [
-    {
-      id: 1,
-      title: 'Welcome',
       description: 'Get started with Openstay'
     },
     {
-      id: 2,
+      id: 1,
       title: 'Profile Picture',
       description: 'Add your photo'
     },
     {
-      id: 3,
+      id: 2,
       title: 'Discover People',
       description: 'Connect with others'
     }

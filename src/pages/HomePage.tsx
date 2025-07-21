@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Users, Shield, Globe, Heart, Star } from "lucide-react";
+import { Users, Shield, Heart, Star } from "lucide-react";
 
 import SEOMeta from "@/helpers/SEOMeta";
 import Title from "@/helpers/Title";
@@ -9,6 +9,7 @@ import AdvancedSearchInput from "@/components/AdvancedSearchInput";
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSearch = (query: string, filters?: any) => {
     const searchParams = new URLSearchParams();
     searchParams.set('q', query);
@@ -199,6 +200,9 @@ const HomePage: React.FC = () => {
               </Link>
             </div>
           </section>
+
+          {/* Features Section */}
+          <section aria-labelledby="features-heading" className="mb-16">
             <h2 id="features-heading" className="sr-only">
               Our Features
             </h2>
