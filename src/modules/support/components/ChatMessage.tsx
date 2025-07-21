@@ -23,7 +23,7 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
       isBot ? "justify-start" : "justify-end"
     )}>
       {isBot && (
-        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
           <Bot className="w-5 h-5 text-white" />
         </div>
       )}
@@ -32,14 +32,14 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
         "max-w-[80%] rounded-lg px-4 py-2",
         isBot 
           ? "bg-gray-100 text-gray-900" 
-          : "bg-blue-500 text-white"
+          : "bg-primary-500 text-white"
       )}>
         <div className="whitespace-pre-wrap text-sm leading-relaxed">
           {message.content}
         </div>
         <div className={cn(
           "text-xs mt-1 opacity-70",
-          isBot ? "text-gray-500" : "text-blue-100"
+          isBot ? "text-gray-500" : "text-primary-100"
         )}>
           {formatTime(message.timestamp)}
         </div>

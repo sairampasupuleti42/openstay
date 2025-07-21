@@ -139,50 +139,50 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
 export const quickActions: QuickAction[] = [
   {
     id: 'how-to-start',
-    label: '🚀 How to get started',
-    response: 'Getting started with OpenStay is easy! First, create your profile and tell us whether you want to host travelers or find hosts. Then complete your verification for safety. Ready to begin your cultural exchange journey?',
+    label: '🚀 Get Started',
+    response: 'Welcome to OpenStay! Getting started is easy: 1) Create your profile (traveler or host), 2) Complete verification for safety, 3) Start exploring hosts or create your listing. Ready to join our global community?',
     category: 'onboarding'
   },
   {
     id: 'find-hosts',
-    label: '🏠 Find hosts',
-    response: 'To find perfect hosts: Use our search with your destination, travel dates, and group size. Filter by interests and host vibes. Check their cultural badges and reviews. Send a friendly booking request with your travel story!',
+    label: '🏠 Find Hosts',
+    response: 'Search for amazing hosts using our smart filters: destination, travel dates, group size, and cultural interests. Filter by host "vibes" and check their cultural badges. Send a friendly request with your story!',
     category: 'traveling'
   },
   {
     id: 'become-host',
-    label: '🌟 Become a host',
-    response: 'Ready to welcome travelers? Create your host profile, add photos of your space, describe your cultural offerings, set your group size preference (1-10 people), and get verified. Start building amazing connections!',
+    label: '🌟 Host Travelers',
+    response: 'Start hosting today! Create your profile, upload photos, describe your cultural offerings, set group size (1-10 people), and get verified. Welcome travelers from around the world!',
     category: 'hosting'
   },
   {
     id: 'safety-info',
     label: '🛡️ Safety & Trust',
-    response: 'Your safety is our priority! We offer ID verification, background checks, host certification, SOS check-ins, and our Safety Shield insurance option. Plus, our review system helps you choose trusted community members.',
+    response: 'Safety first! We provide ID verification, background checks, host certification, SOS check-ins, Safety Shield insurance, and community reviews. Travel with confidence on OpenStay.',
     category: 'safety'
   },
   {
     id: 'cultural-experiences',
-    label: '🎭 Cultural Experiences',
-    response: 'Discover authentic local culture! Our hosts offer cooking classes, traditional crafts, local tours, language exchange, and spiritual experiences. Look for cultural badges on host profiles to find your perfect cultural immersion.',
+    label: '🎭 Local Culture',
+    response: 'Immerse yourself in local culture! Our hosts offer cooking classes, traditional crafts, local tours, language exchange, and spiritual experiences. Find authentic cultural connections.',
     category: 'experiences'
   },
   {
     id: 'group-travel',
     label: '👥 Group Travel',
-    response: 'OpenStay specializes in group hosting! Whether you\'re traveling with friends, family, or as a student group, our hosts can accommodate 2-10 people. Perfect for digital nomad teams and travel buddies.',
+    response: 'Perfect for groups! OpenStay specializes in hosting 2-10 people together. Ideal for friends, families, student groups, and digital nomad teams traveling together.',
     category: 'groups'
   },
   {
     id: 'pricing-help',
-    label: '💰 Pricing Info',
-    response: 'OpenStay uses a freemium model - core features are free! Premium subscriptions offer verified-only access and early booking. Hosts can offer free stays or charge for special cultural experiences.',
+    label: '💰 Pricing',
+    response: 'Enjoy our freemium model! Core features are completely free. Premium subscriptions unlock verified-only access, early booking, and enhanced visibility. Fair and transparent pricing.',
     category: 'pricing'
   },
   {
     id: 'contact-support',
-    label: '📞 Contact Human Support',
-    response: 'Need to speak with our support team? I can help you submit a support ticket or connect you with a human agent. What specific issue would you like assistance with?',
+    label: '📞 Get Help',
+    response: 'Need personal assistance? Our support team is ready to help! I can create a support ticket or connect you with a human agent for complex issues. How can we assist you?',
     category: 'support'
   }
 ];

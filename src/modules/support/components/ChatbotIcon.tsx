@@ -14,10 +14,10 @@ const ChatbotIcon: React.FC<ChatbotIconProps> = ({ isOpen, onClick, unreadCount 
       onClick={onClick}
       className={cn(
         "fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg transition-all duration-300 z-50",
-        "flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-blue-300",
+        "flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-primary-300",
         isOpen 
           ? "bg-gray-600 hover:bg-gray-700" 
-          : "bg-blue-500 hover:bg-blue-600"
+          : "bg-primary-500 hover:bg-primary-600"
       )}
       aria-label={isOpen ? "Close chat" : "Open support chat"}
     >
@@ -46,7 +46,7 @@ const ChatbotIcon: React.FC<ChatbotIconProps> = ({ isOpen, onClick, unreadCount 
       
       {/* Pulse animation when closed */}
       {!isOpen && (
-        <div className="absolute inset-0 rounded-full bg-blue-500 animate-ping opacity-20" />
+        <div className="absolute inset-0 rounded-full bg-primary-500 animate-ping opacity-20" />
       )}
     </button>
   );

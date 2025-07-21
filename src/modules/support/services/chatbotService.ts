@@ -111,6 +111,28 @@ class ChatbotService {
     return this.sessions.get(sessionId);
   }
   
+  // Reset session (clear messages but keep session)
+  resetSession(sessionId: string): ChatSession {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new Error('Session not found');
+    }
+    
+    // Clear all messages and add welcome message
+    session.messages = [
+      {
+        id: '1',
+        content: "Hi there! 👋 Welcome back to OpenStay support. I'm your AI assistant, here to help you learn about our community-driven travel platform. What would you like to know?",
+        sender: 'bot',
+        timestamp: new Date(),
+        type: 'text'
+      }
+    ];
+    session.lastActivity = new Date();
+    
+    return session;
+  }
+  
   // Get quick actions
   getQuickActions() {
     return quickActions;

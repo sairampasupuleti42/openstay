@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Minimize2 } from 'lucide-react';
+import { Send, Loader2, Minimize2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ChatSession, QuickAction } from '../types';
 import { chatbotService } from '../services/chatbotService';
@@ -13,6 +13,7 @@ const ChatbotWidget: React.FC = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +38,9 @@ const ChatbotWidget: React.FC = () => {
   }, [isOpen]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.parentElement?.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleSendMessage = async () => {
@@ -88,6 +91,10 @@ const ChatbotWidget: React.FC = () => {
       e.preventDefault();
       handleSendMessage();
     }
+    if (e.key === 'Escape' && showResetConfirm) {
+      e.preventDefault();
+      cancelReset();
+    }
   };
 
   const toggleChat = () => {
@@ -96,6 +103,35 @@ const ChatbotWidget: React.FC = () => {
 
   const minimizeChat = () => {
     setIsOpen(false);
+  };
+
+  const handleResetChat = () => {
+    if (!session) return;
+    
+    try {
+      const resetSession = chatbotService.resetSession(session.id);
+      setSession(resetSession);
+      setShowQuickActions(true);
+      setShowResetConfirm(false);
+      setInputMessage('');
+      
+      // Focus input after reset
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Error resetting chat:', error);
+    }
+  };
+
+  const confirmReset = () => {
+    setShowResetConfirm(true);
+  };
+
+  const cancelReset = () => {
+    setShowResetConfirm(false);
   };
 
   return (
@@ -111,24 +147,57 @@ const ChatbotWidget: React.FC = () => {
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-96 h-[32rem] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-50 overflow-hidden">
           {/* Header */}
-          <div className="bg-blue-500 text-white p-4 rounded-t-lg">
+          <div className="bg-primary-500 text-white p-3 rounded-t-lg">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-bold">OS</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <span className="text-xs font-bold">OS</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold">OpenStay Support</h3>
-                  <p className="text-xs text-blue-100">Always here to help</p>
+                  <h3 className="font-semibold text-sm">OpenStay Support</h3>
+                  <p className="text-xs text-primary-100">Always here to help</p>
                 </div>
               </div>
-              <button
-                onClick={minimizeChat}
-                className="p-1 hover:bg-white hover:bg-opacity-20 rounded transition-colors"
-              >
-                <Minimize2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center space-x-1">
+                {/* Reset Button */}
+                <button
+                  onClick={confirmReset}
+                  className="p-1 hover:bg-white hover:bg-opacity-20 rounded transition-colors"
+                  title="Reset conversation"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                {/* Minimize Button */}
+                <button
+                  onClick={minimizeChat}
+                  className="p-1 hover:bg-white hover:bg-opacity-20 rounded transition-colors"
+                  title="Minimize chat"
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
+            
+            {/* Reset Confirmation */}
+            {showResetConfirm && (
+              <div className="mt-2 p-2 bg-white bg-opacity-10 rounded-lg">
+                <p className="text-xs text-primary-100 mb-2">Reset chat conversation? This will clear all messages.</p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleResetChat}
+                    className="px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs transition-colors"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={cancelReset}
+                    className="px-2 py-1 bg-transparent border border-white border-opacity-30 hover:bg-white hover:bg-opacity-10 rounded text-xs transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Messages Container */}
@@ -140,7 +209,7 @@ const ChatbotWidget: React.FC = () => {
             {/* Typing Indicator */}
             {isTyping && (
               <div className="flex items-center space-x-2 text-gray-500">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center">
                   <Loader2 className="w-4 h-4 text-white animate-spin" />
                 </div>
                 <div className="bg-gray-100 rounded-lg px-4 py-2">
@@ -174,7 +243,7 @@ const ChatbotWidget: React.FC = () => {
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
                 disabled={isTyping}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50"
               />
               <button
                 onClick={handleSendMessage}
@@ -182,7 +251,7 @@ const ChatbotWidget: React.FC = () => {
                 className={cn(
                   "px-4 py-2 rounded-lg transition-colors",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
-                  "bg-blue-500 hover:bg-blue-600 text-white"
+                  "bg-primary-500 hover:bg-primary-600 text-white"
                 )}
               >
                 <Send className="w-4 h-4" />

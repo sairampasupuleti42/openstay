@@ -20,6 +20,7 @@ The OpenStay Customer Support Chatbot is an intelligent, AI-powered assistant th
 - **🎨 Brand Consistency**: Matches OpenStay's design language and colors
 - **♿ Accessibility**: Proper ARIA labels and keyboard navigation support
 - **🔔 Visual Feedback**: Typing indicators, message timestamps, and status updates
+- **🔄 Reset Conversation**: Easy option to clear chat history and start fresh
 
 ## 🏗️ Architecture
 
@@ -86,14 +87,14 @@ The chatbot's intelligence comes from a comprehensive knowledge base covering:
 
 Pre-defined quick actions for instant help:
 
-1. **🚀 How to get started** - Onboarding guidance
-2. **🏠 Find hosts** - Search and booking process
-3. **🌟 Become a host** - Host registration guide
+1. **🚀 Get Started** - Onboarding guidance
+2. **🏠 Find Hosts** - Search and booking process
+3. **🌟 Host Travelers** - Host registration guide
 4. **🛡️ Safety & Trust** - Security features overview
-5. **🎭 Cultural Experiences** - Activity discovery
+5. **🎭 Local Culture** - Cultural experience discovery
 6. **👥 Group Travel** - Group hosting information
-7. **💰 Pricing Info** - Freemium model explanation
-8. **📞 Contact Human Support** - Escalation to human agents
+7. **💰 Pricing** - Freemium model explanation
+8. **📞 Get Help** - Escalation to human agents
 
 ## 🔧 Implementation Details
 
@@ -104,6 +105,7 @@ Pre-defined quick actions for instant help:
 - Input field with send functionality
 - Typing indicators and animations
 - Responsive design for all screen sizes
+- Reset conversation functionality with confirmation dialog
 
 #### ChatbotIcon
 - Fixed-position floating button
@@ -130,6 +132,7 @@ Pre-defined quick actions for instant help:
 - Message processing and storage
 - Response generation logic
 - Integration with knowledge base
+- Reset conversation functionality
 
 #### KnowledgeBase
 - Structured FAQ database
@@ -255,3 +258,48 @@ To extend the chatbot functionality:
 ---
 
 *The OpenStay Support Chatbot is designed to provide exceptional user experience while reducing support load and improving user onboarding and engagement.*
+
+## 🔄 Reset Conversation Feature
+
+### Overview
+The reset conversation feature allows users to clear their chat history and start fresh with a new conversation. This is useful when users want to:
+- Clear sensitive information from the chat
+- Start over with a different topic
+- Reset the conversation context
+- Test the chatbot functionality
+
+### How to Reset
+
+Users can reset their chat conversation in two ways:
+
+#### 1. Header Reset Button
+- Click the rotate icon (🔄) in the chat header next to the minimize button
+- A confirmation dialog will appear in the header area
+- Choose "Reset" to confirm or "Cancel" to abort
+
+#### 2. Quick Action Button
+- Use the "🔄 Reset Conversation" quick action button (available in the initial state)
+- This will immediately reset the conversation without additional confirmation
+
+### Reset Behavior
+
+When a conversation is reset:
+1. **Message History**: All previous messages are cleared
+2. **Welcome Message**: A fresh welcome message is displayed
+3. **Quick Actions**: Quick action buttons become visible again
+4. **Input Focus**: The input field is automatically focused for immediate use
+5. **Session Continuity**: The same session ID is maintained for analytics
+
+### Keyboard Support
+- **Escape Key**: Cancel the reset confirmation dialog
+- **Enter Key**: Confirm the reset when the confirmation dialog is active
+
+### Technical Implementation
+
+The reset functionality is implemented through:
+- `resetSession()` method in ChatbotService
+- Confirmation state management in ChatbotWidget
+- Special handling of the reset quick action
+- Proper cleanup of component state
+
+This feature enhances user control and provides a clean slate for new conversations while maintaining the session context for analytics purposes.
