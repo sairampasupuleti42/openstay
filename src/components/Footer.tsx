@@ -78,14 +78,6 @@ const Footer: React.FC = () => {
                     About
                   </Link>
                 </li>
-                {/* <li>
-                  <a
-                    href="#services"
-                    className="text-primary-200 hover:text-white transition-colors text-sm"
-                  >
-                    Services
-                  </a>
-                </li> */}
                 <li>
                   <Link
                     to="/contact"
@@ -93,6 +85,24 @@ const Footer: React.FC = () => {
                     className="text-primary-200 hover:text-white transition-colors text-sm"
                   >
                     Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/privacy-policy"
+                    onClick={scrollToTop}
+                    className="text-primary-200 hover:text-white transition-colors text-sm"
+                  >
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/terms-conditions"
+                    onClick={scrollToTop}
+                    className="text-primary-200 hover:text-white transition-colors text-sm"
+                  >
+                    Terms & Conditions
                   </Link>
                 </li>
               </ul>
@@ -125,9 +135,29 @@ const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="border-t border-primary-700 mt-8 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-primary-200 text-sm">
-              © 2025 Openstay. All rights reserved.
-            </p>
+            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4">
+              <p className="text-primary-200 text-sm">
+                © 2025 Openstay. All rights reserved.
+              </p>
+              {/* Legal Links */}
+              <div className="flex items-center space-x-4 text-xs">
+                <Link
+                  to="/privacy-policy"
+                  onClick={scrollToTop}
+                  className="text-primary-300 hover:text-white transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+                <span className="text-primary-400">•</span>
+                <Link
+                  to="/terms-conditions"
+                  onClick={scrollToTop}
+                  className="text-primary-300 hover:text-white transition-colors"
+                >
+                  Terms & Conditions
+                </Link>
+              </div>
+            </div>
             <div className="mt-4 md:mt-0">
               <div className="bg-primary/85 text-primary-foreground px-3 py-1 rounded-full">
                 <span className="text-xs font-medium">

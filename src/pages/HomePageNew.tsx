@@ -1,23 +1,37 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Users, Shield, Globe, Heart, Star } from "lucide-react";
+import { Users, Shield, Heart, Star } from "lucide-react";
 
 import SEOMeta from "@/helpers/SEOMeta";
 import Title from "@/helpers/Title";
 import AdvancedSearchInput from "@/components/AdvancedSearchInput";
 
+interface SearchFilters {
+  type?: 'all' | 'location' | 'property' | 'user';
+  priceRange?: string;
+  rating?: number;
+  sortBy?: 'relevance' | 'price' | 'rating' | 'recent';
+}
+
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
-  const handleSearch = (query: string, filters?: any) => {
+  const handleSearch = (query: string, filters?: SearchFilters) => {
     const searchParams = new URLSearchParams();
     searchParams.set('q', query);
     if (filters) {
-      Object.keys(filters).forEach(key => {
-        if (filters[key] && filters[key] !== 'all' && filters[key] !== 'any') {
-          searchParams.set(key, filters[key].toString());
-        }
-      });
+      if (filters.type && filters.type !== 'all') {
+        searchParams.set('type', filters.type);
+      }
+      if (filters.priceRange && filters.priceRange !== 'any') {
+        searchParams.set('priceRange', filters.priceRange);
+      }
+      if (filters.rating && filters.rating > 0) {
+        searchParams.set('rating', filters.rating.toString());
+      }
+      if (filters.sortBy && filters.sortBy !== 'relevance') {
+        searchParams.set('sortBy', filters.sortBy);
+      }
     }
     navigate(`/search/results?${searchParams.toString()}`);
   };
@@ -199,90 +213,6 @@ const HomePage: React.FC = () => {
               </Link>
             </div>
           </section>
-            <h2 id="features-heading" className="sr-only">
-              Our Features
-            </h2>
-            <div className="grid md:grid-cols-3 gap-6">
-              <article className="bg-white/80 backdrop-blur-sm border border-primary-200 rounded-lg p-6 shadow-lg shadow-primary-100/50">
-                <div
-                  className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4"
-                  aria-hidden="true"
-                >
-                  <div className="w-6 h-6 bg-primary-500 rounded"></div>
-                </div>
-                <h3 className="text-xl font-heading font-semibold text-primary-800 mb-2">
-                  Verified Community
-                </h3>
-                <p className="text-muted-foreground">
-                  Connect with trusted local hosts through our verified
-                  community-based platform.
-                </p>
-              </article>
-
-              <article className="bg-white/80 backdrop-blur-sm border border-primary-200 rounded-lg p-6 shadow-lg shadow-primary-100/50">
-                <div
-                  className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4"
-                  aria-hidden="true"
-                >
-                  <div className="w-6 h-6 bg-primary-500 rounded-full"></div>
-                </div>
-                <h3 className="text-xl font-heading font-semibold text-primary-800 mb-2">
-                  Cultural Exchange
-                </h3>
-                <p className="text-muted-foreground">
-                  Experience authentic local culture through meaningful
-                  connections with your hosts.
-                </p>
-              </article>
-
-              <article className="bg-white/80 backdrop-blur-sm border border-primary-200 rounded-lg p-6 shadow-lg shadow-primary-100/50">
-                <div
-                  className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4"
-                  aria-hidden="true"
-                >
-                  <div className="w-6 h-6 bg-primary-500 rounded animate-pulse"></div>
-                </div>
-                <h3 className="text-xl font-heading font-semibold text-primary-800 mb-2">
-                  Group Travel
-                </h3>
-                <p className="text-muted-foreground">
-                  Perfect for student groups, digital nomads, and travel groups
-                  seeking authentic experiences.
-                </p>
-              </article>
-            </div>
-          </section>
-
-          {/* Status Section */}
-          <div className="bg-white/80 backdrop-blur-sm text-center border border-primary-200 rounded-lg p-8 shadow-lg shadow-primary-100/50">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-6">
-              <div className="w-8 h-8 bg-primary-500 rounded animate-pulse"></div>
-            </div>
-            <h2 className="text-3xl font-semibold mb-4 font-heading text-primary-800">
-              Join the Openstay Community
-            </h2>
-            <p className="text-muted-foreground font-sans mb-6 max-w-md mx-auto">
-              We're building the future of community-based travel. Be part of
-              authentic cultural exchanges and meaningful connections!
-            </p>
-            <div className="flex justify-center space-x-2 mb-6">
-              <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
-              <div
-                className="w-2 h-2 bg-primary-400 rounded-full animate-bounce"
-                style={{ animationDelay: "0.1s" }}
-              ></div>
-              <div
-                className="w-2 h-2 bg-primary-300 rounded-full animate-bounce"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
-            </div>
-            <a
-              href="mailto:sairampasupuleti.42@gmail.com"
-              className="inline-block bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-            >
-              Join Our Community - Get Early Access
-            </a>
-          </div>
         </div>
       </div>
     </>
