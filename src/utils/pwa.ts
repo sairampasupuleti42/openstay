@@ -24,7 +24,7 @@ export const isPWAInstalled = (): boolean => {
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   
   // Check if running in PWA mode on iOS Safari
-  const isIOSStandalone = (window.navigator as any).standalone === true;
+  const isIOSStandalone = window.navigator.standalone === true;
   
   // Check for Chrome PWA indicators
   const isInWebApk = document.referrer.includes('android-app://');
