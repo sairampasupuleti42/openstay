@@ -5,9 +5,17 @@ import './index.css'
 import { router } from './router'
 import { AuthProvider } from '@/contexts/AuthContext'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { initializePWA } from '@/utils/pwa'
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);
+
+// Initialize PWA features
+initializePWA().then((status) => {
+  console.log('PWA initialized with status:', status);
+}).catch((error) => {
+  console.error('Failed to initialize PWA:', error);
+});
 
 root.render(
   <StrictMode>

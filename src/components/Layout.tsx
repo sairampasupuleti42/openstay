@@ -5,6 +5,9 @@ import Header from './Header';
 import Footer from './Footer';
 import OnboardingRedirect from './OnboardingRedirect';
 import { ChatbotWidget } from '@/modules/support';
+import PWAInstallPrompt from './PWAInstallPrompt';
+import OfflineIndicator from './OfflineIndicator';
+import PWAUpdateNotification from './PWAUpdateNotification';
 
 interface LayoutProps {
   className?: string;
@@ -41,6 +44,15 @@ const Layout: React.FC<LayoutProps> = ({ className }) => {
       
       {/* Support Chatbot */}
       <ChatbotWidget />
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
+      
+      {/* Offline Indicator */}
+      <OfflineIndicator />
+      
+      {/* PWA Update Notification */}
+      <PWAUpdateNotification />
     </div>
   );
 };

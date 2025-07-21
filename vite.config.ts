@@ -49,7 +49,14 @@ export default defineConfig({
     minify: 'terser',
     // Increase chunk size warning limit since we're optimizing manually
     chunkSizeWarningLimit: 600,
-    sourcemap: false // Disable sourcemaps in production for smaller bundle
+    sourcemap: false, // Disable sourcemaps in production for smaller bundle
+    // PWA optimizations
+    assetsDir: 'assets',
+    assetsInlineLimit: 4096 // Inline assets smaller than 4kb
+  },
+  // PWA-specific optimizations
+  worker: {
+    format: 'es'
   },
   // Enable better tree shaking
   define: {
