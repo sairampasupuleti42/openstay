@@ -118,7 +118,7 @@ Navigate to `/admin/incidents` to access the main incident management interface.
 Use the `IncidentReportForm` component in your application:
 
 ```tsx
-import IncidentReportForm from '@/components/IncidentReportForm';
+import IncidentReportForm from '@/modules/incident/components/IncidentReportForm';
 
 function App() {
   const [showReportForm, setShowReportForm] = useState(false);

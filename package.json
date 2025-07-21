@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5174",
+    "dev:5173": "vite --port 5173",
     "build": "tsc -b && vite build",
     "build:dev": "npm run build",
     "build:prod": "npm run build",

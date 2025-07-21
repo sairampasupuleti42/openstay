@@ -26,8 +26,9 @@ const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
 const TermsConditions = lazy(() => import('@/pages/TermsConditions'));
 
 // Lazy load admin pages
-const IncidentResponseDashboard = lazy(() => import('@/pages/admin/IncidentResponseDashboard'));
-const IncidentDetails = lazy(() => import('@/pages/admin/IncidentDetails'));
+const IncidentResponseDashboard = lazy(() => import('@/modules/incident/pages/IncidentResponseDashboard'));
+const IncidentDetails = lazy(() => import('@/modules/incident/pages/IncidentDetails'));
+const IncidentReportPage = lazy(() => import('@/modules/incident/pages/IncidentReportPage'));
 
 // Lazy load admin layout
 const AdminLayout = lazy(() => import('@/components/AdminLayout'));
@@ -87,6 +88,14 @@ export const router = createBrowserRouter([
               <OnboardingPageNew />
             </Suspense>
           </ProtectedRoute>
+        )
+      },
+      {
+        path: '/report-incident',
+        element: (
+          <Suspense fallback={<LazyLoadSpinner />}>
+            <IncidentReportPage />
+          </Suspense>
         )
       },
       {

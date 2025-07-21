@@ -6,8 +6,6 @@ import Logo from "@/helpers/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
 import SearchInput from "@/components/SearchInput";
-import IncidentReportForm from "@/components/IncidentReportForm";
-import { useIncidentReport } from "@/hooks/useIncidentReport";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -15,7 +13,6 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, loading } = useAuth();
-  const { showReportForm, openReportForm, closeReportForm } = useIncidentReport();
 
   // Handle scroll effect for header background
   useEffect(() => {
@@ -249,14 +246,14 @@ const Header: React.FC = () => {
               // Show user profile and notifications when logged in
               <div className="flex items-center space-x-3">
                 {/* Report Issue Button */}
-                <button
-                  onClick={openReportForm}
+                <Link
+                  to="/report-incident"
                   className="relative p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
                   aria-label="Report an issue"
                   title="Report Issue"
                 >
                   <AlertTriangle className="w-5 h-5" />
-                </button>
+                </Link>
 
                 {/* Notifications */}
                 <button
@@ -463,15 +460,13 @@ const Header: React.FC = () => {
                   >
                     Explore
                   </Link>
-                  <button
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      openReportForm();
-                    }}
+                  <Link
+                    to="/report-incident"
+                    onClick={() => setIsMenuOpen(false)}
                     className="block w-full text-left text-foreground hover:text-red-600 transition-colors duration-200 font-medium py-2"
                   >
                     Report Issue
-                  </button>
+                  </Link>
                 </>
               )}
 
@@ -557,16 +552,6 @@ const Header: React.FC = () => {
         </nav>
       </div>
 
-      {/* Incident Report Form Modal */}
-      {showReportForm && (
-        <IncidentReportForm
-          onClose={closeReportForm}
-          onSubmit={() => {
-            closeReportForm();
-            // Optionally show a success toast or redirect
-          }}
-        />
-      )}
     </header>
   );
 };
