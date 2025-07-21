@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadBytes, ref, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateProfilePicture, completeOnboarding } from '@/services/userService';
+import { updateProfilePicture, completeOnboarding, updatePersonalInfo, updateTravelPreferences, ensureUserProfile } from '@/services/userService';
 import Stepper from '@/components/Stepper';
 import ProfilePictureUpload from '@/components/ProfilePictureUpload';
 import UserDiscovery from '@/components/UserDiscovery';
@@ -27,6 +27,21 @@ const OnboardingPage: React.FC = () => {
     accommodation: '',
     activities: [] as string[]
   });
+
+  // Ensure user profile exists when component mounts
+  useEffect(() => {
+    const initializeUserProfile = async () => {
+      if (user) {
+        try {
+          await ensureUserProfile(user);
+        } catch (error) {
+          console.error('Error initializing user profile:', error);
+        }
+      }
+    };
+
+    initializeUserProfile();
+  }, [user]);
 
   const steps = [
     {
@@ -84,9 +99,19 @@ const OnboardingPage: React.FC = () => {
     setCurrentStep(2);
   };
 
-  const handlePersonalInfoComplete = (info: typeof personalInfo) => {
-    setPersonalInfo(info);
-    setCurrentStep(3);
+  const handlePersonalInfoComplete = async (info: typeof personalInfo) => {
+    if (!user) return;
+    
+    try {
+      setPersonalInfo(info);
+      // Save personal info to Firestore
+      await updatePersonalInfo(user.uid, info);
+      setCurrentStep(3);
+    } catch (error) {
+      console.error('Error saving personal info:', error);
+      alert('Failed to save personal information. You can update it later from your profile.');
+      setCurrentStep(3);
+    }
   };
 
   const handleSkipPersonalInfo = () => {
@@ -106,6 +131,9 @@ const OnboardingPage: React.FC = () => {
 
     try {
       setPreferences(prefs);
+      // Save travel preferences to Firestore
+      await updateTravelPreferences(user.uid, prefs);
+      // Mark onboarding as complete
       await completeOnboarding(user.uid);
       navigate('/');
     } catch (error) {

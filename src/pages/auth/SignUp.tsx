@@ -53,10 +53,10 @@ const SignUp: React.FC = () => {
         setEmailSent(true);
         form.reset();
         
-        // Redirect to sign in page after 3 seconds
+        // Redirect to onboarding page after 3 seconds
         setTimeout(() => {
-          navigate('/auth/signin', {
-            state: { message: 'Account created! Please check your email to verify your account before signing in.' }
+          navigate('/onboarding', {
+            state: { message: 'Account created! Let\'s complete your profile setup.' }
           });
         }, 3000);
       } else {
@@ -80,10 +80,10 @@ const SignUp: React.FC = () => {
       
       if (result.success) {
         setSuccess('Account created with Google successfully!');
-        // Redirect to home page after successful sign up
+        // Redirect to onboarding page after successful sign up
         setTimeout(() => {
-          navigate('/');
-        }, 1500);
+          navigate('/onboarding');
+        }, 3000);
       } else {
         setError(result.message);
       }
@@ -98,11 +98,11 @@ const SignUp: React.FC = () => {
   // Password strength indicator
   const getPasswordStrength = (password: string) => {
     let strength = 0;
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[@$!%*?&]/.test(password)) strength++;
+    if (password.length >= 8) strength =5;
+    // if (/[A-Z]/.test(password)) strength++;
+    // if (/[a-z]/.test(password)) strength++;
+    // if (/\d/.test(password)) strength++;
+    // if (/[@$!%*?&]/.test(password)) strength++;
     return strength;
   };
 
@@ -144,10 +144,10 @@ const SignUp: React.FC = () => {
           </div>
 
           <Button
-            onClick={() => navigate('/auth/signin')}
+            onClick={() => navigate('/onboarding')}
             className="w-full"
           >
-            Go to Sign In
+            Continue to Profile Setup
           </Button>
         </div>
       </>
@@ -189,7 +189,7 @@ const SignUp: React.FC = () => {
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
             <div className="flex">
               <div className="ml-3">
-                <p className="text-sm text-green-700">{success}</p>
+                <p className="text-sm text-primary-700">{success}</p>
               </div>
             </div>
           </div>

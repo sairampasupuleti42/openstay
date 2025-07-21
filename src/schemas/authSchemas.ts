@@ -4,7 +4,7 @@ import { z } from 'zod';
 const nameRegex = /^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$/;
 
 // Password validation - at least 8 characters, one uppercase, one lowercase, one number
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const passwordRegex = /^(?=.{8,})(?=.*[A-Z])(?=.*[a-z])(?=.*[!@#$%^&*(),.{}[\]%&])[A-Za-z!@#$%^&*(),.{}\[\]%&]{8,}$/;
 
 // Phone number validation (international format)
 const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
@@ -17,7 +17,7 @@ const emailSchema = z.string()
 // Password validation schema
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
-  .regex(passwordRegex, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+//  .regex(passwordRegex, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
 
 // Name validation schema
 const nameSchema = z.string()

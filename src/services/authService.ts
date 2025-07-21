@@ -9,9 +9,24 @@ import {
   updateProfile,
   type User
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { SignInFormData, SignUpFormData } from '@/schemas/authSchemas';
+
+// Check if user has completed onboarding
+export const checkOnboardingStatus = async (userId: string): Promise<boolean> => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      return userData.isOnboardingComplete || false;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking onboarding status:', error);
+    return false;
+  }
+};
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
@@ -34,20 +49,48 @@ export const signUpWithEmailPassword = async (data: SignUpFormData): Promise<{ u
       displayName: `${data.firstName} ${data.lastName}`
     });
 
+    // Wait a moment to ensure user is fully authenticated
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Create user profile in Firestore
-    await setDoc(doc(db, 'users', user.uid), {
-      uid: user.uid,
-      displayName: `${data.firstName} ${data.lastName}`,
-      email: user.email,
-      photoURL: user.photoURL || null,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      followers: [],
-      following: [],
-      createdAt: new Date().toISOString(),
-      isOnboardingComplete: false,
-      emailVerified: false
-    });
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        displayName: `${data.firstName} ${data.lastName}`,
+        email: user.email,
+        photoURL: user.photoURL || null,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        bio: '',
+        location: '',
+        occupation: '',
+        interests: [],
+        languages: [],
+        verified: false,
+        rating: 0,
+        reviewCount: 0,
+        responseRate: 0,
+        responseTime: 'N/A',
+        hostingSince: new Date(),
+        followers: [],
+        following: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isOnboardingComplete: false,
+        emailVerified: false,
+        // Travel preferences
+        travelPreferences: {
+          travelStyle: '',
+          budget: '',
+          accommodation: '',
+          activities: []
+        }
+      });
+    } catch (firestoreError: unknown) {
+      console.error('Firestore error:', firestoreError);
+      // Continue with user creation even if Firestore fails
+      // The user profile can be created later during onboarding
+    }
 
     // Send email verification
     await sendEmailVerification(user);
@@ -143,11 +186,32 @@ export const signInWithGoogle = async (): Promise<{ user: User | null; success: 
         displayName: user.displayName || 'User',
         email: user.email,
         photoURL: user.photoURL,
+        firstName: user.displayName?.split(' ')[0] || '',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        bio: '',
+        location: '',
+        occupation: '',
+        interests: [],
+        languages: [],
+        verified: false,
+        rating: 0,
+        reviewCount: 0,
+        responseRate: 0,
+        responseTime: 'N/A',
+        hostingSince: new Date(),
         followers: [],
         following: [],
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         isOnboardingComplete: false,
-        emailVerified: user.emailVerified
+        emailVerified: user.emailVerified,
+        // Travel preferences
+        travelPreferences: {
+          travelStyle: '',
+          budget: '',
+          accommodation: '',
+          activities: []
+        }
       });
     }
 

@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import Layout from '@/components/Layout';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import HomePageNew from '@/pages/HomePageNew';
 import AboutPage from '@/pages/About';
 import Contact from '@/pages/Contact';
@@ -51,33 +52,41 @@ export const router = createBrowserRouter([
       {
         path: '/explore',
         element: (
-          <Suspense fallback={<LazyLoadSpinner />}>
-            <Explore />
-          </Suspense>
+          <ProtectedRoute requireOnboarding={true}>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <Explore />
+            </Suspense>
+          </ProtectedRoute>
         )
       },
       {
         path: '/profile',
         element: (
-          <Suspense fallback={<LazyLoadSpinner />}>
-            <Profile />
-          </Suspense>
+          <ProtectedRoute requireOnboarding={true}>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <Profile />
+            </Suspense>
+          </ProtectedRoute>
         )
       },
       {
         path: '/settings',
         element: (
-          <Suspense fallback={<LazyLoadSpinner />}>
-            <Settings />
-          </Suspense>
+          <ProtectedRoute requireOnboarding={true}>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <Settings />
+            </Suspense>
+          </ProtectedRoute>
         )
       },
       {
         path: '/onboarding',
         element: (
-          <Suspense fallback={<LazyLoadSpinner />}>
-            <OnboardingPageNew />
-          </Suspense>
+          <ProtectedRoute>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <OnboardingPageNew />
+            </Suspense>
+          </ProtectedRoute>
         )
       },
       {

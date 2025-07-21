@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Mail, Smartphone } from 'lucide-react';
 import { signInSchema, type SignInFormData } from '@/schemas/authSchemas';
-import { signInWithEmailPassword, signInWithGoogle } from '@/services/authService';
+import { signInWithEmailPassword, signInWithGoogle, checkOnboardingStatus } from '@/services/authService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -43,11 +43,19 @@ const SignIn: React.FC = () => {
     try {
       const result = await signInWithEmailPassword(data);
       
-      if (result.success) {
+      if (result.success && result.user) {
         setSuccess(result.message);
-        // Redirect to home page after successful sign in
+        
+        // Check if user has completed onboarding
+        const isOnboardingComplete = await checkOnboardingStatus(result.user.uid);
+        
+        // Redirect based on onboarding status
         setTimeout(() => {
-          navigate('/');
+          if (isOnboardingComplete) {
+            navigate('/');
+          } else {
+            navigate('/onboarding');
+          }
         }, 1500);
       } else {
         setError(result.message);
@@ -68,11 +76,19 @@ const SignIn: React.FC = () => {
     try {
       const result = await signInWithGoogle();
       
-      if (result.success) {
+      if (result.success && result.user) {
         setSuccess(result.message);
-        // Redirect to home page after successful sign in
+        
+        // Check if user has completed onboarding
+        const isOnboardingComplete = await checkOnboardingStatus(result.user.uid);
+        
+        // Redirect based on onboarding status
         setTimeout(() => {
-          navigate('/');
+          if (isOnboardingComplete) {
+            navigate('/');
+          } else {
+            navigate('/onboarding');
+          }
         }, 1500);
       } else {
         setError(result.message);
