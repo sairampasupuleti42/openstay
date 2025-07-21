@@ -2,7 +2,7 @@
 
 ## 🚀 Latest Enhancements
 
-This document outlines the comprehensive enhancements made to the OpenStay platform, transforming it into a sophisticated community-based travel and hosting platform with advanced search capabilities, comprehensive onboarding, and user management features.
+This document outlines the comprehensive enhancements made to the Openstay platform, transforming it into a sophisticated community-based travel and hosting platform with advanced search capabilities, comprehensive onboarding, and user management features.
 
 ## ✨ New Features Implemented
 
@@ -330,4 +330,4 @@ For technical support, feature requests, or general inquiries:
 
 ---
 
-**OpenStay** - Connecting travelers and hosts for authentic cultural experiences through technology and community. 🌍✈️🏠
+**Openstay** - Connecting travelers and hosts for authentic cultural experiences through technology and community. 🌍✈️🏠

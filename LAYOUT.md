@@ -175,4 +175,4 @@ border-primary-200        /* Borders */
 shadow-lg shadow-primary-100/50  /* Card shadows */
 ```
 
-The layout system is now ready for use with any routing system and provides a solid foundation for your OpenStay application! 🚀
+The layout system is now ready for use with any routing system and provides a solid foundation for your Openstay application! 🚀

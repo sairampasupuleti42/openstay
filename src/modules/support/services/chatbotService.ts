@@ -10,17 +10,17 @@ class ChatbotService {
     
     // Handle greetings
     if (this.isGreeting(query)) {
-      return "Hello! 👋 Welcome to OpenStay support. I'm here to help you with questions about our community-driven travel platform. How can I assist you today?";
+      return "Hello! 👋 Welcome to Openstay support. I'm here to help you with questions about our community-driven travel platform. How can I assist you today?";
     }
     
     // Handle thanks
     if (this.isThanking(query)) {
-      return "You're welcome! 😊 Is there anything else I can help you with regarding OpenStay?";
+      return "You're welcome! 😊 Is there anything else I can help you with regarding Openstay?";
     }
     
     // Handle goodbye
     if (this.isGoodbye(query)) {
-      return "Thanks for chatting with OpenStay support! Have a wonderful day and happy travels! 🌍✈️";
+      return "Thanks for chatting with Openstay support! Have a wonderful day and happy travels! 🌍✈️";
     }
     
     // Search knowledge base
@@ -43,23 +43,23 @@ class ChatbotService {
     
     // Handle specific platform questions
     if (query.includes('host') && query.includes('group')) {
-      return "Great question about group hosting! OpenStay specializes in connecting groups (2-10 people) with welcoming hosts. This makes us perfect for student groups, digital nomad teams, and friends traveling together. Would you like to know more about becoming a group host or finding hosts for your group?";
+      return "Great question about group hosting! Openstay specializes in connecting groups (2-10 people) with welcoming hosts. This makes us perfect for student groups, digital nomad teams, and friends traveling together. Would you like to know more about becoming a group host or finding hosts for your group?";
     }
     
     if (query.includes('safety') || query.includes('secure') || query.includes('trust')) {
-      return "Safety is our top priority at OpenStay! 🛡️ We provide ID verification, background checks, host certification, SOS check-ins, and optional Safety Shield insurance. Our community review system also helps you connect with trusted members. What specific safety feature would you like to know more about?";
+      return "Safety is our top priority at Openstay! 🛡️ We provide ID verification, background checks, host certification, SOS check-ins, and optional Safety Shield insurance. Our community review system also helps you connect with trusted members. What specific safety feature would you like to know more about?";
     }
     
     if (query.includes('cultural') || query.includes('experience') || query.includes('local')) {
-      return "OpenStay is all about authentic cultural experiences! 🎭 Our hosts offer cooking classes, traditional crafts, local tours, language exchange, and spiritual experiences. You can search for hosts by their cultural badges and activity offerings. Ready to dive into local culture?";
+      return "Openstay is all about authentic cultural experiences! 🎭 Our hosts offer cooking classes, traditional crafts, local tours, language exchange, and spiritual experiences. You can search for hosts by their cultural badges and activity offerings. Ready to dive into local culture?";
     }
     
     if (query.includes('price') || query.includes('cost') || query.includes('free')) {
-      return "OpenStay uses a freemium model! 💰 Core hosting and traveling features are completely free. We offer premium subscriptions for verified-only access and early booking privileges. Hosts can choose to offer free stays or charge for special cultural experiences. Would you like details about our pricing structure?";
+      return "Openstay uses a freemium model! 💰 Core hosting and traveling features are completely free. We offer premium subscriptions for verified-only access and early booking privileges. Hosts can choose to offer free stays or charge for special cultural experiences. Would you like details about our pricing structure?";
     }
     
     // Default response with quick actions
-    return "I'd be happy to help you with that! While I search for the best answer, here are some popular topics I can assist with:\n\n🚀 Getting started with OpenStay\n🏠 Finding hosts or becoming one\n👥 Group travel and hosting\n🛡️ Safety and verification\n🎭 Cultural experiences\n💰 Pricing information\n\nFeel free to ask about any of these topics, or type your specific question!";
+    return "I'd be happy to help you with that! While I search for the best answer, here are some popular topics I can assist with:\n\n🚀 Getting started with Openstay\n🏠 Finding hosts or becoming one\n👥 Group travel and hosting\n🛡️ Safety and verification\n🎭 Cultural experiences\n💰 Pricing information\n\nFeel free to ask about any of these topics, or type your specific question!";
   }
   
   // Create a new chat session
@@ -70,7 +70,7 @@ class ChatbotService {
       messages: [
         {
           id: '1',
-          content: "Hi there! 👋 Welcome to OpenStay support. I'm your AI assistant, here to help you learn about our community-driven travel platform where you can host travelers or find authentic local experiences. What would you like to know?",
+          content: "Hi there! 👋 Welcome to Openstay support. I'm your AI assistant, here to help you learn about our community-driven travel platform where you can host travelers or find authentic local experiences. What would you like to know?",
           sender: 'bot',
           timestamp: new Date(),
           type: 'text'
@@ -122,7 +122,7 @@ class ChatbotService {
     session.messages = [
       {
         id: '1',
-        content: "Hi there! 👋 Welcome back to OpenStay support. I'm your AI assistant, here to help you learn about our community-driven travel platform. What would you like to know?",
+        content: "Hi there! 👋 Welcome back to Openstay support. I'm your AI assistant, here to help you learn about our community-driven travel platform. What would you like to know?",
         sender: 'bot',
         timestamp: new Date(),
         type: 'text'

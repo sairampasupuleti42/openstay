@@ -1,4 +1,4 @@
-# OpenStay Theme Guide
+# Openstay Theme Guide
 
 ## 🎨 Primary Color: #92c10c
 

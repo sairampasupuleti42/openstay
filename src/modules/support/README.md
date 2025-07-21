@@ -1,12 +1,12 @@
 # Support Module
 
-This module contains the customer support chatbot functionality for OpenStay.
+This module contains the customer support chatbot functionality for Openstay.
 
 ## Features
 
 - **Floating Chatbot Icon**: Always visible support access
 - **Intelligent Responses**: AI-powered responses based on README.md content
-- **Knowledge Base**: Comprehensive answers about OpenStay platform
+- **Knowledge Base**: Comprehensive answers about Openstay platform
 - **Real-time Chat**: Instant support with typing indicators
 - **FAQ Integration**: Quick answers to common questions
 - **Escalation**: Option to connect with human support

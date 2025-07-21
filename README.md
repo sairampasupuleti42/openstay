@@ -291,7 +291,7 @@ Location | Date | Group Size | Host Language | Type
 - Inbox (Messages)
 - Calendar View
 ---------------------------
-# OpenStay UI Dev
+# Openstay UI Dev
 
 A modern React application built with Vite, featuring TailwindCSS, Shadcn/ui, Zod forms, and Firebase integration.
 

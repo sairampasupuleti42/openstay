@@ -2,12 +2,12 @@
 
 ## 🤖 Overview
 
-The OpenStay Customer Support Chatbot is an intelligent, AI-powered assistant that provides instant help to users based on comprehensive knowledge extracted from the platform's README.md documentation. The chatbot features a modern, floating interface that appears on all pages and provides contextual support for all aspects of the OpenStay platform.
+The Openstay Customer Support Chatbot is an intelligent, AI-powered assistant that provides instant help to users based on comprehensive knowledge extracted from the platform's README.md documentation. The chatbot features a modern, floating interface that appears on all pages and provides contextual support for all aspects of the Openstay platform.
 
 ## ✨ Features
 
 ### Core Functionality
-- **🎯 Intelligent Response System**: AI-powered responses based on OpenStay's knowledge base
+- **🎯 Intelligent Response System**: AI-powered responses based on Openstay's knowledge base
 - **📱 Floating Interface**: Always-accessible chat icon positioned at bottom-right
 - **💬 Real-time Conversation**: Instant responses with typing indicators and smooth animations
 - **🚀 Quick Actions**: Pre-defined action buttons for common questions
@@ -17,7 +17,7 @@ The OpenStay Customer Support Chatbot is an intelligent, AI-powered assistant th
 ### User Experience
 - **✨ Modern UI**: Clean, professional chat interface with smooth animations
 - **📱 Responsive Design**: Works perfectly on desktop and mobile devices
-- **🎨 Brand Consistency**: Matches OpenStay's design language and colors
+- **🎨 Brand Consistency**: Matches Openstay's design language and colors
 - **♿ Accessibility**: Proper ARIA labels and keyboard navigation support
 - **🔔 Visual Feedback**: Typing indicators, message timestamps, and status updates
 - **🔄 Reset Conversation**: Easy option to clear chat history and start fresh
@@ -51,7 +51,7 @@ src/modules/support/
 The chatbot's intelligence comes from a comprehensive knowledge base covering:
 
 ### Platform Information
-- What is OpenStay and how it works
+- What is Openstay and how it works
 - Community-driven travel concepts
 - Cultural exchange focus
 - Group hosting specialization
@@ -173,7 +173,7 @@ const response = await chatbotService.processMessage(session.id, "How do I find 
 
 ## 🎨 Styling
 
-The chatbot uses Tailwind CSS classes and follows OpenStay's design system:
+The chatbot uses Tailwind CSS classes and follows Openstay's design system:
 
 - **Primary Colors**: Blue-500 for branding
 - **Typography**: System font stack with proper hierarchy
@@ -257,7 +257,7 @@ To extend the chatbot functionality:
 
 ---
 
-*The OpenStay Support Chatbot is designed to provide exceptional user experience while reducing support load and improving user onboarding and engagement.*
+*The Openstay Support Chatbot is designed to provide exceptional user experience while reducing support load and improving user onboarding and engagement.*
 
 ## 🔄 Reset Conversation Feature
 

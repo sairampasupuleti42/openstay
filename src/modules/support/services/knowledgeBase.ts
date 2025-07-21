@@ -4,16 +4,16 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   // Platform Overview
   {
     id: 'what-is-openstay',
-    question: 'What is OpenStay?',
-    answer: 'OpenStay is a community-driven platform that connects travelers and travel groups with trusted local hosts for authentic cultural experiences. Unlike traditional hotels, we focus on human connections and cultural immersion.',
+    question: 'What is Openstay?',
+    answer: 'Openstay is a community-driven platform that connects travelers and travel groups with trusted local hosts for authentic cultural experiences. Unlike traditional hotels, we focus on human connections and cultural immersion.',
     category: 'platform',
     keywords: ['openstay', 'platform', 'what is', 'about', 'community'],
     priority: 10
   },
   {
     id: 'how-it-works',
-    question: 'How does OpenStay work?',
-    answer: 'OpenStay works in three simple steps: 1) Create your profile as a traveler or host, 2) Search for hosts in your destination or list your space, 3) Connect, chat, and arrange your stay. Our platform emphasizes trust, safety, and cultural exchange.',
+    question: 'How does Openstay work?',
+    answer: 'Openstay works in three simple steps: 1) Create your profile as a traveler or host, 2) Search for hosts in your destination or list your space, 3) Connect, chat, and arrange your stay. Our platform emphasizes trust, safety, and cultural exchange.',
     category: 'platform',
     keywords: ['how it works', 'process', 'steps', 'getting started'],
     priority: 9
@@ -23,7 +23,7 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   {
     id: 'become-host',
     question: 'How do I become a host?',
-    answer: 'To become a host on OpenStay: 1) Sign up and complete your profile, 2) Create your host listing with photos and description, 3) Set your availability and group size preferences, 4) Get verified through our safety process. Hosts can welcome solo travelers or groups up to 10 people.',
+    answer: 'To become a host on Openstay: 1) Sign up and complete your profile, 2) Create your host listing with photos and description, 3) Set your availability and group size preferences, 4) Get verified through our safety process. Hosts can welcome solo travelers or groups up to 10 people.',
     category: 'hosting',
     keywords: ['become host', 'hosting', 'list space', 'host signup'],
     priority: 8
@@ -31,7 +31,7 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   {
     id: 'group-hosting',
     question: 'Can I host groups?',
-    answer: 'Yes! OpenStay specializes in group hosting. You can specify the maximum group size you\'re comfortable with (typically 2-10 people). This makes us perfect for student groups, digital nomad teams, and friend groups traveling together.',
+    answer: 'Yes! Openstay specializes in group hosting. You can specify the maximum group size you\'re comfortable with (typically 2-10 people). This makes us perfect for student groups, digital nomad teams, and friend groups traveling together.',
     category: 'hosting',
     keywords: ['group hosting', 'groups', 'multiple travelers', 'student groups'],
     priority: 7
@@ -66,8 +66,8 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   // Safety & Trust
   {
     id: 'safety-features',
-    question: 'What safety features does OpenStay have?',
-    answer: 'OpenStay prioritizes safety with: ID verification, background checks, rating systems, SOS check-ins, emergency contacts, verified profiles, host certification, and optional insurance coverage through our Safety Shield feature.',
+    question: 'What safety features does Openstay have?',
+    answer: 'Openstay prioritizes safety with: ID verification, background checks, rating systems, SOS check-ins, emergency contacts, verified profiles, host certification, and optional insurance coverage through our Safety Shield feature.',
     category: 'safety',
     keywords: ['safety', 'security', 'trust', 'verification', 'emergency'],
     priority: 9
@@ -84,8 +84,8 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   // Pricing & Payment
   {
     id: 'pricing-model',
-    question: 'How much does OpenStay cost?',
-    answer: 'OpenStay offers a freemium model: Core hosting and traveling features are free. Premium features include verified-only access, early booking privileges, and enhanced visibility for hosts. Optional monetization allows hosts to charge for special experiences.',
+    question: 'How much does Openstay cost?',
+    answer: 'Openstay offers a freemium model: Core hosting and traveling features are free. Premium features include verified-only access, early booking privileges, and enhanced visibility for hosts. Optional monetization allows hosts to charge for special experiences.',
     category: 'pricing',
     keywords: ['cost', 'pricing', 'free', 'premium', 'payment'],
     priority: 7
@@ -103,7 +103,7 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   {
     id: 'mobile-app',
     question: 'Is there a mobile app?',
-    answer: 'OpenStay is available as a Progressive Web App (PWA) that works great on mobile devices. We\'re also developing native mobile apps for iOS and Android, coming in Phase 2 of our roadmap.',
+    answer: 'Openstay is available as a Progressive Web App (PWA) that works great on mobile devices. We\'re also developing native mobile apps for iOS and Android, coming in Phase 2 of our roadmap.',
     category: 'technical',
     keywords: ['mobile app', 'phone', 'ios', 'android', 'app'],
     priority: 5
@@ -111,7 +111,7 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   {
     id: 'supported-locations',
     question: 'Which locations are supported?',
-    answer: 'OpenStay is expanding globally! We currently support major cities and tourist destinations worldwide. Our platform works anywhere hosts choose to list their spaces and welcome travelers.',
+    answer: 'Openstay is expanding globally! We currently support major cities and tourist destinations worldwide. Our platform works anywhere hosts choose to list their spaces and welcome travelers.',
     category: 'locations',
     keywords: ['locations', 'countries', 'cities', 'where', 'available'],
     priority: 5
@@ -121,7 +121,7 @@ export const knowledgeBase: KnowledgeBaseItem[] = [
   {
     id: 'community-guidelines',
     question: 'What are the community guidelines?',
-    answer: 'OpenStay is built on respect, trust, and cultural exchange. We expect all members to be respectful, honest, and open to learning about different cultures. Discrimination, harassment, or abuse is not tolerated.',
+    answer: 'Openstay is built on respect, trust, and cultural exchange. We expect all members to be respectful, honest, and open to learning about different cultures. Discrimination, harassment, or abuse is not tolerated.',
     category: 'community',
     keywords: ['guidelines', 'rules', 'community', 'behavior'],
     priority: 4
@@ -140,7 +140,7 @@ export const quickActions: QuickAction[] = [
   {
     id: 'how-to-start',
     label: '🚀 Get Started',
-    response: 'Welcome to OpenStay! Getting started is easy: 1) Create your profile (traveler or host), 2) Complete verification for safety, 3) Start exploring hosts or create your listing. Ready to join our global community?',
+    response: 'Welcome to Openstay! Getting started is easy: 1) Create your profile (traveler or host), 2) Complete verification for safety, 3) Start exploring hosts or create your listing. Ready to join our global community?',
     category: 'onboarding'
   },
   {
@@ -158,7 +158,7 @@ export const quickActions: QuickAction[] = [
   {
     id: 'safety-info',
     label: '🛡️ Safety & Trust',
-    response: 'Safety first! We provide ID verification, background checks, host certification, SOS check-ins, Safety Shield insurance, and community reviews. Travel with confidence on OpenStay.',
+    response: 'Safety first! We provide ID verification, background checks, host certification, SOS check-ins, Safety Shield insurance, and community reviews. Travel with confidence on Openstay.',
     category: 'safety'
   },
   {
@@ -170,7 +170,7 @@ export const quickActions: QuickAction[] = [
   {
     id: 'group-travel',
     label: '👥 Group Travel',
-    response: 'Perfect for groups! OpenStay specializes in hosting 2-10 people together. Ideal for friends, families, student groups, and digital nomad teams traveling together.',
+    response: 'Perfect for groups! Openstay specializes in hosting 2-10 people together. Ideal for friends, families, student groups, and digital nomad teams traveling together.',
     category: 'groups'
   },
   {

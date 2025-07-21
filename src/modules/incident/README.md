@@ -1,6 +1,6 @@
 # Incident Module
 
-This module contains all incident-related functionality for the OpenStay platform, including security incident reporting, incident management, and administrative dashboard components.
+This module contains all incident-related functionality for the Openstay platform, including security incident reporting, incident management, and administrative dashboard components.
 
 ## Module Structure
 
