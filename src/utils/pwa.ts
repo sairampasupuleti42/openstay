@@ -116,10 +116,13 @@ export const updateServiceWorker = async (): Promise<void> => {
 /**
  * Check online/offline status
  */
-export const getNetworkStatus = () => ({
-  isOnline: navigator.onLine,
-  connection: (navigator as any).connection,
-});
+export const getNetworkStatus = () => {
+  const connection = 'connection' in navigator ? (navigator.connection as NetworkInformation) : null;
+  return {
+    isOnline: navigator.onLine,
+    connection,
+  };
+};
 
 /**
  * Add online/offline event listeners
