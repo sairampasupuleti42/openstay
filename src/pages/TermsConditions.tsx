@@ -80,9 +80,9 @@ const TermsConditions: React.FC = () => {
                 If you do not agree to these Terms, you may not access or use our Service.
               </p>
               
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Important Notes:</h3>
-                <ul className="space-y-1 text-blue-800 text-sm">
+              <div className="bg-primary-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-primary-900 mb-2">Important Notes:</h3>
+                <ul className="space-y-1 text-primary-800 text-sm">
                   <li>• These Terms form a legally binding agreement between you and Openstay</li>
                   <li>• You must be at least 18 years old to use our Service</li>
                   <li>• By using our Service, you represent that you have the authority to enter into this agreement</li>
@@ -298,9 +298,9 @@ const TermsConditions: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Payment Processing</h3>
                 <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-900 mb-2">Payment Methods</h4>
-                    <p className="text-blue-800 text-sm">
+                  <div className="bg-primary-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-primary-900 mb-2">Payment Methods</h4>
+                    <p className="text-primary-800 text-sm">
                       We accept major credit cards, debit cards, and other payment methods as displayed at checkout. 
                       All payments are processed securely through our trusted payment partners.
                     </p>

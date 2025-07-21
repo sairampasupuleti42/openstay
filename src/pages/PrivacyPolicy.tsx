@@ -319,8 +319,8 @@ const PrivacyPolicy: React.FC = () => {
               </div>
             </div>
             
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-800 text-sm">
+            <div className="mt-6 bg-primary-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-primary-800 text-sm">
                 To exercise these rights, please contact us using the information provided in the Contact section below. 
                 We will respond to your request within 30 days.
               </p>

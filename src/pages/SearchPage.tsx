@@ -106,7 +106,7 @@ const SearchPage: React.FC = () => {
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'location':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'property':
         return 'bg-green-100 text-green-800';
       case 'user':
@@ -253,7 +253,7 @@ const SearchPage: React.FC = () => {
                 </p>
                 <button
                   onClick={() => handleSearch('')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   Clear search
                 </button>

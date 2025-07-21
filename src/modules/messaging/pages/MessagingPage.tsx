@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, Users, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { messagingService } from '../services/messagingService';
@@ -13,6 +14,7 @@ import type { UserProfile } from '@/services/userServiceEnhanced';
 
 const MessagingPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +34,29 @@ const MessagingPage: React.FC = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const handleStartChat = useCallback(async (userId: string) => {
+    if (!currentUser) return;
+
+    try {
+      const conversationId = await messagingService.createConversation([currentUser.uid, userId]);
+      setActiveConversationId(conversationId);
+      setShowNewChat(false);
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert('Unable to start chat. Make sure you both follow each other.');
+    }
+  }, [currentUser]);
+
+  // Handle startChat query parameter
+  useEffect(() => {
+    const startChatUserId = searchParams.get('startChat');
+    if (startChatUserId && currentUser) {
+      handleStartChat(startChatUserId);
+      // Clear the query parameter
+      window.history.replaceState({}, '', '/messages');
+    }
+  }, [searchParams, currentUser, handleStartChat]);
 
   // Load conversations
   useEffect(() => {
@@ -88,19 +113,6 @@ const MessagingPage: React.FC = () => {
     setShowNewChat(true);
     if (isMobile) {
       setActiveConversationId(null);
-    }
-  };
-
-  const handleStartChat = async (userId: string) => {
-    if (!currentUser) return;
-
-    try {
-      const conversationId = await messagingService.createConversation([currentUser.uid, userId]);
-      setActiveConversationId(conversationId);
-      setShowNewChat(false);
-    } catch (error) {
-      console.error('Error starting chat:', error);
-      alert('Unable to start chat. Make sure you both follow each other.');
     }
   };
 

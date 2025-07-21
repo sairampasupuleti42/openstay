@@ -124,7 +124,7 @@ const UserDiscovery: React.FC<UserDiscoveryProps> = ({
                   className={`flex items-center space-x-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     followingUsers.has(user.uid)
                       ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                      : 'bg-blue-100 text-primary-700 hover:bg-primary-200'
+                      : 'bg-primary-100 text-primary-700 hover:bg-primary-200'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {followingInProgress.has(user.uid) ? (

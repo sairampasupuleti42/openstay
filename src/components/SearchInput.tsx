@@ -207,7 +207,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
                     <div className="flex-shrink-0">
                       <span className={cn(
                         "inline-flex px-2 py-1 text-xs font-medium rounded-full",
-                        suggestion.type === 'location' && "bg-blue-100 text-blue-800",
+                        suggestion.type === 'location' && "bg-primary-100 text-primary-800",
                         suggestion.type === 'property' && "bg-green-100 text-green-800",
                         suggestion.type === 'user' && "bg-purple-100 text-purple-800"
                       )}>
@@ -223,7 +223,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
               <p className="text-sm">No results found for "{query}"</p>
               <button
                 onClick={() => handleSearch()}
-                className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                className="mt-2 text-primary-600 hover:text-primary-800 text-sm font-medium"
               >
                 Search anyway
               </button>

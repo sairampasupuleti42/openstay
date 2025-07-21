@@ -417,7 +417,7 @@ const AdvancedSearchInput: React.FC<AdvancedSearchInputProps> = ({
                         )}
                         <span className={cn(
                           "inline-flex px-2 py-1 text-xs font-medium rounded-full",
-                          suggestion.type === 'location' && "bg-blue-100 text-blue-800",
+                          suggestion.type === 'location' && "bg-primary-100 text-primary-800",
                           suggestion.type === 'property' && "bg-green-100 text-green-800",
                           suggestion.type === 'user' && "bg-purple-100 text-purple-800",
                           suggestion.type === 'recent' && "bg-gray-100 text-gray-800"

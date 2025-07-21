@@ -79,8 +79,8 @@ const FollowingPage: React.FC = () => {
   };
 
   const handleMessage = (userId: string) => {
-    // TODO: Implement messaging functionality
-    console.log('Message user:', userId);
+    // Navigate to messaging page with the user
+    window.location.href = `/messages?startChat=${userId}`;
   };
 
   if (!currentUser) {

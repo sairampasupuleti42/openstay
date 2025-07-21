@@ -118,7 +118,7 @@ const UserCard: React.FC<UserCardProps> = ({
                   )}
 
                   {user.isHost && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                       Host
                     </span>
                   )}
@@ -264,7 +264,7 @@ const UserCard: React.FC<UserCardProps> = ({
 
           {user.isHost && (
             <div className="mt-3">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
                 Host
               </span>
             </div>

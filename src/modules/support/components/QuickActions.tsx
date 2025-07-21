@@ -14,7 +14,7 @@ const QuickActionsComponent: React.FC<QuickActionsProps> = ({ actions, onActionC
           <button
             key={action.id}
             onClick={() => onActionClick(action)}
-            className="text-left p-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-colors"
+            className="text-left p-1.5 text-xs bg-white border border-gray-200 rounded-md hover:bg-primary-50 hover:border-blue-300 transition-colors"
           >
             {action.label}
           </button>

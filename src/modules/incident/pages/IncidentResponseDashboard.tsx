@@ -155,7 +155,7 @@ const IncidentResponseDashboard: React.FC = () => {
   const getStatusColor = (status: IncidentStatus) => {
     switch (status) {
       case 'open': return 'bg-red-100 text-red-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'in_progress': return 'bg-primary-100 text-primary-800';
       case 'investigating': return 'bg-purple-100 text-purple-800';
       case 'waiting_for_response': return 'bg-yellow-100 text-yellow-800';
       case 'escalated': return 'bg-orange-100 text-orange-800';
@@ -214,7 +214,7 @@ const IncidentResponseDashboard: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600">Total Incidents</p>
                 <p className="text-2xl font-bold text-gray-900">{MOCK_METRICS.totalIncidents}</p>
               </div>
-              <Activity className="w-8 h-8 text-blue-600" />
+              <Activity className="w-8 h-8 text-primary-600" />
             </div>
           </div>
           
@@ -252,9 +252,9 @@ const IncidentResponseDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">SLA Compliance</p>
-                <p className="text-2xl font-bold text-blue-600">{MOCK_METRICS.slaCompliance}%</p>
+                <p className="text-2xl font-bold text-primary-600">{MOCK_METRICS.slaCompliance}%</p>
               </div>
-              <CheckCircle className="w-8 h-8 text-blue-600" />
+              <CheckCircle className="w-8 h-8 text-primary-600" />
             </div>
           </div>
           
@@ -291,14 +291,14 @@ const IncidentResponseDashboard: React.FC = () => {
                 className={cn(
                   "flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors",
                   showFilters 
-                    ? "border-blue-500 bg-blue-50 text-blue-700" 
+                    ? "border-blue-500 bg-primary-50 text-primary-700" 
                     : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                 )}
               >
                 <Filter className="w-4 h-4" />
                 <span>Filters</span>
                 {(selectedFilters.status.length + selectedFilters.severity.length + selectedFilters.type.length + selectedFilters.priority.length) > 0 && (
-                  <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                  <span className="bg-primary-600 text-white text-xs px-2 py-1 rounded-full">
                     {selectedFilters.status.length + selectedFilters.severity.length + selectedFilters.type.length + selectedFilters.priority.length}
                   </span>
                 )}
@@ -328,7 +328,7 @@ const IncidentResponseDashboard: React.FC = () => {
                         type="checkbox"
                         checked={selectedFilters.status.includes(status as IncidentStatus)}
                         onChange={() => handleFilterChange('status', status)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-blue-500"
                       />
                       <span className="text-sm text-gray-600 capitalize">{status.replace('_', ' ')}</span>
                     </label>
@@ -346,7 +346,7 @@ const IncidentResponseDashboard: React.FC = () => {
                         type="checkbox"
                         checked={selectedFilters.severity.includes(severity as IncidentSeverity)}
                         onChange={() => handleFilterChange('severity', severity)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-blue-500"
                       />
                       <span className="text-sm text-gray-600 capitalize">{severity}</span>
                     </label>
@@ -364,7 +364,7 @@ const IncidentResponseDashboard: React.FC = () => {
                         type="checkbox"
                         checked={selectedFilters.type.includes(type as IncidentType)}
                         onChange={() => handleFilterChange('type', type)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-blue-500"
                       />
                       <span className="text-sm text-gray-600 capitalize">{type.replace('_', ' ')}</span>
                     </label>
@@ -382,7 +382,7 @@ const IncidentResponseDashboard: React.FC = () => {
                         type="checkbox"
                         checked={selectedFilters.priority.includes(priority as IncidentPriority)}
                         onChange={() => handleFilterChange('priority', priority)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-blue-500"
                       />
                       <span className="text-sm text-gray-600 capitalize">{priority}</span>
                     </label>
@@ -407,7 +407,7 @@ const IncidentResponseDashboard: React.FC = () => {
                 key={incident.id} 
                 className={cn(
                   "p-6 hover:bg-gray-50 cursor-pointer transition-colors",
-                  selectedIncident === incident.id && "bg-blue-50"
+                  selectedIncident === incident.id && "bg-primary-50"
                 )}
                 onClick={() => setSelectedIncident(selectedIncident === incident.id ? null : incident.id)}
               >
@@ -494,7 +494,7 @@ const IncidentResponseDashboard: React.FC = () => {
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-2">Quick Actions</h4>
                         <div className="flex flex-wrap gap-2">
-                          <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700">
+                          <button className="px-3 py-1 bg-primary-600 text-white text-sm rounded-md hover:bg-primary-700">
                             Assign to Me
                           </button>
                           <button className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700">

@@ -42,6 +42,9 @@ const FollowingPage = lazy(() => import(/* webpackChunkName: "social" */ '@/modu
 // Lazy load messaging components - separate chunk for messaging functionality
 const MessagingPage = lazy(() => import(/* webpackChunkName: "messaging" */ '@/modules/messaging/pages/MessagingPage'));
 
+// Lazy load validation page - development/testing purposes
+const ValidationPage = lazy(() => import(/* webpackChunkName: "validation" */ '@/pages/ValidationPage'));
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -62,7 +65,7 @@ export const router = createBrowserRouter([
       {
         path: '/explore',
         element: (
-          <ProtectedRoute requireOnboarding={true}>
+          <ProtectedRoute requireOnboarding={false}>
             <Suspense fallback={<LazyLoadSpinner />}>
               <Explore />
             </Suspense>
@@ -165,6 +168,16 @@ export const router = createBrowserRouter([
           <ProtectedRoute requireOnboarding={true}>
             <Suspense fallback={<LazyLoadSpinner />}>
               <MessagingPage />
+            </Suspense>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: '/validation',
+        element: (
+          <ProtectedRoute requireOnboarding={true}>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <ValidationPage />
             </Suspense>
           </ProtectedRoute>
         )

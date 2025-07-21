@@ -66,7 +66,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       case 'delivered':
         return <CheckCheck className="w-3 h-3 text-gray-400" />;
       case 'read':
-        return <CheckCheck className="w-3 h-3 text-blue-500" />;
+        return <CheckCheck className="w-3 h-3 text-primary-500" />;
       case 'failed':
         return <div className="w-3 h-3 rounded-full bg-red-500" />;
       default:
@@ -129,7 +129,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           className={cn(
             "relative px-4 py-2 rounded-2xl shadow-sm",
             isOwn
-              ? "bg-blue-500 text-white rounded-br-md"
+              ? "bg-primary-500 text-white rounded-br-md"
               : "bg-white border border-gray-200 text-gray-900 rounded-bl-md"
           )}
         >
@@ -152,7 +152,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           {message.edited && (
             <span className={cn(
               "text-xs opacity-60 ml-2",
-              isOwn ? "text-blue-100" : "text-gray-500"
+              isOwn ? "text-primary-100" : "text-gray-500"
             )}>
               (edited)
             </span>
@@ -176,7 +176,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 className={cn(
                   "flex items-center space-x-1 px-2 py-1 rounded-full text-xs border transition-colors",
                   hasUserReacted(emoji)
-                    ? "bg-blue-100 border-blue-300 text-blue-700"
+                    ? "bg-primary-100 border-blue-300 text-primary-700"
                     : "bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200"
                 )}
               >

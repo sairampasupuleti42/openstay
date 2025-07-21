@@ -35,11 +35,11 @@ const FirestoreDebug: React.FC = () => {
   }
 
   return (
-    <div className="p-4 bg-blue-50 border border-blue-200 rounded">
+    <div className="p-4 bg-primary-50 border border-blue-200 rounded">
       <h3 className="font-bold mb-2">Firestore Debug</h3>
       <button 
         onClick={runTests}
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700"
       >
         Run Firestore Tests
       </button>

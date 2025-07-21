@@ -307,7 +307,7 @@ const SearchResultsPage: React.FC = () => {
                 {result.highlights.slice(0, 3).map((highlight, index) => (
                   <span
                     key={index}
-                    className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full"
+                    className="px-2 py-1 bg-primary-50 text-primary-700 text-xs rounded-full"
                   >
                     {highlight}
                   </span>

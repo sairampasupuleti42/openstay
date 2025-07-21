@@ -57,7 +57,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       className={cn(
         "flex items-center p-3 cursor-pointer border-l-4 transition-all duration-200 hover:bg-gray-50",
         isActive 
-          ? "bg-blue-50 border-blue-500 border-l-4" 
+          ? "bg-primary-50 border-blue-500 border-l-4" 
           : "border-transparent hover:border-gray-200"
       )}
     >
@@ -90,7 +90,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
         <div className="flex items-center justify-between">
           <h4 className={cn(
             "font-medium truncate",
-            isActive ? "text-blue-900" : "text-gray-900"
+            isActive ? "text-primary-900" : "text-gray-900"
           )}>
             {displayName}
           </h4>
@@ -103,7 +103,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             )}
             
             {conversation.unreadCount > 0 && (
-              <div className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <div className="bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
               </div>
             )}
@@ -120,11 +120,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           {conversation.isTyping.length > 0 && (
             <div className="flex items-center space-x-1 ml-2">
               <div className="flex space-x-1">
-                <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></div>
-                <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-1 h-1 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-1 h-1 bg-primary-500 rounded-full animate-bounce"></div>
+                <div className="w-1 h-1 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-1 h-1 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               </div>
-              <span className="text-xs text-blue-500">typing</span>
+              <span className="text-xs text-primary-500">typing</span>
             </div>
           )}
         </div>
@@ -174,13 +174,13 @@ const ConversationList: React.FC<ConversationListProps> = ({
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <MessageCircle className="w-6 h-6 mr-2 text-blue-500" />
+            <MessageCircle className="w-6 h-6 mr-2 text-primary-500" />
             Messages
           </h2>
           <Button
             onClick={onNewConversation}
             size="sm"
-            className="bg-blue-500 hover:bg-blue-600"
+            className="bg-primary-500 hover:bg-primary-600"
           >
             New Chat
           </Button>

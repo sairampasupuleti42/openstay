@@ -149,7 +149,7 @@ const IncidentDetails: React.FC<IncidentDetailsProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'bg-red-100 text-red-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'in_progress': return 'bg-primary-100 text-primary-800';
       case 'investigating': return 'bg-purple-100 text-purple-800';
       case 'waiting_for_response': return 'bg-yellow-100 text-yellow-800';
       case 'escalated': return 'bg-orange-100 text-orange-800';
@@ -161,7 +161,7 @@ const IncidentDetails: React.FC<IncidentDetailsProps> = ({
 
   const getTimelineIcon = (type: string) => {
     switch (type) {
-      case 'created': return <Plus className="w-4 h-4 text-blue-600" />;
+      case 'created': return <Plus className="w-4 h-4 text-primary-600" />;
       case 'assigned': return <Users className="w-4 h-4 text-green-600" />;
       case 'comment': return <MessageSquare className="w-4 h-4 text-gray-600" />;
       case 'status_change': return <Activity className="w-4 h-4 text-purple-600" />;
@@ -346,7 +346,7 @@ const IncidentDetails: React.FC<IncidentDetailsProps> = ({
                   {incident.tags.map((tag) => (
                     <span 
                       key={tag}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                      className="px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full"
                     >
                       {tag}
                     </span>
@@ -395,7 +395,7 @@ const IncidentDetails: React.FC<IncidentDetailsProps> = ({
                   <button
                     onClick={handleAddComment}
                     disabled={!newComment.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Add Comment
                   </button>

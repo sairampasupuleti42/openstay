@@ -169,7 +169,7 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
           )}
           <button
             onClick={onClose}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition-colors"
           >
             Close
           </button>
@@ -219,7 +219,7 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
                 <span>Confidential</span>
               </div>
               <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
                 <span>24/7 Monitoring</span>
               </div>
               <div className="flex items-center space-x-1">
@@ -381,7 +381,7 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
             <div
               className={cn(
                 "border-2 border-dashed rounded-lg p-6 text-center transition-colors",
-                dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"
+                dragActive ? "border-blue-500 bg-primary-50" : "border-gray-300 hover:border-gray-400"
               )}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -402,7 +402,7 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
               />
               <label
                 htmlFor="file-upload"
-                className="text-blue-600 hover:text-blue-700 cursor-pointer text-sm font-medium"
+                className="text-primary-600 hover:text-primary-700 cursor-pointer text-sm font-medium"
               >
                 Choose Files
               </label>
@@ -417,8 +417,8 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
                 {formData.attachments.map((file, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Upload className="w-4 h-4 text-blue-600" />
+                      <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <Upload className="w-4 h-4 text-primary-600" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">{file.name}</p>

@@ -130,12 +130,12 @@ const SignUp: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-            <p className="text-sm text-blue-700">
+          <div className="bg-primary-50 border border-blue-200 rounded-md p-4 mb-6">
+            <p className="text-sm text-primary-700">
               <strong>Didn't receive the email?</strong> Check your spam folder, or{' '}
               <button
                 type="button"
-                className="text-blue-600 hover:text-blue-800 underline"
+                className="text-primary-600 hover:text-primary-800 underline"
                 onClick={() => setEmailSent(false)}
               >
                 try signing up again

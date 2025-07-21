@@ -72,7 +72,7 @@ const AdminLayout: React.FC = () => {
           {/* Logo */}
           <div className="flex h-16 items-center px-6 border-b border-gray-200">
             <Link to="/" className="flex items-center space-x-2">
-              <Home className="w-6 h-6 text-blue-600" />
+              <Home className="w-6 h-6 text-primary-600" />
               <span className="text-xl font-bold text-gray-900">Openstay</span>
               <span className="text-sm text-gray-500">Admin</span>
             </Link>
@@ -89,7 +89,7 @@ const AdminLayout: React.FC = () => {
                   className={cn(
                     "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     item.current
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      ? "bg-primary-50 text-primary-700 border border-blue-200"
                       : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                   )}
                 >

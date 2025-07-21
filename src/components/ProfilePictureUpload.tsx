@@ -101,7 +101,7 @@ const ProfilePictureUpload: React.FC<ProfilePictureUploadProps> = ({
         <button
           onClick={handleCameraClick}
           disabled={isUploading}
-          className="flex items-center justify-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center justify-center space-x-2 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Upload className="w-4 h-4" />
           <span>{isUploading ? 'Uploading...' : 'Choose Photo'}</span>

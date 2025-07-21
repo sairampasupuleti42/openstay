@@ -38,27 +38,27 @@ const PWAUpdateNotification: React.FC = () => {
   }
 
   return (
-    <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm bg-blue-50 border border-blue-200 rounded-lg shadow-lg p-4 z-50 animate-in slide-in-from-top-4">
+    <div className="fixed top-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm bg-primary-50 border border-blue-200 rounded-lg shadow-lg p-4 z-50 animate-in slide-in-from-top-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2">
-          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-            <RefreshCw className="w-4 h-4 text-blue-600" />
+          <div className="flex-shrink-0 w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+            <RefreshCw className="w-4 h-4 text-primary-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-blue-900 text-sm">Update Available</h3>
-            <p className="text-xs text-blue-700">A new version of Openstay is ready</p>
+            <h3 className="font-semibold text-primary-900 text-sm">Update Available</h3>
+            <p className="text-xs text-primary-700">A new version of Openstay is ready</p>
           </div>
         </div>
         <button
           onClick={handleDismiss}
-          className="text-blue-400 hover:text-blue-600 transition-colors"
+          className="text-primary-400 hover:text-primary-600 transition-colors"
           aria-label="Dismiss update notification"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
       
-      <p className="text-sm text-blue-700 mb-4">
+      <p className="text-sm text-primary-700 mb-4">
         Update now to get the latest features and improvements.
       </p>
       
@@ -66,14 +66,14 @@ const PWAUpdateNotification: React.FC = () => {
         <button
           onClick={handleUpdate}
           disabled={isUpdating}
-          className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 bg-primary-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
           <span>{isUpdating ? 'Updating...' : 'Update Now'}</span>
         </button>
         <button
           onClick={handleDismiss}
-          className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+          className="px-3 py-2 text-sm text-primary-600 hover:text-primary-800 transition-colors"
         >
           Later
         </button>
