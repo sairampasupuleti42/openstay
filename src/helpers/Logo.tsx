@@ -1,6 +1,7 @@
 import React from 'react';
 import logoImage from '../assets/logo/transparent/logo-primary.png';
 import footerLogo from '../assets/logo/transparent/logo-primary.png';
+
 interface LogoProps {
   at?: string;
   width?: number | string;
@@ -10,7 +11,7 @@ interface LogoProps {
 }
 
 const Logo: React.FC<LogoProps> = ({
-  at =  logoImage,
+  at = logoImage,
   width = 240, 
   height = 60, 
   className = "",
@@ -24,6 +25,8 @@ const Logo: React.FC<LogoProps> = ({
         width={width}
         height={height}
         style={{ width, height }}
+        loading="eager"
+        decoding="sync"
       />
     </span>
   );

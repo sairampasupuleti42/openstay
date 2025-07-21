@@ -124,7 +124,7 @@ const Profile: React.FC = () => {
 
   const displayName = currentUser.displayName || 'User';
   const email = currentUser.email || '';
-  const photoURL = currentUser.photoURL;
+  const photoURL = currentUser.photoURL || `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 10)}.jpg`;
   const creationTime = currentUser.metadata.creationTime;
   const lastSignInTime = currentUser.metadata.lastSignInTime;
 

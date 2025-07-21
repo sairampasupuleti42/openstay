@@ -1,0 +1,28 @@
+{
+  "name": "Openstay - Connect Travelers with Local Hosts",
+  "short_name": "Openstay",
+  "description": "Connect with verified local hosts for authentic cultural experiences. Join our community-based platform for meaningful travel and group accommodation.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#92c10c",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/logo/transparent/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo/transparent/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "social", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr"
+}

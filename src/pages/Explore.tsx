@@ -5,6 +5,7 @@ import { Search, MapPin, Star, Users, Grid, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SEOMeta from '@/helpers/SEOMeta';
 import Title from '@/helpers/Title';
+import LazyImage from '@/components/LazyImage';
 
 interface User {
   id: string;
@@ -127,15 +128,15 @@ const Explore: React.FC = () => {
         month: 'long' 
       }).format(date);
     };
-
+ 
     if (isListView) {
       return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-start space-x-4">
             <div className="flex-shrink-0">
               <div className="relative">
-                <img
-                  src={user.photoURL || '/api/placeholder/80/80'}
+                <LazyImage
+                  src={user.photoURL || 'https://randomuser.me/api/portraits/men/'+Math.floor(Math.random() * 10)+'.jpg'}
                   alt={user.displayName}
                   className="w-20 h-20 rounded-full object-cover"
                 />
@@ -221,7 +222,7 @@ const Explore: React.FC = () => {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
         <div className="aspect-square relative">
-          <img
+          <LazyImage
             src={user.photoURL || '/api/placeholder/300/300'}
             alt={user.displayName}
             className="w-full h-full object-cover"

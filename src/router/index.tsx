@@ -13,25 +13,27 @@ const SignIn = lazy(() => import('@/pages/auth/SignIn'));
 const SignUp = lazy(() => import('@/pages/auth/SignUp'));
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
 
-// Lazy load profile component
-const Profile = lazy(() => import('@/pages/Profile'));
-const Settings = lazy(() => import('@/pages/Settings'));
-const OnboardingPageNew = lazy(() => import('@/pages/OnboardingPageNew'));
-const SearchPage = lazy(() => import('@/pages/SearchPage'));
-const SearchResultsPage = lazy(() => import('@/pages/SearchResultsPage'));
-const Explore = lazy(() => import('@/pages/Explore'));
+// Lazy load profile components with better chunking
+const Profile = lazy(() => import(/* webpackChunkName: "profile" */ '@/pages/Profile'));
+const Settings = lazy(() => import(/* webpackChunkName: "settings" */ '@/pages/Settings'));
+const OnboardingPageNew = lazy(() => import(/* webpackChunkName: "onboarding" */ '@/pages/OnboardingPageNew'));
 
-// Lazy load legal pages
-const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
-const TermsConditions = lazy(() => import('@/pages/TermsConditions'));
+// Lazy load search components
+const SearchPage = lazy(() => import(/* webpackChunkName: "search" */ '@/pages/SearchPage'));
+const SearchResultsPage = lazy(() => import(/* webpackChunkName: "search" */ '@/pages/SearchResultsPage'));
+const Explore = lazy(() => import(/* webpackChunkName: "explore" */ '@/pages/Explore'));
 
-// Lazy load admin pages
-const IncidentResponseDashboard = lazy(() => import('@/modules/incident/pages/IncidentResponseDashboard'));
-const IncidentDetails = lazy(() => import('@/modules/incident/pages/IncidentDetails'));
-const IncidentReportPage = lazy(() => import('@/modules/incident/pages/IncidentReportPage'));
+// Lazy load legal pages - group them together
+const PrivacyPolicy = lazy(() => import(/* webpackChunkName: "legal" */ '@/pages/PrivacyPolicy'));
+const TermsConditions = lazy(() => import(/* webpackChunkName: "legal" */ '@/pages/TermsConditions'));
+
+// Lazy load admin pages - separate chunk for admin functionality
+const IncidentResponseDashboard = lazy(() => import(/* webpackChunkName: "admin" */ '@/modules/incident/pages/IncidentResponseDashboard'));
+const IncidentDetails = lazy(() => import(/* webpackChunkName: "admin" */ '@/modules/incident/pages/IncidentDetails'));
+const IncidentReportPage = lazy(() => import(/* webpackChunkName: "incident" */ '@/modules/incident/pages/IncidentReportPage'));
 
 // Lazy load admin layout
-const AdminLayout = lazy(() => import('@/components/AdminLayout'));
+const AdminLayout = lazy(() => import(/* webpackChunkName: "admin" */ '@/components/AdminLayout'));
 
 export const router = createBrowserRouter([
   {
