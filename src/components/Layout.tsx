@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import Header from './Header';
 import Footer from './Footer';
 import OnboardingRedirect from './OnboardingRedirect';
+import { ChatbotWidget } from '@/modules/support';
 
 interface LayoutProps {
   className?: string;
@@ -37,6 +38,9 @@ const Layout: React.FC<LayoutProps> = ({ className }) => {
       
       {/* Footer */}
       <Footer />
+      
+      {/* Support Chatbot */}
+      <ChatbotWidget />
     </div>
   );
 };

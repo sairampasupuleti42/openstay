@@ -8,7 +8,7 @@ import {
   Clock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { incidentService } from '@/services/incidentService';
+import { incidentService } from '@/modules/incident/services/incidentService';
 
 interface IncidentReportFormProps {
   onClose?: () => void;
