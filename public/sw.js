@@ -42,8 +42,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful responses
-          if (response.ok) {
+          // Cache successful responses (only GET requests)
+          if (response.ok && request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then((cache) => {
@@ -77,7 +77,8 @@ self.addEventListener('fetch', (event) => {
           
           return fetch(request)
             .then((response) => {
-              if (response.ok) {
+              // Only cache GET requests with successful responses
+              if (response.ok && request.method === 'GET') {
                 const responseClone = response.clone();
                 caches.open(STATIC_CACHE)
                   .then((cache) => {
@@ -96,7 +97,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response.ok) {
+          // Only cache GET requests with successful responses
+          if (response.ok && request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then((cache) => {
@@ -116,7 +118,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response.ok) {
+        // Only cache GET requests with successful responses
+        if (response.ok && request.method === 'GET') {
           const responseClone = response.clone();
           caches.open(DYNAMIC_CACHE)
             .then((cache) => {

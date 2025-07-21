@@ -1,5 +1,6 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove, query, limit, where, getDoc, setDoc } from 'firebase/firestore';
+import { cleanFirestoreData } from '@/lib/firestoreUtils';
 import type { User } from 'firebase/auth';
 
 export interface UserProfile {
@@ -97,7 +98,7 @@ export const createUserProfile = async (user: User, additionalData: Partial<User
     uid: user.uid,
     displayName: user.displayName || 'User',
     email: user.email || '',
-    photoURL: user.photoURL || undefined,
+    ...(user.photoURL && { photoURL: user.photoURL }), // Only include if not null/undefined
     firstName: user.displayName?.split(' ')[0] || '',
     lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
     bio: '',
@@ -126,7 +127,9 @@ export const createUserProfile = async (user: User, additionalData: Partial<User
     ...additionalData
   };
 
-  await setDoc(userRef, userData);
+  // Clean the data to remove any undefined values
+  const cleanData = cleanFirestoreData(userData);
+  await setDoc(userRef, cleanData);
 };
 
 // Ensure user profile exists (create if it doesn't)
