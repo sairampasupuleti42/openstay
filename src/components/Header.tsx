@@ -426,7 +426,42 @@ const Header: React.FC = () => {
                   >
                     Explore
                   </Link>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      openReportForm();
+                    }}
+                    className="block w-full text-left text-foreground hover:text-red-600 transition-colors duration-200 font-medium py-2"
+                  >
+                    Report Issue
+                  </button>
                 </>
+              )}
+
+              {/* Mobile Sign Up/Sign In (when not authenticated) */}
+              {!currentUser && (
+                <div className="pt-4 border-t border-gray-200">
+                  <Link
+                    to="/auth/signup"
+                    className="block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      scrollToTop();
+                    }}
+                  >
+                    Sign Up
+                  </Link>
+                  <Link
+                    to="/auth/signin"
+                    className="block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      scrollToTop();
+                    }}
+                  >
+                    Sign In
+                  </Link>
+                </div>
               )}
             </div>
 
