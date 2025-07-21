@@ -197,29 +197,16 @@ const IncidentResponseDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                <AlertTriangle className="w-7 h-7 text-red-600 mr-3" />
-                Incident Response Dashboard
-              </h1>
-              <p className="text-gray-600 mt-1">Monitor, manage, and resolve platform incidents</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
-                <Plus className="w-4 h-4" />
-                <span>Report Incident</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Metrics Overview */}
       <div className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+            <AlertTriangle className="w-7 h-7 text-red-600 mr-3" />
+            Incident Response Dashboard
+          </h1>
+          <p className="text-gray-600 mt-1">Monitor, manage, and resolve platform incidents</p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center justify-between">
