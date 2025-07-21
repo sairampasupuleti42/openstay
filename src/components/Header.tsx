@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Bell, MessageSquare, AlertTriangle } from "lucide-react";
+import { Menu, X, Bell, MessageSquare, AlertTriangle, Users, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/helpers/Logo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -188,23 +188,7 @@ const Header: React.FC = () => {
               </>
             ) : (
               <>
-                {/* Authenticated user navigation */}
-                <Link
-                  to="/dashboard"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
-                    location.pathname === "/dashboard" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/dashboard" ? "page" : undefined}
-                >
-                  Dashboard
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/dashboard" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
+                {/* Authenticated user navigation - Dashboard menu removed */}
                 <Link
                   to="/explore"
                   onClick={scrollToTop}
@@ -219,6 +203,42 @@ const Header: React.FC = () => {
                   <span className={cn(
                     "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
                     location.pathname === "/explore" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                  )} />
+                </Link>
+
+                <Link
+                  to="/social/followers"
+                  onClick={scrollToTop}
+                  className={cn(
+                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group flex items-center space-x-1",
+                    location.pathname === "/social/followers" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                  aria-current={location.pathname === "/social/followers" ? "page" : undefined}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Followers</span>
+                  <span className={cn(
+                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
+                    location.pathname === "/social/followers" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                  )} />
+                </Link>
+
+                <Link
+                  to="/social/following"
+                  onClick={scrollToTop}
+                  className={cn(
+                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group flex items-center space-x-1",
+                    location.pathname === "/social/following" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                  aria-current={location.pathname === "/social/following" ? "page" : undefined}
+                >
+                  <UserCheck className="w-4 h-4" />
+                  <span>Following</span>
+                  <span className={cn(
+                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
+                    location.pathname === "/social/following" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
                   )} />
                 </Link>
                 
@@ -430,21 +450,7 @@ const Header: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Link
-                    to="/dashboard"
-                    className={cn(
-                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/dashboard" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/dashboard" ? "page" : undefined}
-                  >
-                    Dashboard
-                  </Link>
+                  {/* Mobile Dashboard menu removed */}
                   <Link
                     to="/explore"
                     className={cn(
@@ -460,6 +466,41 @@ const Header: React.FC = () => {
                   >
                     Explore
                   </Link>
+
+                  <Link
+                    to="/social/followers"
+                    className={cn(
+                      "flex items-center space-x-2 text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                      location.pathname === "/social/followers" &&
+                        "text-primary-600 font-semibold"
+                    )}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      scrollToTop();
+                    }}
+                    aria-current={location.pathname === "/social/followers" ? "page" : undefined}
+                  >
+                    <Users className="w-4 h-4" />
+                    <span>Followers</span>
+                  </Link>
+
+                  <Link
+                    to="/social/following"
+                    className={cn(
+                      "flex items-center space-x-2 text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                      location.pathname === "/social/following" &&
+                        "text-primary-600 font-semibold"
+                    )}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      scrollToTop();
+                    }}
+                    aria-current={location.pathname === "/social/following" ? "page" : undefined}
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    <span>Following</span>
+                  </Link>
+
                   <Link
                     to="/report-incident"
                     onClick={() => setIsMenuOpen(false)}
@@ -470,31 +511,7 @@ const Header: React.FC = () => {
                 </>
               )}
 
-              {/* Mobile Sign Up/Sign In (when not authenticated) */}
-              {!currentUser && (
-                <div className="pt-4 border-t border-gray-200">
-                  <Link
-                    to="/auth/signup"
-                    className="block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                  >
-                    Sign Up
-                  </Link>
-                  <Link
-                    to="/auth/signin"
-                    className="block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                  >
-                    Sign In
-                  </Link>
-                </div>
-              )}
+              {/* Mobile Sign Up/Sign In removed - now handled through profile dropdown */}
             </div>
 
             {/* Mobile Auth Section */}

@@ -50,6 +50,7 @@ export interface UserProfile {
   // Social & Community
   followers?: string[];
   following?: string[];
+  blocked?: string[];
   isHost?: boolean;
   hostRating?: number;
   guestRating?: number;

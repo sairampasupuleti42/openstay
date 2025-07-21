@@ -35,6 +35,10 @@ const IncidentReportPage = lazy(() => import(/* webpackChunkName: "incident" */ 
 // Lazy load admin layout
 const AdminLayout = lazy(() => import(/* webpackChunkName: "admin" */ '@/components/AdminLayout'));
 
+// Lazy load social components - separate chunk for social functionality
+const FollowersPage = lazy(() => import(/* webpackChunkName: "social" */ '@/modules/social/pages/FollowersPage'));
+const FollowingPage = lazy(() => import(/* webpackChunkName: "social" */ '@/modules/social/pages/FollowingPage'));
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -130,6 +134,26 @@ export const router = createBrowserRouter([
           <Suspense fallback={<LazyLoadSpinner />}>
             <TermsConditions />
           </Suspense>
+        )
+      },
+      {
+        path: '/social/followers',
+        element: (
+          <ProtectedRoute requireOnboarding={true}>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <FollowersPage />
+            </Suspense>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: '/social/following',
+        element: (
+          <ProtectedRoute requireOnboarding={true}>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <FollowingPage />
+            </Suspense>
+          </ProtectedRoute>
         )
       }
     ]
