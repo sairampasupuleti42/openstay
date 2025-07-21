@@ -39,6 +39,9 @@ const AdminLayout = lazy(() => import(/* webpackChunkName: "admin" */ '@/compone
 const FollowersPage = lazy(() => import(/* webpackChunkName: "social" */ '@/modules/social/pages/FollowersPage'));
 const FollowingPage = lazy(() => import(/* webpackChunkName: "social" */ '@/modules/social/pages/FollowingPage'));
 
+// Lazy load messaging components - separate chunk for messaging functionality
+const MessagingPage = lazy(() => import(/* webpackChunkName: "messaging" */ '@/modules/messaging/pages/MessagingPage'));
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -152,6 +155,16 @@ export const router = createBrowserRouter([
           <ProtectedRoute requireOnboarding={true}>
             <Suspense fallback={<LazyLoadSpinner />}>
               <FollowingPage />
+            </Suspense>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: '/messages',
+        element: (
+          <ProtectedRoute requireOnboarding={true}>
+            <Suspense fallback={<LazyLoadSpinner />}>
+              <MessagingPage />
             </Suspense>
           </ProtectedRoute>
         )

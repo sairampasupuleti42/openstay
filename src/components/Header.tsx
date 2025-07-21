@@ -291,7 +291,8 @@ const Header: React.FC = () => {
                 </button>
 
                 {/* Messages */}
-                <button
+                <Link
+                  to="/messages"
                   className="relative p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors duration-200"
                   aria-label="View messages"
                   title="Messages"
@@ -301,7 +302,7 @@ const Header: React.FC = () => {
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
                     2
                   </span>
-                </button>
+                </Link>
 
                 {/* User Profile Dropdown */}
                 <UserProfileDropdown />
@@ -536,14 +537,15 @@ const Header: React.FC = () => {
                     <span>Notifications</span>
                     <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
                   </button>
-                  <button
+                  <Link
+                    to="/messages"
                     className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors duration-200"
                     aria-label="View messages"
                   >
                     <MessageSquare className="w-5 h-5" />
                     <span>Messages</span>
                     <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">2</span>
-                  </button>
+                  </Link>
                 </div>
                 <UserProfileDropdown isMobile={true} />
               </div>
