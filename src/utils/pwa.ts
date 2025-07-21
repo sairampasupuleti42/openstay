@@ -179,8 +179,8 @@ export const showNotification = (
   };
 
   // Add vibration pattern separately (not part of standard NotificationOptions)
-  if ('vibrate' in navigator) {
-    (navigator as any).vibrate([200, 100, 200]);
+  if (typeof navigator.vibrate === 'function') {
+    navigator.vibrate([200, 100, 200]);
   }
 
   return new Notification(title, defaultOptions);
