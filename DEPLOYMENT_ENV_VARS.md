@@ -41,28 +41,14 @@ For static hosting without server-side support, you have two options:
 #### Option A: Use a build-time config file
 Create `src/config/firebase.prod.ts`:
 ```typescript
-export const firebaseConfig = {
-  apiKey: "AIzaSyBAhWdn4N28dknFCulzN0wVy7Mj57L3v5Q",
-  authDomain: "open-stay.firebaseapp.com",
-  projectId: "open-stay",
-  storageBucket: "open-stay.firebasestorage.app",
-  messagingSenderId: "1016869601145",
-  appId: "1:1016869601145:web:28f313b7246c6a661d79a8",
-  measurementId: "G-KTKYMJR8XY"
-};
+UPDATED NEW CONFIG FRO PROD
 ```
 
 #### Option B: Use runtime config (not recommended for sensitive data)
 
 ## Current Values (from .env)
 ```
-VITE_FIREBASE_API_KEY="AIzaSyBAhWdn4N28dknFCulzN0wVy7Mj57L3v5Q"
-VITE_FIREBASE_AUTH_DOMAIN="open-stay.firebaseapp.com"
-VITE_FIREBASE_PROJECT_ID="open-stay"
-VITE_FIREBASE_STORAGE_BUCKET="open-stay.firebasestorage.app"
-VITE_FIREBASE_MESSAGING_SENDER_ID="1016869601145"
-VITE_FIREBASE_APP_ID="1:1016869601145:web:28f313b7246c6a661d79a8"
-VITE_FIREBASE_MEASUREMENT_ID="G-KTKYMJR8XY"
+UPDATED NEW CONFIG FRO PROD
 ```
 
 ## Debugging Steps

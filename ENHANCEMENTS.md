@@ -1,4 +1,4 @@
-# OpenStay - Enhanced Community Travel Platform
+# Openstay - Enhanced Community Travel Platform
 
 ## 🚀 Latest Enhancements
 
