@@ -85,7 +85,7 @@ const TravelPreferences: React.FC<TravelPreferencesProps> = ({
           Travel Preferences
         </h2>
         <p className="text-gray-600">
-          Help us personalize your OpenStay experience
+          Help us personalize your Openstay experience
         </p>
       </div>
 

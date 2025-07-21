@@ -154,7 +154,7 @@ const ChatbotWidget: React.FC = () => {
                   <span className="text-xs font-bold">OS</span>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm">OpenStay Support</h3>
+                  <h3 className="font-semibold text-sm">Openstay Support</h3>
                   <p className="text-xs text-primary-100">Always here to help</p>
                 </div>
               </div>
@@ -258,7 +258,7 @@ const ChatbotWidget: React.FC = () => {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              Powered by OpenStay AI • Always improving
+              Powered by Openstay AI • Always improving
             </p>
           </div>
         </div>

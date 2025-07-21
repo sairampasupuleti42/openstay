@@ -47,7 +47,7 @@ const OnboardingPage: React.FC = () => {
     {
       id: 0,
       title: 'Welcome',
-      description: 'Get started with OpenStay'
+      description: 'Get started with Openstay'
     },
     {
       id: 1,
@@ -169,7 +169,7 @@ const OnboardingPage: React.FC = () => {
           <div className="text-center space-y-6">
             <div className="space-y-4">
               <h1 className="text-3xl font-bold text-gray-900">
-                Welcome to OpenStay, {user.displayName || 'Friend'}! 🎉
+                Welcome to Openstay, {user.displayName || 'Friend'}! 🎉
               </h1>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                 We're excited to have you join our community. Let's set up your profile 
@@ -184,7 +184,7 @@ const OnboardingPage: React.FC = () => {
                 <li>• Share your personal information</li>
                 <li>• Discover and connect with people</li>
                 <li>• Set your travel preferences</li>
-                <li>• Start exploring OpenStay</li>
+                <li>• Start exploring Openstay</li>
               </ul>
             </div>
 
@@ -262,7 +262,7 @@ const OnboardingPage: React.FC = () => {
               onClick={handleSkipPreferences}
               className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
             >
-              Skip onboarding and go to OpenStay
+              Skip onboarding and go to Openstay
             </button>
           </div>
         )}

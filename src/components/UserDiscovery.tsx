@@ -152,7 +152,7 @@ const UserDiscovery: React.FC<UserDiscoveryProps> = ({
           onClick={onComplete}
           className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium ml-auto"
         >
-          Continue to OpenStay
+          Continue to Openstay
         </button>
 
         
