@@ -18,6 +18,7 @@ const Settings = lazy(() => import('@/pages/Settings'));
 const OnboardingPageNew = lazy(() => import('@/pages/OnboardingPageNew'));
 const SearchPage = lazy(() => import('@/pages/SearchPage'));
 const SearchResultsPage = lazy(() => import('@/pages/SearchResultsPage'));
+const Explore = lazy(() => import('@/pages/Explore'));
 
 // Lazy load legal pages
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy'));
@@ -46,6 +47,14 @@ export const router = createBrowserRouter([
       {
         path: '/contact',
         element: <Contact />
+      },
+      {
+        path: '/explore',
+        element: (
+          <Suspense fallback={<LazyLoadSpinner />}>
+            <Explore />
+          </Suspense>
+        )
       },
       {
         path: '/profile',

@@ -138,6 +138,22 @@ const Header: React.FC = () => {
                   )} />
                 </Link>
                 <Link
+                  to="/explore"
+                  onClick={scrollToTop}
+                  className={cn(
+                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
+                    location.pathname === "/explore" &&
+                      "text-primary-600 font-semibold"
+                  )}
+                  aria-current={location.pathname === "/explore" ? "page" : undefined}
+                >
+                  Explore
+                  <span className={cn(
+                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
+                    location.pathname === "/explore" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                  )} />
+                </Link>
+                <Link
                   to="/contact"
                   onClick={scrollToTop}
                   className={cn(
@@ -365,6 +381,21 @@ const Header: React.FC = () => {
                     aria-current={location.pathname === "/about" ? "page" : undefined}
                   >
                     About
+                  </Link>
+                  <Link
+                    to="/explore"
+                    className={cn(
+                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                      location.pathname === "/explore" &&
+                        "text-primary-600 font-semibold"
+                    )}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      scrollToTop();
+                    }}
+                    aria-current={location.pathname === "/explore" ? "page" : undefined}
+                  >
+                    Explore
                   </Link>
                   <Link
                     to="/contact"
