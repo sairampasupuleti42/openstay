@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Bell, MessageSquare, AlertTriangle, Users, UserCheck } from "lucide-react";
+import { Menu, X, Bell, MessageSquare, AlertTriangle, Users, UserCheck, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/helpers/Logo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,197 +67,154 @@ const Header: React.FC = () => {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 transition-all duration-300",
-        isScrolled 
-          ? "bg-white/98 backdrop-blur-md border-b border-primary-200 shadow-sm" 
-          : "bg-white/95 backdrop-blur-sm border-b border-primary-100"
+        "sticky top-0 z-50 transition-all duration-300 bg-white border-b border-gray-100",
+        isScrolled && "shadow-md"
       )}
       role="banner"
       aria-label="Site header"
     >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center">
             <Link
               to="/"
               className="flex items-center group"
-              aria-label="Openstay - Go to homepage"
+              aria-label="Educrat - Go to homepage"
               onClick={scrollToTop}
             >
-              <Logo
-                width={240}
-                height={60}
-                className="group-hover:opacity-80 transition-opacity duration-200"
-                alt="Openstay Company Logo"
-              />
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <span className="text-white font-bold text-xl">E</span>
+                </div>
+                <span className="text-2xl font-bold text-gray-900">Educrat</span>
+              </div>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <nav
-            className="hidden md:flex items-center space-x-8"
+            className="hidden lg:flex items-center space-x-8"
             role="navigation"
             aria-label="Main navigation"
           >
-            {!currentUser ? (
-              <>
-                <Link
-                  to="/"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
-                    location.pathname === "/" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/" ? "page" : undefined}
-                >
-                  Home
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
-                <Link
-                  to="/about"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
-                    location.pathname === "/about" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/about" ? "page" : undefined}
-                >
-                  About
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/about" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
-                <Link
-                  to="/explore"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
-                    location.pathname === "/explore" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/explore" ? "page" : undefined}
-                >
-                  Explore
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/explore" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
-                <Link
-                  to="/contact"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
-                    location.pathname === "/contact" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/contact" ? "page" : undefined}
-                >
-                  Contact
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/contact" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
-                {/* Admin menu temporarily hidden */}
-                {/*
-                <Link
-                  to="/admin/incidents"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
-                    location.pathname.startsWith("/admin") &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname.startsWith("/admin") ? "page" : undefined}
-                >
-                  Admin
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname.startsWith("/admin") ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
-                */}
-              </>
-            ) : (
-              <>
-                {/* Authenticated user navigation - Dashboard menu removed */}
-                <Link
-                  to="/explore"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group",
-                    location.pathname === "/explore" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/explore" ? "page" : undefined}
-                >
-                  Explore
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/explore" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
+            <Link
+              to="/explore"
+              onClick={scrollToTop}
+              className={cn(
+                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/explore" && "text-purple-600"
+              )}
+              aria-current={location.pathname === "/explore" ? "page" : undefined}
+            >
+              Explore
+              <span className={cn(
+                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
+                location.pathname === "/explore" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )} />
+            </Link>
 
-                <Link
-                  to="/social/followers"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group flex items-center space-x-1",
-                    location.pathname === "/social/followers" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/social/followers" ? "page" : undefined}
-                >
-                  <Users className="w-4 h-4" />
-                  <span>Followers</span>
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/social/followers" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
+            <Link
+              to="/"
+              onClick={scrollToTop}
+              className={cn(
+                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/" && "text-purple-600"
+              )}
+              aria-current={location.pathname === "/" ? "page" : undefined}
+            >
+              Home
+              <span className={cn(
+                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
+                location.pathname === "/" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )} />
+            </Link>
 
-                <Link
-                  to="/social/following"
-                  onClick={scrollToTop}
-                  className={cn(
-                    "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group flex items-center space-x-1",
-                    location.pathname === "/social/following" &&
-                      "text-primary-600 font-semibold"
-                  )}
-                  aria-current={location.pathname === "/social/following" ? "page" : undefined}
-                >
-                  <UserCheck className="w-4 h-4" />
-                  <span>Following</span>
-                  <span className={cn(
-                    "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
-                    location.pathname === "/social/following" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  )} />
-                </Link>
-                
-                {/* Search bar for authenticated users - hidden on home page */}
-                {location.pathname !== "/" && (
-                  <div className="flex-1 max-w-md mx-6">
-                    <SearchInput 
-                      onSearch={handleSearch}
-                      placeholder="Search destinations..."
-                      className="w-full"
-                    />
-                  </div>
-                )}
-              </>
-            )}
+            <Link
+              to="/courses"
+              onClick={scrollToTop}
+              className={cn(
+                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/courses" && "text-purple-600"
+              )}
+              aria-current={location.pathname === "/courses" ? "page" : undefined}
+            >
+              Courses
+              <span className={cn(
+                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
+                location.pathname === "/courses" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )} />
+            </Link>
+
+            <Link
+              to="/events"
+              onClick={scrollToTop}
+              className={cn(
+                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/events" && "text-purple-600"
+              )}
+              aria-current={location.pathname === "/events" ? "page" : undefined}
+            >
+              Events
+              <span className={cn(
+                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
+                location.pathname === "/events" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )} />
+            </Link>
+
+            <Link
+              to="/blog"
+              onClick={scrollToTop}
+              className={cn(
+                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/blog" && "text-purple-600"
+              )}
+              aria-current={location.pathname === "/blog" ? "page" : undefined}
+            >
+              Blog
+              <span className={cn(
+                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
+                location.pathname === "/blog" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )} />
+            </Link>
+
+            <div className="relative group">
+              <button className="text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium flex items-center">
+                Pages
+                <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {/* Dropdown menu can be added here */}
+            </div>
+
+            <Link
+              to="/contact"
+              onClick={scrollToTop}
+              className={cn(
+                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/contact" && "text-purple-600"
+              )}
+              aria-current={location.pathname === "/contact" ? "page" : undefined}
+            >
+              Contact
+              <span className={cn(
+                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
+                location.pathname === "/contact" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+              )} />
+            </Link>
           </nav>
 
-          {/* CTA Button / User Profile */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* Right Side Actions */}
+          <div className="flex items-center space-x-4">
+            {/* Search Icon */}
+            <button
+              className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
             {loading ? (
               // Loading skeleton
               <div className="flex items-center space-x-3">
@@ -265,26 +222,15 @@ const Header: React.FC = () => {
                 <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
               </div>
             ) : currentUser ? (
-              // Show user profile and notifications when logged in
-              <div className="flex items-center space-x-3">
-                {/* Report Issue Button */}
-                <Link
-                  to="/report-incident"
-                  className="relative p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors duration-200"
-                  aria-label="Report an issue"
-                  title="Report Issue"
-                >
-                  <AlertTriangle className="w-5 h-5" />
-                </Link>
-
+              // Authenticated user actions
+              <div className="hidden md:flex items-center space-x-3">
                 {/* Notifications */}
                 <button
-                  className="relative p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors duration-200"
+                  className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
                   aria-label="View notifications"
                   title="Notifications"
                 >
                   <Bell className="w-5 h-5" />
-                  {/* Notification badge */}
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                     3
                   </span>
@@ -293,12 +239,11 @@ const Header: React.FC = () => {
                 {/* Messages */}
                 <Link
                   to="/messages"
-                  className="relative p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors duration-200"
+                  className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
                   aria-label="View messages"
                   title="Messages"
                 >
                   <MessageSquare className="w-5 h-5" />
-                  {/* Message badge */}
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 text-white text-xs rounded-full flex items-center justify-center">
                     2
                   </span>
@@ -308,229 +253,151 @@ const Header: React.FC = () => {
                 <UserProfileDropdown />
               </div>
             ) : (
-              // Show Sign In button when not logged in
-              <div className="flex items-center space-x-3">
+              // Unauthenticated user actions
+              <div className="hidden md:flex items-center space-x-4">
+                <Link
+                  to="/auth/signin"
+                  className="text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium"
+                  aria-label="Sign in to your account"
+                >
+                  Log In
+                </Link>
                 <Link
                   to="/auth/signup"
-                  className="text-foreground hover:text-primary-600 transition-colors duration-200 font-medium"
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                   aria-label="Create new account"
                 >
                   Sign Up
                 </Link>
-                <Link
-                  to="/auth/signin"
-                  className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                  aria-label="Sign in to your account"
-                >
-                  Sign In
-                </Link>
               </div>
             )}
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={toggleMobileMenu}
-            className="md:hidden p-2 rounded-lg text-foreground hover:bg-primary-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            aria-expanded={isMenuOpen}
-            aria-controls="mobile-menu"
-            aria-label={isMenuOpen ? "Close mobile menu" : "Open mobile menu"}
-          >
-            {isMenuOpen ? (
-              <X className="w-6 h-6" aria-hidden="true" />
-            ) : (
-              <Menu className="w-6 h-6" aria-hidden="true" />
-            )}
-          </button>
+            {/* Mobile Menu Button */}
+            <button
+              onClick={toggleMobileMenu}
+              className="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              aria-expanded={isMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={isMenuOpen ? "Close mobile menu" : "Open mobile menu"}
+            >
+              {isMenuOpen ? (
+                <X className="w-6 h-6" aria-hidden="true" />
+              ) : (
+                <Menu className="w-6 h-6" aria-hidden="true" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
         <nav
           id="mobile-menu"
           className={cn(
-            "md:hidden transition-all duration-300 ease-in-out overflow-hidden",
-            isMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            "lg:hidden transition-all duration-300 ease-in-out overflow-hidden",
+            isMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
           )}
           aria-label="Mobile navigation"
           role="navigation"
           aria-hidden={!isMenuOpen}
         >
-          <div className="py-4 space-y-4 border-t border-primary-200 bg-gradient-to-b from-white to-gray-50">
-            {/* Mobile Search - hidden on home page */}
-            {currentUser && location.pathname !== "/" && (
-              <div className="px-4 mb-4">
-                <SearchInput 
-                  onSearch={handleSearch}
-                  placeholder="Search destinations..."
-                  className="w-full"
-                  isMobile={true}
-                />
-              </div>
-            )}
-            
-            {/* Navigation Links */}
-            <div className="px-4 space-y-3">
-              {!currentUser ? (
-                <>
-                  <Link
-                    to="/"
-                    className={cn(
-                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/" ? "page" : undefined}
-                  >
-                    Home
-                  </Link>
-                  <Link
-                    to="/about"
-                    className={cn(
-                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/about" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/about" ? "page" : undefined}
-                  >
-                    About
-                  </Link>
-                  <Link
-                    to="/explore"
-                    className={cn(
-                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/explore" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/explore" ? "page" : undefined}
-                  >
-                    Explore
-                  </Link>
-                  <Link
-                    to="/contact"
-                    className={cn(
-                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/contact" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/contact" ? "page" : undefined}
-                  >
-                    Contact
-                  </Link>
-                  {/* Admin menu temporarily hidden */}
-                  {/*
-                  <Link
-                    to="/admin/incidents"
-                    className={cn(
-                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname.startsWith("/admin") &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname.startsWith("/admin") ? "page" : undefined}
-                  >
-                    Admin
-                  </Link>
-                  */}
-                </>
-              ) : (
-                <>
-                  {/* Mobile Dashboard menu removed */}
-                  <Link
-                    to="/explore"
-                    className={cn(
-                      "block text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/explore" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/explore" ? "page" : undefined}
-                  >
-                    Explore
-                  </Link>
+          <div className="py-6 space-y-4 border-t border-gray-100 bg-white">
+            {/* Mobile Navigation Links */}
+            <div className="space-y-4">
+              <Link
+                to="/explore"
+                className={cn(
+                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/explore" && "text-purple-600"
+                )}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  scrollToTop();
+                }}
+              >
+                Explore
+              </Link>
 
-                  <Link
-                    to="/social/followers"
-                    className={cn(
-                      "flex items-center space-x-2 text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/social/followers" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/social/followers" ? "page" : undefined}
-                  >
-                    <Users className="w-4 h-4" />
-                    <span>Followers</span>
-                  </Link>
+              <Link
+                to="/"
+                className={cn(
+                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/" && "text-purple-600"
+                )}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  scrollToTop();
+                }}
+              >
+                Home
+              </Link>
 
-                  <Link
-                    to="/social/following"
-                    className={cn(
-                      "flex items-center space-x-2 text-foreground hover:text-primary-600 transition-colors duration-200 font-medium py-2",
-                      location.pathname === "/social/following" &&
-                        "text-primary-600 font-semibold"
-                    )}
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      scrollToTop();
-                    }}
-                    aria-current={location.pathname === "/social/following" ? "page" : undefined}
-                  >
-                    <UserCheck className="w-4 h-4" />
-                    <span>Following</span>
-                  </Link>
+              <Link
+                to="/courses"
+                className={cn(
+                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/courses" && "text-purple-600"
+                )}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  scrollToTop();
+                }}
+              >
+                Courses
+              </Link>
 
-                  <Link
-                    to="/report-incident"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block w-full text-left text-foreground hover:text-red-600 transition-colors duration-200 font-medium py-2"
-                  >
-                    Report Issue
-                  </Link>
-                </>
-              )}
+              <Link
+                to="/events"
+                className={cn(
+                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/events" && "text-purple-600"
+                )}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  scrollToTop();
+                }}
+              >
+                Events
+              </Link>
 
-              {/* Mobile Sign Up/Sign In removed - now handled through profile dropdown */}
+              <Link
+                to="/blog"
+                className={cn(
+                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/blog" && "text-purple-600"
+                )}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  scrollToTop();
+                }}
+              >
+                Blog
+              </Link>
+
+              <button className="block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2 text-left">
+                Pages
+              </button>
+
+              <Link
+                to="/contact"
+                className={cn(
+                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/contact" && "text-purple-600"
+                )}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  scrollToTop();
+                }}
+              >
+                Contact
+              </Link>
             </div>
 
             {/* Mobile Auth Section */}
-            {loading ? (
-              <div className="px-4 pt-4 border-t border-primary-200">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-                  <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-              </div>
-            ) : currentUser ? (
-              <div className="px-4 pt-4 border-t border-primary-200">
-                {/* Mobile notifications */}
-                <div className="flex items-center space-x-4 mb-4">
+            {currentUser ? (
+              <div className="pt-4 border-t border-gray-100 space-y-4">
+                <div className="flex items-center space-x-4">
                   <button
-                    className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors duration-200"
+                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors duration-200"
                     aria-label="View notifications"
                   >
                     <Bell className="w-5 h-5" />
@@ -539,7 +406,7 @@ const Header: React.FC = () => {
                   </button>
                   <Link
                     to="/messages"
-                    className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors duration-200"
+                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors duration-200"
                     aria-label="View messages"
                   >
                     <MessageSquare className="w-5 h-5" />
@@ -550,29 +417,26 @@ const Header: React.FC = () => {
                 <UserProfileDropdown isMobile={true} />
               </div>
             ) : (
-              <div className="px-4 pt-4 border-t border-primary-200 space-y-3">
-                <Link
-                  to="/auth/signup"
-                  className="block text-center bg-gray-100 hover:bg-gray-200 text-gray-900 px-4 py-3 rounded-lg font-medium transition-colors duration-200"
-                  onClick={() => setIsMenuOpen(false)}
-                  aria-label="Create new account"
-                >
-                  Sign Up
-                </Link>
+              <div className="pt-4 border-t border-gray-100 space-y-3">
                 <Link
                   to="/auth/signin"
-                  className="block text-center bg-primary-500 hover:bg-primary-600 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200"
+                  className="block text-center text-gray-700 hover:text-purple-600 px-4 py-3 rounded-lg font-medium transition-colors duration-200"
                   onClick={() => setIsMenuOpen(false)}
-                  aria-label="Sign in to your account"
                 >
-                  Sign In
+                  Log In
+                </Link>
+                <Link
+                  to="/auth/signup"
+                  className="block text-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign Up
                 </Link>
               </div>
             )}
           </div>
         </nav>
       </div>
-
     </header>
   );
 };
