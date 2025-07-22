@@ -2,11 +2,18 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 import path from 'path'
 import viteImagemin from 'vite-plugin-imagemin'
+import { buildMetadataPlugin } from './src/plugins/buildMetadataPlugin'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    buildMetadataPlugin({
+      customMetadata: {
+        deployment: 'production',
+        app: 'openstay'
+      }
+    }),
     viteImagemin({
       gifsicle: { optimizationLevel: 7 },
       mozjpeg: { quality: 80 },
