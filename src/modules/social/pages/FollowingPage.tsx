@@ -10,7 +10,6 @@ import UserCard from '../components/UserCard';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   fetchUserFollowing,
-  unfollowUser,
   setSearchQuery,
   setViewMode,
   clearError,
@@ -46,19 +45,6 @@ const FollowingPage: React.FC = () => {
       dispatch(fetchUserFollowing({ userId: currentUser.uid }));
     }
   }, [dispatch, currentUser?.uid]);
-
-  const handleUnfollow = async (userId: string) => {
-    if (!currentUser?.uid) return;
-
-    try {
-      await dispatch(unfollowUser({
-        currentUserId: currentUser.uid,
-        targetUserId: userId
-      })).unwrap();
-    } catch (err) {
-      console.error('Error unfollowing user:', err);
-    }
-  };
 
   const handleMessage = (userId: string) => {
     // Navigate to messaging page with the user
@@ -221,8 +207,6 @@ const FollowingPage: React.FC = () => {
                   currentUserId={currentUser.uid}
                   variant={viewMode}
                   showActions={true}
-                  isFollowing={true}
-                  onUnfollow={handleUnfollow}
                   onMessage={handleMessage}
                 />
               ))}

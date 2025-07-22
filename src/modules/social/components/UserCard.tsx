@@ -3,6 +3,14 @@ import { MapPin, Star, MessageSquare, UserPlus, UserMinus, UserX, Shield } from 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import LazyImage from '@/components/LazyImage';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  followUser, 
+  unfollowUser, 
+  removeFollower, 
+  blockUser,
+  selectIsFollowing 
+} from '@/store/slices/socialSlice';
 import type { UserProfile } from '@/services/userServiceEnhanced';
 
 interface UserCardProps {
@@ -10,14 +18,10 @@ interface UserCardProps {
   currentUserId?: string;
   showActions?: boolean;
   variant?: 'grid' | 'list';
-  onFollow?: (userId: string) => void;
-  onUnfollow?: (userId: string) => void;
-  onRemoveFollower?: (userId: string) => void;
-  onBlock?: (userId: string) => void;
   onMessage?: (userId: string) => void;
-  isFollowing?: boolean;
   isFollower?: boolean;
   className?: string;
+  // Remove callback props - using Redux now
 }
 
 const UserCard: React.FC<UserCardProps> = ({
@@ -25,22 +29,57 @@ const UserCard: React.FC<UserCardProps> = ({
   currentUserId,
   showActions = true,
   variant = 'grid',
-  onFollow,
-  onUnfollow,
-  onRemoveFollower,
-  onBlock,
   onMessage,
-  isFollowing = false,
   isFollower = false,
   className
 }) => {
+  const dispatch = useAppDispatch();
+  const isFollowing = useAppSelector(state => selectIsFollowing(state, user.uid));
   const isOwnProfile = currentUserId === user.uid;
 
-  const handleFollow = () => {
-    if (isFollowing && onUnfollow) {
-      onUnfollow(user.uid);
-    } else if (!isFollowing && onFollow) {
-      onFollow(user.uid);
+  const handleFollow = async () => {
+    if (!currentUserId) return;
+    
+    try {
+      if (isFollowing) {
+        await dispatch(unfollowUser({
+          currentUserId,
+          targetUserId: user.uid
+        })).unwrap();
+      } else {
+        await dispatch(followUser({
+          currentUserId,
+          targetUserId: user.uid
+        })).unwrap();
+      }
+    } catch (error) {
+      console.error('Error updating follow status:', error);
+    }
+  };
+
+  const handleRemoveFollower = async () => {
+    if (!currentUserId) return;
+    
+    try {
+      await dispatch(removeFollower({
+        currentUserId,
+        followerId: user.uid
+      })).unwrap();
+    } catch (error) {
+      console.error('Error removing follower:', error);
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!currentUserId) return;
+    
+    try {
+      await dispatch(blockUser({
+        currentUserId,
+        targetUserId: user.uid
+      })).unwrap();
+    } catch (error) {
+      console.error('Error blocking user:', error);
     }
   };
 
@@ -163,29 +202,25 @@ const UserCard: React.FC<UserCardProps> = ({
                   {/* Follower-specific actions */}
                   {isFollower && (
                     <>
-                      {onRemoveFollower && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onRemoveFollower(user.uid)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <UserMinus className="w-4 h-4" />
-                          <span className="hidden sm:inline">Remove</span>
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveFollower}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Remove</span>
+                      </Button>
                       
-                      {onBlock && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onBlock(user.uid)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <UserX className="w-4 h-4" />
-                          <span className="hidden sm:inline">Block</span>
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBlock}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <UserX className="w-4 h-4" />
+                        <span className="hidden sm:inline">Block</span>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -310,29 +345,25 @@ const UserCard: React.FC<UserCardProps> = ({
               {/* Follower-specific actions */}
               {isFollower && (
                 <div className="flex space-x-2">
-                  {onRemoveFollower && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onRemoveFollower(user.uid)}
-                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <UserMinus className="w-4 h-4 mr-1" />
-                      Remove Follower
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRemoveFollower}
+                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <UserMinus className="w-4 h-4 mr-1" />
+                    Remove Follower
+                  </Button>
                   
-                  {onBlock && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onBlock(user.uid)}
-                      className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <UserX className="w-4 h-4 mr-1" />
-                      Block
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBlock}
+                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <UserX className="w-4 h-4 mr-1" />
+                    Block
+                  </Button>
                 </div>
               )}
             </div>

@@ -10,8 +10,6 @@ import UserCard from '../components/UserCard';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   fetchUserFollowers,
-  removeFollower,
-  blockUser,
   setSearchQuery,
   setViewMode,
   clearError,
@@ -47,32 +45,6 @@ const FollowersPage: React.FC = () => {
       dispatch(fetchUserFollowers({ userId: currentUser.uid }));
     }
   }, [dispatch, currentUser?.uid]);
-
-  const handleRemoveFollower = async (followerId: string) => {
-    if (!currentUser?.uid) return;
-
-    try {
-      await dispatch(removeFollower({
-        currentUserId: currentUser.uid,
-        followerId
-      })).unwrap();
-    } catch (err) {
-      console.error('Error removing follower:', err);
-    }
-  };
-
-  const handleBlockFollower = async (followerId: string) => {
-    if (!currentUser?.uid) return;
-
-    try {
-      await dispatch(blockUser({
-        currentUserId: currentUser.uid,
-        targetUserId: followerId
-      })).unwrap();
-    } catch (err) {
-      console.error('Error blocking follower:', err);
-    }
-  };
 
   const handleSearchChange = (value: string) => {
     dispatch(setSearchQuery(value));
@@ -230,8 +202,6 @@ const FollowersPage: React.FC = () => {
                   variant={viewMode}
                   showActions={true}
                   isFollower={true}
-                  onRemoveFollower={handleRemoveFollower}
-                  onBlock={handleBlockFollower}
                   onMessage={handleMessage}
                 />
               ))}

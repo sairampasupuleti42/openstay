@@ -298,9 +298,6 @@ const MessagingPage: React.FC = () => {
                         currentUserId={currentUser.uid}
                         variant="grid"
                         showActions={false}
-                        isFollowing={true}
-                        onFollow={() => {}}
-                        onUnfollow={() => {}}
                         onMessage={() => handleStartChat(user.uid)}
                       />
                     </div>

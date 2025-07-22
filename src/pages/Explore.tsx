@@ -11,8 +11,6 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   fetchExploreUsers,
   checkFollowingStatuses,
-  followUser,
-  unfollowUser,
   setSearchQuery,
   setViewMode,
   filterUsers,
@@ -23,8 +21,7 @@ import {
   selectExploreError,
   selectSearchQuery,
   selectViewMode,
-  selectHasMore,
-  selectFollowingStatus
+  selectHasMore
 } from '@/store/slices/socialSlice';
 
 const Explore: React.FC = () => {
@@ -39,7 +36,6 @@ const Explore: React.FC = () => {
   const searchQuery = useAppSelector(selectSearchQuery);
   const viewMode = useAppSelector(selectViewMode);
   const hasMore = useAppSelector(selectHasMore);
-  const followingStatus = useAppSelector(selectFollowingStatus);
 
   // Load initial users
   useEffect(() => {
@@ -75,32 +71,6 @@ const Explore: React.FC = () => {
   // Handle view mode change
   const handleViewModeChange = (mode: 'grid' | 'list') => {
     dispatch(setViewMode(mode));
-  };
-
-  const handleFollow = async (userId: string) => {
-    if (!currentUser?.uid) return;
-
-    try {
-      await dispatch(followUser({
-        currentUserId: currentUser.uid,
-        targetUserId: userId
-      })).unwrap();
-    } catch (err) {
-      console.error('Error following user:', err);
-    }
-  };
-
-  const handleUnfollow = async (userId: string) => {
-    if (!currentUser?.uid) return;
-
-    try {
-      await dispatch(unfollowUser({
-        currentUserId: currentUser.uid,
-        targetUserId: userId
-      })).unwrap();
-    } catch (err) {
-      console.error('Error unfollowing user:', err);
-    }
   };
 
   const handleMessage = (userId: string) => {
@@ -252,9 +222,6 @@ const Explore: React.FC = () => {
                     currentUserId={currentUser?.uid}
                     variant={viewMode}
                     showActions={true}
-                    isFollowing={followingStatus[user.uid] || false}
-                    onFollow={handleFollow}
-                    onUnfollow={handleUnfollow}
                     onMessage={handleMessage}
                   />
                 ))}
