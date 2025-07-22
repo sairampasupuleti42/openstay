@@ -1,0 +1,17 @@
+# E2E Test artifacts
+test-results/
+screenshots/
+videos/
+traces/
+downloads/
+
+# Playwright cache
+.cache/
+
+# Test reports
+playwright-report/
+blob-report/
+
+# Temporary files
+*.tmp
+*.temp

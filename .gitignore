@@ -44,6 +44,12 @@ Thumbs.db
 
 # Testing
 coverage/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+e2e/screenshots/
+e2e/test-results/
 .nyc_output
 junit.xml
 
