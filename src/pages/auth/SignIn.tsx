@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Mail, Smartphone } from 'lucide-react';
 import { signInSchema, type SignInFormData } from '@/schemas/authSchemas';
-import { signInWithEmailPassword, signInWithGoogle, checkOnboardingStatus } from '@/services/authService';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { 
+  signIn, 
+  signInWithGoogleAsync, 
+  clearMessages,
+  selectSignInLoading,
+  selectGoogleLoading,
+  selectAuthError,
+  selectAuthSuccess,
+  selectIsOnboardingComplete
+} from '@/store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,13 +29,18 @@ import Title from '@/helpers/Title';
 import SEOMeta from '@/helpers/SEOMeta';
 
 const SignIn: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  
+  // Redux state selectors
+  const isSignInLoading = useAppSelector(selectSignInLoading);
+  const isGoogleLoading = useAppSelector(selectGoogleLoading);
+  const error = useAppSelector(selectAuthError);
+  const success = useAppSelector(selectAuthSuccess);
+  const isOnboardingComplete = useAppSelector(selectIsOnboardingComplete);
+
+  // Local UI state (non-global state)
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
@@ -35,70 +50,32 @@ const SignIn: React.FC = () => {
     },
   });
 
-  const onSubmit = async (data: SignInFormData) => {
-    setIsLoading(true);
-    setError('');
-    setSuccess('');
+  // Clear messages on component mount
+  useEffect(() => {
+    dispatch(clearMessages());
+  }, [dispatch]);
 
-    try {
-      const result = await signInWithEmailPassword(data);
+  // Handle successful authentication
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        if (isOnboardingComplete) {
+          navigate('/');
+        } else {
+          navigate('/onboarding');
+        }
+      }, 1500);
       
-      if (result.success && result.user) {
-        setSuccess(result.message);
-        
-        // Check if user has completed onboarding
-        const isOnboardingComplete = await checkOnboardingStatus(result.user.uid);
-        
-        // Redirect based on onboarding status
-        setTimeout(() => {
-          if (isOnboardingComplete) {
-            navigate('/');
-          } else {
-            navigate('/onboarding');
-          }
-        }, 1500);
-      } else {
-        setError(result.message);
-      }
-    } catch (error: unknown) {
-      console.error('Sign in error:', error);
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
+      return () => clearTimeout(timer);
     }
+  }, [success, isOnboardingComplete, navigate]);
+
+  const onSubmit = async (data: SignInFormData) => {
+    dispatch(signIn(data));
   };
 
   const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const result = await signInWithGoogle();
-      
-      if (result.success && result.user) {
-        setSuccess(result.message);
-        
-        // Check if user has completed onboarding
-        const isOnboardingComplete = await checkOnboardingStatus(result.user.uid);
-        
-        // Redirect based on onboarding status
-        setTimeout(() => {
-          if (isOnboardingComplete) {
-            navigate('/');
-          } else {
-            navigate('/onboarding');
-          }
-        }, 1500);
-      } else {
-        setError(result.message);
-      }
-    } catch (error: unknown) {
-      console.error('Google sign in error:', error);
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setIsGoogleLoading(false);
-    }
+    dispatch(signInWithGoogleAsync());
   };
 
   return (
@@ -148,7 +125,7 @@ const SignIn: React.FC = () => {
           variant="outline"
           className="w-full mb-6 h-12"
           onClick={handleGoogleSignIn}
-          disabled={isGoogleLoading || isLoading}
+          disabled={isGoogleLoading || isSignInLoading}
         >
           {isGoogleLoading ? (
             <>
@@ -277,9 +254,9 @@ const SignIn: React.FC = () => {
             <Button
               type="submit"
               className="w-full h-12"
-              disabled={isLoading || isGoogleLoading}
+              disabled={isSignInLoading || isGoogleLoading}
             >
-              {isLoading ? (
+              {isSignInLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Signing in...
