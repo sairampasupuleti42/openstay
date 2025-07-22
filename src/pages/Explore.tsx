@@ -1,6 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, query, orderBy, limit, startAfter, DocumentSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import React, { useEffect } from 'react';
 import { Search, Users, Grid, List, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SEOMeta from '@/helpers/SEOMeta';
@@ -9,158 +7,86 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import UserCard from '@/modules/social/components/UserCard';
-import { socialService } from '@/modules/social/services/socialService';
-import type { UserProfile } from '@/services/userServiceEnhanced';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+  fetchExploreUsers,
+  checkFollowingStatuses,
+  followUser,
+  unfollowUser,
+  setSearchQuery,
+  setViewMode,
+  filterUsers,
+  clearError,
+  selectExploreUsers,
+  selectFilteredUsers,
+  selectExploreLoading,
+  selectExploreError,
+  selectSearchQuery,
+  selectViewMode,
+  selectHasMore,
+  selectFollowingStatus
+} from '@/store/slices/socialSlice';
 
 const Explore: React.FC = () => {
   const { currentUser } = useAuth();
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [lastDoc, setLastDoc] = useState<DocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [followingStatus, setFollowingStatus] = useState<Record<string, boolean>>({});
+  const dispatch = useAppDispatch();
   
-  const usersPerPage = 12;
-
-  // Fetch users from Firestore
-  const fetchUsers = useCallback(async (isLoadMore: boolean = false) => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const usersRef = collection(db, 'users');
-      let q = query(
-        usersRef,
-        orderBy('createdAt', 'desc'),
-        limit(usersPerPage)
-      );
-
-      if (isLoadMore && lastDoc) {
-        q = query(
-          usersRef,
-          orderBy('createdAt', 'desc'),
-          startAfter(lastDoc),
-          limit(usersPerPage)
-        );
-      }
-
-      const querySnapshot = await getDocs(q);
-      const fetchedUsers: UserProfile[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        
-        // Skip current user from results
-        if (currentUser?.uid && data.uid === currentUser.uid) {
-          return;
-        }
-
-        fetchedUsers.push({
-          uid: data.uid || doc.id,
-          displayName: data.displayName || 'Anonymous User',
-          email: data.email || '',
-          photoURL: data.photoURL || '',
-          bio: data.bio || '',
-          location: data.location || '',
-          verified: data.verified || false,
-          hostRating: data.hostRating || 0,
-          guestRating: data.guestRating || 0,
-          totalReviews: data.totalReviews || 0,
-          followers: data.followers || [],
-          following: data.following || [],
-          isHost: data.isHost || false,
-          interests: data.interests || [],
-          occupation: data.occupation || '',
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          profileComplete: data.profileComplete || false,
-          isOnboardingComplete: data.isOnboardingComplete || false
-        });
-      });
-
-      if (isLoadMore) {
-        setUsers(prev => [...prev, ...fetchedUsers]);
-      } else {
-        setUsers(fetchedUsers);
-      }
-
-      // Update pagination state
-      if (querySnapshot.docs.length > 0) {
-        setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]);
-        setHasMore(querySnapshot.docs.length === usersPerPage);
-      } else {
-        setHasMore(false);
-      }
-
-    } catch (err) {
-      console.error('Error fetching users:', err);
-      setError('Failed to load users. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [lastDoc, currentUser?.uid]);
+  // Redux selectors
+  const exploreUsers = useAppSelector(selectExploreUsers);
+  const filteredUsers = useAppSelector(selectFilteredUsers);
+  const loading = useAppSelector(selectExploreLoading);
+  const error = useAppSelector(selectExploreError);
+  const searchQuery = useAppSelector(selectSearchQuery);
+  const viewMode = useAppSelector(selectViewMode);
+  const hasMore = useAppSelector(selectHasMore);
+  const followingStatus = useAppSelector(selectFollowingStatus);
 
   // Load initial users
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  // Check following status for all users
-  useEffect(() => {
-    const checkFollowingStatus = async () => {
-      if (!currentUser?.uid || users.length === 0) return;
-
-      const statusMap: Record<string, boolean> = {};
-      
-      for (const user of users) {
-        try {
-          const isFollowing = await socialService.isFollowing(currentUser.uid, user.uid);
-          statusMap[user.uid] = isFollowing;
-        } catch (error) {
-          console.error('Error checking following status:', error);
-          statusMap[user.uid] = false;
-        }
-      }
-      
-      setFollowingStatus(statusMap);
-    };
-
-    checkFollowingStatus();
-  }, [users, currentUser?.uid]);
-
-  // Filter users based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredUsers(users);
-      return;
+    if (currentUser?.uid) {
+      dispatch(fetchExploreUsers({ 
+        currentUserId: currentUser.uid,
+        isLoadMore: false 
+      }));
     }
+  }, [dispatch, currentUser?.uid]);
 
-    const filtered = users.filter(user =>
-      user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.occupation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.interests?.some(interest => 
-        interest.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    );
-    
-    setFilteredUsers(filtered);
-  }, [searchQuery, users]);
+  // Check following status when users change
+  useEffect(() => {
+    if (currentUser?.uid && exploreUsers.length > 0) {
+      const userIds = exploreUsers.map(user => user.uid);
+      dispatch(checkFollowingStatuses({
+        currentUserId: currentUser.uid,
+        userIds
+      }));
+    }
+  }, [dispatch, exploreUsers, currentUser?.uid]);
+
+  // Filter users when search query changes
+  useEffect(() => {
+    dispatch(filterUsers());
+  }, [dispatch, searchQuery, exploreUsers]);
+
+  // Handle search query change
+  const handleSearchChange = (value: string) => {
+    dispatch(setSearchQuery(value));
+  };
+
+  // Handle view mode change
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    dispatch(setViewMode(mode));
+  };
 
   const handleFollow = async (userId: string) => {
     if (!currentUser?.uid) return;
 
     try {
-      await socialService.followUser(currentUser.uid, userId);
-      setFollowingStatus(prev => ({ ...prev, [userId]: true }));
+      await dispatch(followUser({
+        currentUserId: currentUser.uid,
+        targetUserId: userId
+      })).unwrap();
     } catch (err) {
       console.error('Error following user:', err);
-      setError('Failed to follow user. Please try again.');
     }
   };
 
@@ -168,11 +94,12 @@ const Explore: React.FC = () => {
     if (!currentUser?.uid) return;
 
     try {
-      await socialService.unfollowUser(currentUser.uid, userId);
-      setFollowingStatus(prev => ({ ...prev, [userId]: false }));
+      await dispatch(unfollowUser({
+        currentUserId: currentUser.uid,
+        targetUserId: userId
+      })).unwrap();
     } catch (err) {
       console.error('Error unfollowing user:', err);
-      setError('Failed to unfollow user. Please try again.');
     }
   };
 
@@ -182,9 +109,20 @@ const Explore: React.FC = () => {
   };
 
   const loadMore = () => {
-    if (!loading && hasMore) {
-      fetchUsers(true);
+    if (!loading && hasMore && currentUser?.uid) {
+      dispatch(fetchExploreUsers({ 
+        currentUserId: currentUser.uid,
+        isLoadMore: true 
+      }));
     }
+  };
+
+  const handleClearError = () => {
+    dispatch(clearError());
+  };
+
+  const handleClearSearch = () => {
+    dispatch(setSearchQuery(''));
   };
 
   return (
@@ -217,7 +155,7 @@ const Explore: React.FC = () => {
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => handleViewModeChange('grid')}
                   aria-label="Grid view"
                 >
                   <Grid className="w-4 h-4" />
@@ -225,7 +163,7 @@ const Explore: React.FC = () => {
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('list')}
+                  onClick={() => handleViewModeChange('list')}
                   aria-label="List view"
                 >
                   <List className="w-4 h-4" />
@@ -242,7 +180,7 @@ const Explore: React.FC = () => {
                 type="text"
                 placeholder="Search by name, location, or interests..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -251,15 +189,25 @@ const Explore: React.FC = () => {
           {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                <p className="text-red-700">{error}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                  <p className="text-red-700">{error}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearError}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  ×
+                </Button>
               </div>
             </div>
           )}
 
           {/* Content */}
-          {loading && users.length === 0 ? (
+          {loading && exploreUsers.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               <span className="ml-3 text-gray-600">Loading community members...</span>
@@ -275,7 +223,7 @@ const Explore: React.FC = () => {
                   </p>
                   <Button
                     variant="outline"
-                    onClick={() => setSearchQuery('')}
+                    onClick={handleClearSearch}
                     className="mt-4"
                   >
                     Clear search
