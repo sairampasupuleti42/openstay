@@ -175,6 +175,62 @@ export const unfollowUser = createAsyncThunk(
   }
 );
 
+// Fetch user followers
+export const fetchUserFollowers = createAsyncThunk(
+  'social/fetchUserFollowers',
+  async (payload: { userId: string }, { rejectWithValue }) => {
+    try {
+      const followers = await socialService.getUserFollowers(payload.userId);
+      return followers;
+    } catch (error) {
+      console.error('Error fetching followers:', error);
+      return rejectWithValue('Failed to fetch followers');
+    }
+  }
+);
+
+// Fetch user following
+export const fetchUserFollowing = createAsyncThunk(
+  'social/fetchUserFollowing',
+  async (payload: { userId: string }, { rejectWithValue }) => {
+    try {
+      const following = await socialService.getUserFollowing(payload.userId);
+      return following;
+    } catch (error) {
+      console.error('Error fetching following:', error);
+      return rejectWithValue('Failed to fetch following');
+    }
+  }
+);
+
+// Remove follower
+export const removeFollower = createAsyncThunk(
+  'social/removeFollower',
+  async (payload: { currentUserId: string; followerId: string }, { rejectWithValue }) => {
+    try {
+      await socialService.removeFollower(payload.currentUserId, payload.followerId);
+      return payload.followerId;
+    } catch (error) {
+      console.error('Error removing follower:', error);
+      return rejectWithValue('Failed to remove follower');
+    }
+  }
+);
+
+// Block user
+export const blockUser = createAsyncThunk(
+  'social/blockUser',
+  async (payload: { currentUserId: string; targetUserId: string }, { rejectWithValue }) => {
+    try {
+      await socialService.blockUser(payload.currentUserId, payload.targetUserId);
+      return payload.targetUserId;
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      return rejectWithValue('Failed to block user');
+    }
+  }
+);
+
 // Initial state
 const initialState: SocialState = {
   // User discovery
@@ -375,6 +431,62 @@ const socialSlice = createSlice({
         state.followingStatus[action.payload.targetUserId] = action.payload.isFollowing;
       })
       .addCase(unfollowUser.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+      // Fetch user followers
+      .addCase(fetchUserFollowers.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserFollowers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.followers = action.payload;
+      })
+      .addCase(fetchUserFollowers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Fetch user following
+      .addCase(fetchUserFollowing.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserFollowing.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.following = action.payload;
+      })
+      .addCase(fetchUserFollowing.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Remove follower
+      .addCase(removeFollower.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(removeFollower.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.followers = state.followers.filter(follower => follower.uid !== action.payload);
+      })
+      .addCase(removeFollower.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      // Block user
+      .addCase(blockUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(blockUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Remove from both followers and following
+        state.followers = state.followers.filter(follower => follower.uid !== action.payload);
+        state.following = state.following.filter(user => user.uid !== action.payload);
+        // Update following status
+        state.followingStatus[action.payload] = false;
+      })
+      .addCase(blockUser.rejected, (state, action) => {
+        state.isLoading = false;
         state.error = action.payload as string;
       });
   },

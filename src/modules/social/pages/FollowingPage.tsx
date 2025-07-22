@@ -1,86 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { UserCheck, Search, Grid, List, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { socialService } from '../services/socialService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Title from '@/helpers/Title';
 import SEOMeta from '@/helpers/SEOMeta';
 import UserCard from '../components/UserCard';
-import type { UserProfile } from '@/services/userServiceEnhanced';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+  fetchUserFollowing,
+  unfollowUser,
+  setSearchQuery,
+  setViewMode,
+  clearError,
+  selectFollowing,
+  selectSocialLoading,
+  selectSocialError,
+  selectSearchQuery,
+  selectViewMode
+} from '@/store/slices/socialSlice';
 
 const FollowingPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const [following, setFollowing] = useState<UserProfile[]>([]);
-  const [filteredFollowing, setFilteredFollowing] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const dispatch = useAppDispatch();
+  
+  // Redux selectors
+  const following = useAppSelector(selectFollowing);
+  const loading = useAppSelector(selectSocialLoading);
+  const error = useAppSelector(selectSocialError);
+  const searchQuery = useAppSelector(selectSearchQuery);
+  const viewMode = useAppSelector(selectViewMode);
+
+  // Filtered following based on search
+  const filteredFollowing = following.filter(user =>
+    !searchQuery.trim() ||
+    user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.bio?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Load following
   useEffect(() => {
-    const loadFollowing = async () => {
-      if (!currentUser?.uid) return;
-
-      try {
-        setLoading(true);
-        setError('');
-        const followingData = await socialService.getUserFollowing(currentUser.uid);
-        setFollowing(followingData);
-        setFilteredFollowing(followingData);
-      } catch (err) {
-        console.error('Error loading following:', err);
-        setError('Failed to load following. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadFollowing();
-  }, [currentUser?.uid]);
-
-  // Filter following based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredFollowing(following);
-      return;
+    if (currentUser?.uid) {
+      dispatch(fetchUserFollowing({ userId: currentUser.uid }));
     }
-
-    const filtered = following.filter(user =>
-      user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.bio?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    
-    setFilteredFollowing(filtered);
-  }, [searchQuery, following]);
+  }, [dispatch, currentUser?.uid]);
 
   const handleUnfollow = async (userId: string) => {
     if (!currentUser?.uid) return;
 
     try {
-      await socialService.unfollowUser(currentUser.uid, userId);
-      
-      // Update local state
-      const updatedFollowing = following.filter(f => f.uid !== userId);
-      setFollowing(updatedFollowing);
-      setFilteredFollowing(updatedFollowing.filter(user =>
-        !searchQuery.trim() ||
-        user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.bio?.toLowerCase().includes(searchQuery.toLowerCase())
-      ));
+      await dispatch(unfollowUser({
+        currentUserId: currentUser.uid,
+        targetUserId: userId
+      })).unwrap();
     } catch (err) {
       console.error('Error unfollowing user:', err);
-      setError('Failed to unfollow user. Please try again.');
     }
   };
 
   const handleMessage = (userId: string) => {
     // Navigate to messaging page with the user
     window.location.href = `/messages?startChat=${userId}`;
+  };
+
+  const handleSearchChange = (value: string) => {
+    dispatch(setSearchQuery(value));
+  };
+
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    dispatch(setViewMode(mode));
+  };
+
+  const handleClearError = () => {
+    dispatch(clearError());
   };
 
   if (!currentUser) {
@@ -125,7 +119,7 @@ const FollowingPage: React.FC = () => {
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => handleViewModeChange('grid')}
                   aria-label="Grid view"
                 >
                   <Grid className="w-4 h-4" />
@@ -133,7 +127,7 @@ const FollowingPage: React.FC = () => {
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('list')}
+                  onClick={() => handleViewModeChange('list')}
                   aria-label="List view"
                 >
                   <List className="w-4 h-4" />
@@ -150,7 +144,7 @@ const FollowingPage: React.FC = () => {
                 type="text"
                 placeholder="Search following..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -159,9 +153,19 @@ const FollowingPage: React.FC = () => {
           {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                <p className="text-red-700">{error}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                  <p className="text-red-700">{error}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearError}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  ×
+                </Button>
               </div>
             </div>
           )}
@@ -183,7 +187,7 @@ const FollowingPage: React.FC = () => {
                   </p>
                   <Button
                     variant="outline"
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => handleSearchChange('')}
                     className="mt-4"
                   >
                     Clear search

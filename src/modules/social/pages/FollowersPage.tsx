@@ -1,80 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Users, Search, Grid, List, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { socialService } from '../services/socialService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import Title from '@/helpers/Title';
 import SEOMeta from '@/helpers/SEOMeta';
 import UserCard from '../components/UserCard';
-import type { UserProfile } from '@/services/userServiceEnhanced';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+  fetchUserFollowers,
+  removeFollower,
+  blockUser,
+  setSearchQuery,
+  setViewMode,
+  clearError,
+  selectFollowers,
+  selectSocialLoading,
+  selectSocialError,
+  selectSearchQuery,
+  selectViewMode
+} from '@/store/slices/socialSlice';
 
 const FollowersPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const [followers, setFollowers] = useState<UserProfile[]>([]);
-  const [filteredFollowers, setFilteredFollowers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const dispatch = useAppDispatch();
+  
+  // Redux selectors
+  const followers = useAppSelector(selectFollowers);
+  const loading = useAppSelector(selectSocialLoading);
+  const error = useAppSelector(selectSocialError);
+  const searchQuery = useAppSelector(selectSearchQuery);
+  const viewMode = useAppSelector(selectViewMode);
+
+  // Filtered followers based on search
+  const filteredFollowers = followers.filter(follower =>
+    !searchQuery.trim() ||
+    follower.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    follower.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    follower.bio?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Load followers
   useEffect(() => {
-    const loadFollowers = async () => {
-      if (!currentUser?.uid) return;
-
-      try {
-        setLoading(true);
-        setError('');
-        const followersData = await socialService.getUserFollowers(currentUser.uid);
-        setFollowers(followersData);
-        setFilteredFollowers(followersData);
-      } catch (err) {
-        console.error('Error loading followers:', err);
-        setError('Failed to load followers. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadFollowers();
-  }, [currentUser?.uid]);
-
-  // Filter followers based on search query
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredFollowers(followers);
-      return;
+    if (currentUser?.uid) {
+      dispatch(fetchUserFollowers({ userId: currentUser.uid }));
     }
-
-    const filtered = followers.filter(follower =>
-      follower.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      follower.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      follower.bio?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    
-    setFilteredFollowers(filtered);
-  }, [searchQuery, followers]);
+  }, [dispatch, currentUser?.uid]);
 
   const handleRemoveFollower = async (followerId: string) => {
     if (!currentUser?.uid) return;
 
     try {
-      await socialService.removeFollower(currentUser.uid, followerId);
-      
-      // Update local state
-      const updatedFollowers = followers.filter(f => f.uid !== followerId);
-      setFollowers(updatedFollowers);
-      setFilteredFollowers(updatedFollowers.filter(follower =>
-        !searchQuery.trim() ||
-        follower.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        follower.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        follower.bio?.toLowerCase().includes(searchQuery.toLowerCase())
-      ));
+      await dispatch(removeFollower({
+        currentUserId: currentUser.uid,
+        followerId
+      })).unwrap();
     } catch (err) {
       console.error('Error removing follower:', err);
-      setError('Failed to remove follower. Please try again.');
     }
   };
 
@@ -82,21 +65,25 @@ const FollowersPage: React.FC = () => {
     if (!currentUser?.uid) return;
 
     try {
-      await socialService.blockUser(currentUser.uid, followerId);
-      
-      // Update local state
-      const updatedFollowers = followers.filter(f => f.uid !== followerId);
-      setFollowers(updatedFollowers);
-      setFilteredFollowers(updatedFollowers.filter(follower =>
-        !searchQuery.trim() ||
-        follower.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        follower.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        follower.bio?.toLowerCase().includes(searchQuery.toLowerCase())
-      ));
+      await dispatch(blockUser({
+        currentUserId: currentUser.uid,
+        targetUserId: followerId
+      })).unwrap();
     } catch (err) {
       console.error('Error blocking follower:', err);
-      setError('Failed to block user. Please try again.');
     }
+  };
+
+  const handleSearchChange = (value: string) => {
+    dispatch(setSearchQuery(value));
+  };
+
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    dispatch(setViewMode(mode));
+  };
+
+  const handleClearError = () => {
+    dispatch(clearError());
   };
 
   const handleMessage = (userId: string) => {
@@ -146,7 +133,7 @@ const FollowersPage: React.FC = () => {
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => handleViewModeChange('grid')}
                   aria-label="Grid view"
                 >
                   <Grid className="w-4 h-4" />
@@ -154,7 +141,7 @@ const FollowersPage: React.FC = () => {
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setViewMode('list')}
+                  onClick={() => handleViewModeChange('list')}
                   aria-label="List view"
                 >
                   <List className="w-4 h-4" />
@@ -171,7 +158,7 @@ const FollowersPage: React.FC = () => {
                 type="text"
                 placeholder="Search followers..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -180,9 +167,19 @@ const FollowersPage: React.FC = () => {
           {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                <p className="text-red-700">{error}</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                  <p className="text-red-700">{error}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearError}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  ×
+                </Button>
               </div>
             </div>
           )}
@@ -204,7 +201,7 @@ const FollowersPage: React.FC = () => {
                   </p>
                   <Button
                     variant="outline"
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => handleSearchChange('')}
                     className="mt-4"
                   >
                     Clear search
