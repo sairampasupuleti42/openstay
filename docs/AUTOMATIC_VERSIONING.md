@@ -1,13 +1,13 @@
-# Automatic Version Management System
+# Deployment-Triggered Version Management System
 
-This system automatically increments the version number in `package.json` for every build, providing proper versioning and build tracking for the Openstay application.
+This system automatically increments the version number in `package.json` **only during deployments**, providing proper versioning for production releases while keeping development builds clean.
 
 ## ✨ Features
 
-### 🔄 Automatic Version Bumping
-- **Every Build**: Automatically increments patch version (0.0.81 → 0.0.82)
-- **Build Integration**: Seamlessly integrated into the build process
-- **Environment Variables**: Version info available throughout build pipeline
+### � Deployment-Only Version Bumping
+- **Only on Deploy**: Version increments only when running `npm run deploy` or `npm run deploy:all`
+- **Clean Development**: Regular builds (`npm run build`) do not change version numbers
+- **Build Metadata**: Deployment builds are tagged with `buildType: "deployment"`
 - **Skip Option**: Can be disabled when needed
 
 ### 📊 Version Types
@@ -17,11 +17,30 @@ This system automatically increments the version number in `package.json` for ev
 
 ## 🛠️ Usage
 
-### Standard Build (Auto-increment Patch)
+### Development Builds (No Version Change)
 ```bash
-npm run build                    # Bumps 0.0.81 → 0.0.82 and builds
+npm run build                    # Build without version change
 npm run build:dev               # Same as build
 npm run build:prod              # Same as build
+npm run build:manual            # Same as build
+```
+
+### Deployment Builds (Auto-increment Version)
+```bash
+npm run deploy                  # Bump patch → build → deploy to dev
+npm run deploy:all              # Bump patch → build → deploy to all environments
+```
+
+### Manual Deployment (No Version Change)
+```bash
+npm run deploy:manual           # Build → deploy to dev (no version bump)
+npm run deploy:all:manual       # Build → deploy to all (no version bump)
+```
+
+### Test Deployment Flow
+```bash
+npm run deploy:test             # Test deployment flow without Firebase deploy
+npm run deploy:test:all         # Test production deployment flow
 ```
 
 ### Manual Version Control
@@ -32,16 +51,15 @@ npm run version:major           # Bump major version only
 npm run version:status          # Show current version info
 ```
 
-### Build with Specific Version Type
+### Deployment with Specific Version Type
 ```bash
-VERSION_BUMP_TYPE=minor npm run build     # Build with minor bump
-VERSION_BUMP_TYPE=major npm run build     # Build with major bump
+VERSION_BUMP_TYPE=minor npm run deploy     # Deploy with minor bump
+VERSION_BUMP_TYPE=major npm run deploy:all # Deploy with major bump
 ```
 
-### Skip Version Bumping
+### Skip Version Bumping During Deployment
 ```bash
-SKIP_VERSION_BUMP=true npm run build      # Build without version change
-npm run build:manual                      # Build without version change
+SKIP_VERSION_BUMP=true npm run deploy      # Deploy without version change
 ```
 
 ## 🏗️ Implementation
@@ -50,30 +68,33 @@ npm run build:manual                      # Build without version change
 ```
 scripts/
 ├── bump-version.js              # Core version bumping logic
-├── build-with-version.js        # Complete build process with versioning
+├── deploy-with-version.js       # Complete deployment process with versioning
+├── test-deploy.js              # Test deployment flow without Firebase
 ├── version-manager.js           # Interactive version management
 └── setup-git-hooks.js          # Git integration setup
 ```
 
-### Build Process Flow
+### Deployment Process Flow
 
-1. **Version Bump**: Increment version in `package.json`
-2. **Environment Setup**: Set `VITE_APP_VERSION` and `VITE_BUILD_TIME`
+1. **Version Bump**: Increment version in `package.json` (deployment only)
+2. **Environment Setup**: Set `VITE_APP_VERSION`, `VITE_BUILD_TIME`, and `VITE_DEPLOYMENT=true`
 3. **Type Check**: Run TypeScript compilation
-4. **Asset Build**: Run Vite build with version metadata
-5. **Metadata Injection**: Add version info to HTML and JavaScript
+4. **Asset Build**: Run Vite build with deployment metadata
+5. **Metadata Injection**: Add version info to HTML and JavaScript with deployment flag
+6. **Firebase Deploy**: Deploy to specified environment
 
 ### Package.json Scripts
 
 ```json
 {
   "scripts": {
-    "build": "node scripts/build-with-version.js",
-    "build:manual": "tsc -b && vite build",
+    "build": "tsc -b && vite build",
+    "deploy": "node scripts/deploy-with-version.js dev",
+    "deploy:all": "node scripts/deploy-with-version.js all",
+    "deploy:test": "node scripts/test-deploy.js dev",
     "version:patch": "node scripts/bump-version.js patch",
     "version:minor": "node scripts/bump-version.js minor",
-    "version:major": "node scripts/bump-version.js major",
-    "version:status": "node scripts/version-manager.js status"
+    "version:major": "node scripts/bump-version.js major"
   }
 }
 ```
@@ -82,32 +103,42 @@ scripts/
 
 ### Version Metadata in HTML
 ```html
-<meta name="build:version" content="0.0.84" />
-<meta name="build:time" content="2025-01-22T10:14:16.700Z" />
-<meta name="build:timestamp" content="1753179256701" />
+<meta name="build:version" content="0.0.87" />
+<meta name="build:time" content="2025-01-22T10:26:10.435Z" />
+<meta name="build:timestamp" content="1753179970435" />
 <meta name="build:env" content="production" />
+<meta name="build:type" content="deployment" />
 ```
 
 ### JavaScript Build Info
 ```javascript
 window.BUILD_INFO = {
-  version: "0.0.84",
-  buildTime: "2025-01-22T10:14:16.700Z",
-  timestamp: 1753179256701,
+  version: "0.0.87",
+  buildTime: "2025-01-22T10:26:10.435Z",
+  timestamp: 1753179970435,
   environment: "production",
+  buildType: "deployment",  // "deployment" or "development"
   // ... additional metadata
 };
 ```
 
-### Console Output
+### Console Output (Deployment)
 ```
-🚀 Building Openstay with automatic version bumping...
-🔧 Bumping patch version...
-✅ Version bumped: 0.0.83 → 0.0.84
-📦 Building version 0.0.84...
-🔍 Type checking...
-📦 Building assets...
-✅ Build complete! Version 0.0.84
+🚀 Deploying Openstay (dev) with version bump...
+🔧 Bumping patch version for deployment...
+✅ Version bumped: 0.0.86 → 0.0.87
+📦 Building version 0.0.87 for deployment...
+🌐 Deploying to development...
+✅ Deployment complete!
+📊 Deployed version: 0.0.87
+```
+
+### Console Output (Regular Build)
+```
+> npm run build
+> tsc -b && vite build
+✓ built in 18.82s
+# No version bump messages
 ```
 
 ## 🔧 Configuration
@@ -158,36 +189,37 @@ This creates:
 
 ### Development Workflow
 ```bash
-# Regular development builds
-npm run build                      # Auto-increment and build
+# Regular development builds (no version change)
+npm run build                      # Clean build for testing
 
-# Feature releases  
-VERSION_BUMP_TYPE=minor npm run build
+# Feature development
+git commit -m "Add new feature"    # No version change
+npm run build                      # Test build
 
-# Bug fixes (default behavior)
-npm run build                      # Patch increment
+# Ready to deploy feature
+npm run deploy                     # Auto-increment + deploy to dev
 
-# Emergency fixes without version change
-SKIP_VERSION_BUMP=true npm run build
+# Production release
+npm run deploy:all                 # Auto-increment + deploy to production
 ```
 
-### Deployment Pipeline
+### Release Workflow  
 ```bash
-# Development deployment
-npm run deploy                     # Builds with version bump + deploys
+# Bug fix release
+npm run deploy                     # Patch increment + deploy
 
-# Production deployment  
-npm run deploy:all                 # Builds with version bump + deploys all
+# Feature release
+VERSION_BUMP_TYPE=minor npm run deploy:all  # Minor increment + deploy
+
+# Breaking change release  
+VERSION_BUMP_TYPE=major npm run deploy:all  # Major increment + deploy
 ```
 
-### Version Management
+### Testing Deployment
 ```bash
-# Check current version
-npm run version:status
-
-# Manual version control
-npm run version:minor              # For feature releases
-npm run version:major              # For breaking changes
+# Test deployment flow without Firebase
+npm run deploy:test                # Simulates deployment process
+npm run deploy:test:all           # Simulates production deployment
 ```
 
 ## 🔍 Troubleshooting
