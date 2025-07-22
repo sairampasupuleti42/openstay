@@ -9,7 +9,6 @@ import SEOMeta from '@/helpers/SEOMeta';
 import UserCard from '../components/UserCard';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
-  fetchUserFollowing,
   setSearchQuery,
   setViewMode,
   clearError,
@@ -19,10 +18,21 @@ import {
   selectSearchQuery,
   selectViewMode
 } from '@/store/slices/socialSlice';
+import { useOptimizedSocialAPI } from '@/hooks/useOptimizedSocialAPI';
 
 const FollowingPage: React.FC = () => {
   const { currentUser } = useAuth();
   const dispatch = useAppDispatch();
+  
+  // Use optimized social API hook
+  const { 
+    fetchFollowing, 
+    cacheStatus, 
+    invalidateCache 
+  } = useOptimizedSocialAPI(currentUser?.uid, {
+    enableCaching: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
   
   // Redux selectors
   const following = useAppSelector(selectFollowing);
@@ -39,12 +49,16 @@ const FollowingPage: React.FC = () => {
     user.bio?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Load following
+  // Load following with optimized caching
   useEffect(() => {
     if (currentUser?.uid) {
-      dispatch(fetchUserFollowing({ userId: currentUser.uid }));
+      // Check if data is stale before fetching
+      const followingCacheStatus = cacheStatus['following'];
+      if (followingCacheStatus === 'empty' || followingCacheStatus === 'stale') {
+        fetchFollowing(currentUser.uid).catch(console.error);
+      }
     }
-  }, [dispatch, currentUser?.uid]);
+  }, [currentUser?.uid, fetchFollowing, cacheStatus]);
 
   const handleMessage = (userId: string) => {
     // Navigate to messaging page with the user
