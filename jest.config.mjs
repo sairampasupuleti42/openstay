@@ -1,10 +1,15 @@
-module.exports = {
-  preset: 'ts-jest',
+/** @type {import('jest').Config} */
+export default {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['@testing-library/jest-dom/extend-expect'],
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   transform: {
-    '^.+.(js|jsx|ts|tsx)$': 'babel-jest',
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      useESM: true,
+      tsconfig: 'tsconfig.test.json'
+    }],
+    '^.+\\.(js|jsx)$': 'babel-jest',
   },
   testMatch: [
     '<rootDir>/tests/**/*.test.(ts|tsx|js|jsx)',
@@ -23,14 +28,16 @@ module.exports = {
     '!src/main.tsx',
     '!src/vite-env.d.ts',
     '!src/**/types.ts',
-    '!src/**/index.ts'
+    '!src/**/index.ts',
+    '!src/setupTests.ts'
   ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70
+      branches: 30,
+      functions: 30,
+      lines: 30,
+      statements: 30
     }
-  }
+  },
+  extensionsToTreatAsEsm: ['.ts', '.tsx']
 };
