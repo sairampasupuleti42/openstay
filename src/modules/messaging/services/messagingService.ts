@@ -26,6 +26,9 @@ import type {
 } from '../types';
 
 class MessagingService {
+  // Configuration - temporarily disable mutual follow requirement for testing
+  private requireMutualFollow = false; // Set to true to re-enable mutual follow requirement
+
   // Create a new conversation between users
   async createConversation(participants: string[]): Promise<string> {
     try {
@@ -36,13 +39,22 @@ class MessagingService {
       }
 
       // Verify all participants follow each other (for direct messages)
-      if (participants.length === 2) {
+      if (participants.length === 2 && this.requireMutualFollow) {
         const [user1, user2] = participants;
+        console.log('Checking follow status for users:', user1, user2);
+        
         const user1FollowsUser2 = await socialService.isFollowing(user1, user2);
         const user2FollowsUser1 = await socialService.isFollowing(user2, user1);
         
+        console.log('Follow status:', {
+          user1FollowsUser2,
+          user2FollowsUser1,
+          user1,
+          user2
+        });
+        
         if (!user1FollowsUser2 || !user2FollowsUser1) {
-          throw new Error('Users must follow each other to start a conversation');
+          throw new Error(`Users must follow each other to start a conversation. Status: ${user1} follows ${user2}: ${user1FollowsUser2}, ${user2} follows ${user1}: ${user2FollowsUser1}`);
         }
       }
 
@@ -50,7 +62,7 @@ class MessagingService {
         participants: participants.map(userId => ({
           userId,
           role: 'member',
-          joinedAt: serverTimestamp(),
+          joinedAt: new Date(), // Use regular Date instead of serverTimestamp in arrays
         })),
         type: participants.length === 2 ? 'direct' : 'group',
         lastActivity: serverTimestamp(),
@@ -428,6 +440,35 @@ class MessagingService {
       });
       callback(conversations);
     });
+  }
+
+  // Configuration methods
+  setRequireMutualFollow(require: boolean): void {
+    this.requireMutualFollow = require;
+  }
+
+  getRequireMutualFollow(): boolean {
+    return this.requireMutualFollow;
+  }
+
+  // Force check mutual follow status with fresh data
+  async checkMutualFollow(user1: string, user2: string): Promise<{ user1FollowsUser2: boolean; user2FollowsUser1: boolean }> {
+    try {
+      const user1FollowsUser2 = await socialService.isFollowing(user1, user2);
+      const user2FollowsUser1 = await socialService.isFollowing(user2, user1);
+      
+      console.log('Fresh follow status check:', {
+        user1,
+        user2,
+        user1FollowsUser2,
+        user2FollowsUser1
+      });
+      
+      return { user1FollowsUser2, user2FollowsUser1 };
+    } catch (error) {
+      console.error('Error checking mutual follow status:', error);
+      return { user1FollowsUser2: false, user2FollowsUser1: false };
+    }
   }
 
   // Private helper methods

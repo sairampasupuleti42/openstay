@@ -46,7 +46,10 @@ export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   confirmPassword: z.string()
-    .min(1, 'Please confirm your password')
+    .min(1, 'Please confirm your password'),
+  role: z.enum(['traveler', 'host'], {
+    message: 'Please select your role',
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],

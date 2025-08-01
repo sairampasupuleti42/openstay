@@ -61,6 +61,7 @@ export const signUpWithEmailPassword = async (data: SignUpFormData): Promise<{ u
         photoURL: user.photoURL || null,
         firstName: data.firstName,
         lastName: data.lastName,
+        role: data.role, // Add role field
         bio: '',
         location: '',
         occupation: '',
@@ -78,6 +79,8 @@ export const signUpWithEmailPassword = async (data: SignUpFormData): Promise<{ u
         updatedAt: new Date(),
         isOnboardingComplete: false,
         emailVerified: false,
+        // Set host-specific fields based on role
+        isHost: data.role === 'host',
         // Travel preferences
         travelPreferences: {
           travelStyle: '',

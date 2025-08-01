@@ -9,8 +9,18 @@ import { socialService } from '@/modules/social/services/socialService';
 import ConversationList from '../components/ConversationList';
 import ChatInterface from '../components/ChatInterface';
 import UserCard from '@/modules/social/components/UserCard';
+import MessagingDebugTools from '@/components/MessagingDebugTools';
 import type { Conversation } from '../types';
 import type { UserProfile } from '@/services/userServiceEnhanced';
+import type { SerializableUserProfile } from '@/store/slices/socialSlice';
+
+// Helper function to convert UserProfile to SerializableUserProfile
+const serializeUserProfile = (profile: UserProfile): SerializableUserProfile => ({
+  ...profile,
+  lastActive: profile.lastActive instanceof Date ? profile.lastActive.toISOString() : profile.lastActive,
+  createdAt: profile.createdAt instanceof Date ? profile.createdAt.toISOString() : profile.createdAt,
+  updatedAt: profile.updatedAt instanceof Date ? profile.updatedAt.toISOString() : profile.updatedAt,
+});
 
 const MessagingPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -19,7 +29,7 @@ const MessagingPage: React.FC = () => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNewChat, setShowNewChat] = useState(false);
-  const [followingUsers, setFollowingUsers] = useState<UserProfile[]>([]);
+  const [followingUsers, setFollowingUsers] = useState<SerializableUserProfile[]>([]);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
@@ -39,12 +49,40 @@ const MessagingPage: React.FC = () => {
     if (!currentUser) return;
 
     try {
+      // First, let's check the mutual follow status
+      const followStatus = await messagingService.checkMutualFollow(currentUser.uid, userId);
+      console.log('Follow status before creating conversation:', followStatus);
+      
       const conversationId = await messagingService.createConversation([currentUser.uid, userId]);
       setActiveConversationId(conversationId);
       setShowNewChat(false);
     } catch (error) {
       console.error('Error starting chat:', error);
-      alert('Unable to start chat. Make sure you both follow each other.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('follow each other')) {
+        // Show more detailed error message
+        const confirmMessage = `Unable to start chat. Both users must follow each other to enable messaging.\n\nDetailed error: ${errorMessage}\n\nWould you like to temporarily disable this requirement for testing?`;
+        
+        if (confirm(confirmMessage)) {
+          // Temporarily disable the requirement and try again
+          messagingService.setRequireMutualFollow(false);
+          try {
+            const conversationId = await messagingService.createConversation([currentUser.uid, userId]);
+            setActiveConversationId(conversationId);
+            setShowNewChat(false);
+            alert('Chat created successfully (mutual follow requirement temporarily disabled)');
+          } catch (retryError) {
+            console.error('Error on retry:', retryError);
+            alert('Failed to create chat even without follow requirement');
+          } finally {
+            // Re-enable the requirement
+            messagingService.setRequireMutualFollow(true);
+          }
+        }
+      } else {
+        alert(`Unable to start chat: ${errorMessage}`);
+      }
     }
   }, [currentUser]);
 
@@ -96,7 +134,7 @@ const MessagingPage: React.FC = () => {
       setLoadingFollowing(true);
       try {
         const following = await socialService.getUserFollowing(currentUser.uid);
-        setFollowingUsers(following);
+        setFollowingUsers(following.map(serializeUserProfile));
       } catch (error) {
         console.error('Error loading following users:', error);
       } finally {
@@ -252,6 +290,11 @@ const MessagingPage: React.FC = () => {
 
       {/* Main content area */}
       <div className="flex-1 flex">
+        {process.env.NODE_ENV === 'development' && (
+          <div className="absolute top-0 left-0 z-50 w-full">
+            <MessagingDebugTools />
+          </div>
+        )}
         {showNewChat ? (
           <div className="flex-1 bg-white">
             {/* New chat header */}

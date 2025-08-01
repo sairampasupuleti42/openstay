@@ -11,10 +11,10 @@ export interface MessagingState {
   error: string | null;
   // Real-time states
   typingUsers: Record<string, string[]>; // conversationId -> userIds
-  onlineUsers: Set<string>;
+  onlineUsers: string[]; // Changed from Set to array
   // UI states
   searchQuery: string;
-  selectedMessages: Set<string>;
+  selectedMessages: string[]; // Changed from Set to array
   replyTo: Message | null;
   editingMessage: Message | null;
 }
@@ -27,9 +27,9 @@ const initialState: MessagingState = {
   isLoading: false,
   error: null,
   typingUsers: {},
-  onlineUsers: new Set(),
+  onlineUsers: [],
   searchQuery: '',
-  selectedMessages: new Set(),
+  selectedMessages: [],
   replyTo: null,
   editingMessage: null,
 };
@@ -90,23 +90,25 @@ const messagingSlice = createSlice({
       state.typingUsers[action.payload.conversationId] = action.payload.userIds;
     },
     setOnlineUsers: (state, action: PayloadAction<string[]>) => {
-      state.onlineUsers = new Set(action.payload);
+      state.onlineUsers = action.payload;
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
     },
     setSelectedMessages: (state, action: PayloadAction<string[]>) => {
-      state.selectedMessages = new Set(action.payload);
+      state.selectedMessages = action.payload;
     },
     toggleMessageSelection: (state, action: PayloadAction<string>) => {
-      if (state.selectedMessages.has(action.payload)) {
-        state.selectedMessages.delete(action.payload);
+      const messageId = action.payload;
+      const index = state.selectedMessages.indexOf(messageId);
+      if (index >= 0) {
+        state.selectedMessages.splice(index, 1);
       } else {
-        state.selectedMessages.add(action.payload);
+        state.selectedMessages.push(messageId);
       }
     },
     clearSelectedMessages: (state) => {
-      state.selectedMessages.clear();
+      state.selectedMessages = [];
     },
     setReplyTo: (state, action: PayloadAction<Message | null>) => {
       state.replyTo = action.payload;
@@ -128,9 +130,9 @@ const messagingSlice = createSlice({
       state.activeConversationId = null;
       state.messages = {};
       state.typingUsers = {};
-      state.onlineUsers.clear();
+      state.onlineUsers = [];
       state.searchQuery = '';
-      state.selectedMessages.clear();
+      state.selectedMessages = [];
       state.replyTo = null;
       state.editingMessage = null;
       state.error = null;
@@ -181,5 +183,13 @@ export const selectSearchQuery = (state: { messaging: MessagingState }) => state
 export const selectSelectedMessages = (state: { messaging: MessagingState }) => state.messaging.selectedMessages;
 export const selectReplyTo = (state: { messaging: MessagingState }) => state.messaging.replyTo;
 export const selectEditingMessage = (state: { messaging: MessagingState }) => state.messaging.editingMessage;
+
+// Helper selectors for working with arrays as sets
+export const selectIsUserOnline = (state: { messaging: MessagingState }, userId: string) => 
+  state.messaging.onlineUsers.includes(userId);
+export const selectIsMessageSelected = (state: { messaging: MessagingState }, messageId: string) => 
+  state.messaging.selectedMessages.includes(messageId);
+export const selectSelectedMessageCount = (state: { messaging: MessagingState }) => 
+  state.messaging.selectedMessages.length;
 
 export default messagingSlice.reducer;

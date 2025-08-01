@@ -36,6 +36,7 @@ export interface UserProfile {
   photoURL?: string;
   
   // Personal Information
+  role?: 'traveler' | 'host'; // Add role field
   bio?: string;
   location?: string;
   occupation?: string;

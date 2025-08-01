@@ -6,17 +6,31 @@ import { socialService } from '@/modules/social/services/socialService';
 import type { UserProfile } from '@/services/userServiceEnhanced';
 
 // Types
+// Serializable version of UserProfile for Redux state (converts Date to string)
+export type SerializableUserProfile = Omit<UserProfile, 'lastActive' | 'createdAt' | 'updatedAt'> & {
+  lastActive?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Helper function to convert UserProfile to SerializableUserProfile
+const serializeUserProfile = (profile: UserProfile): SerializableUserProfile => ({
+  ...profile,
+  lastActive: profile.lastActive instanceof Date ? profile.lastActive.toISOString() : profile.lastActive,
+  createdAt: profile.createdAt instanceof Date ? profile.createdAt.toISOString() : profile.createdAt,
+  updatedAt: profile.updatedAt instanceof Date ? profile.updatedAt.toISOString() : profile.updatedAt,
+});
 export interface SocialState {
   // User discovery
-  exploreUsers: UserProfile[];
-  filteredUsers: UserProfile[];
+  exploreUsers: SerializableUserProfile[];
+  filteredUsers: SerializableUserProfile[];
   exploreLoading: boolean;
   exploreError: string | null;
   
   // Social relationships
-  followers: UserProfile[];
-  following: UserProfile[];
-  suggestions: UserProfile[];
+  followers: SerializableUserProfile[];
+  following: SerializableUserProfile[];
+  suggestions: SerializableUserProfile[];
   followingStatus: Record<string, boolean>;
   
   // UI state
@@ -34,18 +48,26 @@ export interface SocialState {
 }
 
 // Async thunks
-export const fetchExploreUsers = createAsyncThunk(
+export const fetchExploreUsers = createAsyncThunk<
+  {
+    users: SerializableUserProfile[];
+    lastDoc: DocumentSnapshot | null;
+    hasMore: boolean;
+    isLoadMore: boolean;
+  },
+  { 
+    currentUserId?: string; 
+    isLoadMore?: boolean; 
+    lastDocument?: DocumentSnapshot | null; 
+    usersPerPage?: number; 
+  }
+>(
   'social/fetchExploreUsers',
   async ({ 
     currentUserId, 
     isLoadMore = false, 
     lastDocument = null, 
     usersPerPage = 12 
-  }: { 
-    currentUserId?: string; 
-    isLoadMore?: boolean; 
-    lastDocument?: DocumentSnapshot | null; 
-    usersPerPage?: number; 
   }, { rejectWithValue }) => {
     try {
       const usersRef = collection(db, 'users');
@@ -65,7 +87,7 @@ export const fetchExploreUsers = createAsyncThunk(
       }
 
       const querySnapshot = await getDocs(q);
-      const fetchedUsers: UserProfile[] = [];
+      const fetchedUsers: SerializableUserProfile[] = [];
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
@@ -97,9 +119,9 @@ export const fetchExploreUsers = createAsyncThunk(
           preferredActivities: data.preferredActivities || [],
           profileComplete: data.profileComplete || false,
           isOnboardingComplete: data.isOnboardingComplete || false,
-          lastActive: data.lastActive?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
+          lastActive: data.lastActive?.toDate().toISOString() || new Date().toISOString(),
+          createdAt: data.createdAt?.toDate().toISOString() || new Date().toISOString(),
+          updatedAt: data.updatedAt?.toDate().toISOString() || new Date().toISOString(),
           privacy: data.privacy || {
             showEmail: false,
             showLocation: true,
@@ -176,12 +198,12 @@ export const unfollowUser = createAsyncThunk(
 );
 
 // Fetch user followers
-export const fetchUserFollowers = createAsyncThunk(
+export const fetchUserFollowers = createAsyncThunk<SerializableUserProfile[], { userId: string }>(
   'social/fetchUserFollowers',
   async (payload: { userId: string }, { rejectWithValue }) => {
     try {
       const followers = await socialService.getUserFollowers(payload.userId);
-      return followers;
+      return followers.map(serializeUserProfile);
     } catch (error) {
       console.error('Error fetching followers:', error);
       return rejectWithValue('Failed to fetch followers');
@@ -190,12 +212,12 @@ export const fetchUserFollowers = createAsyncThunk(
 );
 
 // Fetch user following
-export const fetchUserFollowing = createAsyncThunk(
+export const fetchUserFollowing = createAsyncThunk<SerializableUserProfile[], { userId: string }>(
   'social/fetchUserFollowing',
   async (payload: { userId: string }, { rejectWithValue }) => {
     try {
       const following = await socialService.getUserFollowing(payload.userId);
-      return following;
+      return following.map(serializeUserProfile);
     } catch (error) {
       console.error('Error fetching following:', error);
       return rejectWithValue('Failed to fetch following');
@@ -265,11 +287,11 @@ const socialSlice = createSlice({
   initialState,
   reducers: {
     // Explore users
-    setExploreUsers: (state, action: PayloadAction<UserProfile[]>) => {
+    setExploreUsers: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.exploreUsers = action.payload;
       state.filteredUsers = action.payload;
     },
-    setFilteredUsers: (state, action: PayloadAction<UserProfile[]>) => {
+    setFilteredUsers: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.filteredUsers = action.payload;
     },
     
@@ -300,22 +322,22 @@ const socialSlice = createSlice({
     },
     
     // Social relationships
-    setFollowers: (state, action: PayloadAction<UserProfile[]>) => {
+    setFollowers: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.followers = action.payload;
     },
-    addFollowers: (state, action: PayloadAction<UserProfile[]>) => {
+    addFollowers: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.followers = [...state.followers, ...action.payload];
     },
-    setFollowing: (state, action: PayloadAction<UserProfile[]>) => {
+    setFollowing: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.following = action.payload;
     },
-    addFollowing: (state, action: PayloadAction<UserProfile[]>) => {
+    addFollowing: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.following = [...state.following, ...action.payload];
     },
-    setSuggestions: (state, action: PayloadAction<UserProfile[]>) => {
+    setSuggestions: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.suggestions = action.payload;
     },
-    addSuggestions: (state, action: PayloadAction<UserProfile[]>) => {
+    addSuggestions: (state, action: PayloadAction<SerializableUserProfile[]>) => {
       state.suggestions = [...state.suggestions, ...action.payload];
     },
     

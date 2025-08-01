@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, User, Mail, Lock, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, User, Mail, Lock, CheckCircle, Users, Home } from 'lucide-react';
 import { signUpSchema, type SignUpFormData } from '@/schemas/authSchemas';
 import { signUpWithEmailPassword, signInWithGoogle } from '@/services/authService';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,8 @@ const SignUp: React.FC = () => {
   const [emailSent, setEmailSent] = useState(false);
   
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlRole = searchParams.get('role') as 'traveler' | 'host' | null;
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -37,8 +39,16 @@ const SignUp: React.FC = () => {
       email: '',
       password: '',
       confirmPassword: '',
+      role: urlRole || 'traveler', // Default to traveler if no URL param
     },
   });
+
+  // Update form role when URL parameter changes
+  useEffect(() => {
+    if (urlRole && (urlRole === 'traveler' || urlRole === 'host')) {
+      form.setValue('role', urlRole);
+    }
+  }, [urlRole, form]);
 
   const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
@@ -293,6 +303,81 @@ const SignUp: React.FC = () => {
                 )}
               />
             </div>
+
+            {/* Role Selection */}
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>I want to join as</FormLabel>
+                  <FormControl>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className={`relative flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        field.value === 'traveler' 
+                          ? 'border-primary-500 bg-primary-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          value="traveler"
+                          checked={field.value === 'traveler'}
+                          onChange={field.onChange}
+                          className="sr-only"
+                        />
+                        <div className="flex items-center space-x-3">
+                          <Users className="h-6 w-6 text-primary-600" />
+                          <div>
+                            <div className="font-medium text-gray-900">Traveler</div>
+                            <div className="text-sm text-gray-500">Find hosts and explore new places</div>
+                          </div>
+                        </div>
+                        <div className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 ${
+                          field.value === 'traveler' 
+                            ? 'border-primary-500 bg-primary-500' 
+                            : 'border-gray-300'
+                        }`}>
+                          {field.value === 'traveler' && (
+                            <div className="w-full h-full rounded-full bg-white scale-50 transform"></div>
+                          )}
+                        </div>
+                      </label>
+
+                      <label className={`relative flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        field.value === 'host' 
+                          ? 'border-primary-500 bg-primary-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}>
+                        <input
+                          type="radio"
+                          value="host"
+                          checked={field.value === 'host'}
+                          onChange={field.onChange}
+                          className="sr-only"
+                        />
+                        <div className="flex items-center space-x-3">
+                          <Home className="h-6 w-6 text-primary-600" />
+                          <div>
+                            <div className="font-medium text-gray-900">Host</div>
+                            <div className="text-sm text-gray-500">Welcome travelers to your space</div>
+                          </div>
+                        </div>
+                        <div className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 ${
+                          field.value === 'host' 
+                            ? 'border-primary-500 bg-primary-500' 
+                            : 'border-gray-300'
+                        }`}>
+                          {field.value === 'host' && (
+                            <div className="w-full h-full rounded-full bg-white scale-50 transform"></div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Email Field */}
             <FormField

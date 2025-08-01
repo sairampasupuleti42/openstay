@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Bell, MessageSquare, AlertTriangle, Users, UserCheck, Search } from "lucide-react";
+import {
+  Menu,
+  X,
+  Bell,
+  MessageSquare,
+  AlertTriangle,
+  Users,
+  UserCheck,
+  Search,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/helpers/Logo";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,8 +29,8 @@ const Header: React.FC = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Close mobile menu when route changes
@@ -32,19 +41,19 @@ const Header: React.FC = () => {
   // Close mobile menu on escape key
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isMenuOpen) {
+      if (event.key === "Escape" && isMenuOpen) {
         setIsMenuOpen(false);
       }
     };
 
     if (isMenuOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
     };
   }, [isMenuOpen]);
 
@@ -55,13 +64,16 @@ const Header: React.FC = () => {
     });
   }, []);
 
-  const handleSearch = useCallback((query: string) => {
-    // Navigate to search results page
-    navigate(`/search?q=${encodeURIComponent(query)}`);
-  }, [navigate]);
+  const handleSearch = useCallback(
+    (query: string) => {
+      // Navigate to search results page
+      navigate(`/search?q=${encodeURIComponent(query)}`);
+    },
+    [navigate]
+  );
 
   const toggleMobileMenu = useCallback(() => {
-    setIsMenuOpen(prev => !prev);
+    setIsMenuOpen((prev) => !prev);
   }, []);
 
   return (
@@ -80,15 +92,15 @@ const Header: React.FC = () => {
             <Link
               to="/"
               className="flex items-center group"
-              aria-label="Educrat - Go to homepage"
+              aria-label="Openstay - Go to homepage"
               onClick={scrollToTop}
             >
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
-                  <span className="text-white font-bold text-xl">E</span>
-                </div>
-                <span className="text-2xl font-bold text-gray-900">Educrat</span>
-              </div>
+              <Logo
+                width={240}
+                height={60}
+                className="group-hover:opacity-80 transition-opacity duration-200"
+                alt="Openstay Company Logo"
+              />
             </Link>
           </div>
 
@@ -102,118 +114,104 @@ const Header: React.FC = () => {
               to="/explore"
               onClick={scrollToTop}
               className={cn(
-                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
-                location.pathname === "/explore" && "text-purple-600"
+                "text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/explore" && "text-primary-600"
               )}
-              aria-current={location.pathname === "/explore" ? "page" : undefined}
+              aria-current={
+                location.pathname === "/explore" ? "page" : undefined
+              }
             >
               Explore
-              <span className={cn(
-                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
-                location.pathname === "/explore" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-              )} />
+              <span
+                className={cn(
+                  "absolute bottom-[-8px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
+                  location.pathname === "/explore"
+                    ? "scale-x-100"
+                    : "scale-x-0 group-hover:scale-x-100"
+                )}
+              />
             </Link>
-
-            <Link
-              to="/"
+            {/* <Link
+              to="/social/followers"
               onClick={scrollToTop}
               className={cn(
-                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
-                location.pathname === "/" && "text-purple-600"
+                "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group flex items-center space-x-1",
+                location.pathname === "/social/followers" &&
+                  "text-primary-600 font-semibold"
               )}
-              aria-current={location.pathname === "/" ? "page" : undefined}
+              aria-current={
+                location.pathname === "/social/followers" ? "page" : undefined
+              }
             >
-              Home
-              <span className={cn(
-                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
-                location.pathname === "/" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-              )} />
+              <Users className="w-4 h-4" />
+              <span>Followers</span>
+              <span
+                className={cn(
+                  "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
+                  location.pathname === "/social/followers"
+                    ? "scale-x-100"
+                    : "scale-x-0 group-hover:scale-x-100"
+                )}
+              />
             </Link>
-
             <Link
-              to="/courses"
+              to="/social/following"
               onClick={scrollToTop}
               className={cn(
-                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
-                location.pathname === "/courses" && "text-purple-600"
+                "text-foreground hover:text-primary-600 transition-colors duration-200 font-medium relative group flex items-center space-x-1",
+                location.pathname === "/social/following" &&
+                  "text-primary-600 font-semibold"
               )}
-              aria-current={location.pathname === "/courses" ? "page" : undefined}
+              aria-current={
+                location.pathname === "/social/following" ? "page" : undefined
+              }
             >
-              Courses
-              <span className={cn(
-                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
-                location.pathname === "/courses" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-              )} />
-            </Link>
-
-            <Link
-              to="/events"
-              onClick={scrollToTop}
-              className={cn(
-                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
-                location.pathname === "/events" && "text-purple-600"
-              )}
-              aria-current={location.pathname === "/events" ? "page" : undefined}
-            >
-              Events
-              <span className={cn(
-                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
-                location.pathname === "/events" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-              )} />
-            </Link>
-
-            <Link
-              to="/blog"
-              onClick={scrollToTop}
-              className={cn(
-                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
-                location.pathname === "/blog" && "text-purple-600"
-              )}
-              aria-current={location.pathname === "/blog" ? "page" : undefined}
-            >
-              Blog
-              <span className={cn(
-                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
-                location.pathname === "/blog" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-              )} />
-            </Link>
-
-            <div className="relative group">
-              <button className="text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium flex items-center">
-                Pages
-                <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {/* Dropdown menu can be added here */}
-            </div>
-
+              <UserCheck className="w-4 h-4" />
+              <span>Following</span>
+              <span
+                className={cn(
+                  "absolute bottom-[-4px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
+                  location.pathname === "/social/following"
+                    ? "scale-x-100"
+                    : "scale-x-0 group-hover:scale-x-100"
+                )}
+              />
+            </Link> */}
             <Link
               to="/contact"
               onClick={scrollToTop}
               className={cn(
-                "text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium relative group",
-                location.pathname === "/contact" && "text-purple-600"
+                "text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium relative group",
+                location.pathname === "/contact" && "text-primary-600"
               )}
-              aria-current={location.pathname === "/contact" ? "page" : undefined}
+              aria-current={
+                location.pathname === "/contact" ? "page" : undefined
+              }
             >
               Contact
-              <span className={cn(
-                "absolute bottom-[-8px] left-0 w-full h-0.5 bg-purple-600 transition-transform duration-200",
-                location.pathname === "/contact" ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-              )} />
+              <span
+                className={cn(
+                  "absolute bottom-[-8px] left-0 w-full h-0.5 bg-primary-600 transition-transform duration-200",
+                  location.pathname === "/contact"
+                    ? "scale-x-100"
+                    : "scale-x-0 group-hover:scale-x-100"
+                )}
+              />
             </Link>
           </nav>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
             {/* Search Icon */}
-            <button
-              className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
-              aria-label="Search"
-            >
-              <Search className="w-5 h-5" />
-            </button>
+            {location.pathname !== "/" && (
+              <div className="flex-1 max-w-md mx-6">
+                <SearchInput
+                  onSearch={handleSearch}
+                  placeholder="Search destinations..."
+                  className="w-full"
+                />
+              </div>
+            )}
 
             {loading ? (
               // Loading skeleton
@@ -226,7 +224,7 @@ const Header: React.FC = () => {
               <div className="hidden md:flex items-center space-x-3">
                 {/* Notifications */}
                 <button
-                  className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
+                  className="relative p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all duration-200"
                   aria-label="View notifications"
                   title="Notifications"
                 >
@@ -239,7 +237,7 @@ const Header: React.FC = () => {
                 {/* Messages */}
                 <Link
                   to="/messages"
-                  className="relative p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-all duration-200"
+                  className="relative p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all duration-200"
                   aria-label="View messages"
                   title="Messages"
                 >
@@ -257,14 +255,14 @@ const Header: React.FC = () => {
               <div className="hidden md:flex items-center space-x-4">
                 <Link
                   to="/auth/signin"
-                  className="text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium"
+                  className="text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium"
                   aria-label="Sign in to your account"
                 >
                   Log In
                 </Link>
                 <Link
                   to="/auth/signup"
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                   aria-label="Create new account"
                 >
                   Sign Up
@@ -275,7 +273,7 @@ const Header: React.FC = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={toggleMobileMenu}
-              className="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              className="lg:hidden p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               aria-expanded={isMenuOpen}
               aria-controls="mobile-menu"
               aria-label={isMenuOpen ? "Close mobile menu" : "Open mobile menu"}
@@ -306,8 +304,8 @@ const Header: React.FC = () => {
               <Link
                 to="/explore"
                 className={cn(
-                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
-                  location.pathname === "/explore" && "text-purple-600"
+                  "block text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/explore" && "text-primary-600"
                 )}
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -320,8 +318,8 @@ const Header: React.FC = () => {
               <Link
                 to="/"
                 className={cn(
-                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
-                  location.pathname === "/" && "text-purple-600"
+                  "block text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/" && "text-primary-600"
                 )}
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -334,8 +332,8 @@ const Header: React.FC = () => {
               <Link
                 to="/courses"
                 className={cn(
-                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
-                  location.pathname === "/courses" && "text-purple-600"
+                  "block text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/courses" && "text-primary-600"
                 )}
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -348,8 +346,8 @@ const Header: React.FC = () => {
               <Link
                 to="/events"
                 className={cn(
-                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
-                  location.pathname === "/events" && "text-purple-600"
+                  "block text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/events" && "text-primary-600"
                 )}
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -362,8 +360,8 @@ const Header: React.FC = () => {
               <Link
                 to="/blog"
                 className={cn(
-                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
-                  location.pathname === "/blog" && "text-purple-600"
+                  "block text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/blog" && "text-primary-600"
                 )}
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -373,15 +371,15 @@ const Header: React.FC = () => {
                 Blog
               </Link>
 
-              <button className="block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2 text-left">
+              <button className="block text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium py-2 text-left">
                 Pages
               </button>
 
               <Link
                 to="/contact"
                 className={cn(
-                  "block text-gray-700 hover:text-purple-600 transition-colors duration-200 font-medium py-2",
-                  location.pathname === "/contact" && "text-purple-600"
+                  "block text-gray-700 hover:text-primary-600 transition-colors duration-200 font-medium py-2",
+                  location.pathname === "/contact" && "text-primary-600"
                 )}
                 onClick={() => {
                   setIsMenuOpen(false);
@@ -397,21 +395,25 @@ const Header: React.FC = () => {
               <div className="pt-4 border-t border-gray-100 space-y-4">
                 <div className="flex items-center space-x-4">
                   <button
-                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors duration-200"
+                    className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors duration-200"
                     aria-label="View notifications"
                   >
                     <Bell className="w-5 h-5" />
                     <span>Notifications</span>
-                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
+                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      3
+                    </span>
                   </button>
                   <Link
                     to="/messages"
-                    className="flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors duration-200"
+                    className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 transition-colors duration-200"
                     aria-label="View messages"
                   >
                     <MessageSquare className="w-5 h-5" />
                     <span>Messages</span>
-                    <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">2</span>
+                    <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                      2
+                    </span>
                   </Link>
                 </div>
                 <UserProfileDropdown isMobile={true} />
@@ -420,14 +422,14 @@ const Header: React.FC = () => {
               <div className="pt-4 border-t border-gray-100 space-y-3">
                 <Link
                   to="/auth/signin"
-                  className="block text-center text-gray-700 hover:text-purple-600 px-4 py-3 rounded-lg font-medium transition-colors duration-200"
+                  className="block text-center text-gray-700 hover:text-primary-600 px-4 py-3 rounded-lg font-medium transition-colors duration-200"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Log In
                 </Link>
                 <Link
                   to="/auth/signup"
-                  className="block text-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200"
+                  className="block text-center bg-primary-600 hover:bg-primary-700 text-white px-4 py-3 rounded-lg font-medium transition-colors duration-200"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign Up

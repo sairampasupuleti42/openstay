@@ -187,13 +187,13 @@ const HomePage: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                to="/auth/signup"
+                to="/auth/signup?role=traveler"
                 className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
               >
                 Join as a Traveler
               </Link>
               <Link
-                to="/auth/signup"
+                to="/auth/signup?role=host"
                 className="bg-white border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-3 rounded-lg font-medium transition-colors"
               >
                 Become a Host

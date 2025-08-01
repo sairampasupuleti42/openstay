@@ -30,32 +30,16 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    dedupe: ['react', 'react-dom'],
   },
   server: {
     port: 5174,
     open: true, // Optional: automatically open browser
   },
   build: {
-    // Enable gzip compression
-    rollupOptions: {
-      output: {
-        // Manual chunking for better code splitting
-        manualChunks: {
-          // Vendor chunks
-          'react-vendor': ['react', 'react-dom'],
-          'router-vendor': ['react-router-dom'],
-          'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
-          'ui-vendor': ['lucide-react', '@radix-ui/react-label', '@radix-ui/react-slot'],
-          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          'utils-vendor': ['clsx', 'tailwind-merge', 'class-variance-authority']
-        }
-      }
-    },
     // Optimize bundle size
     target: 'es2020',
     minify: 'terser',
-    // Increase chunk size warning limit since we're optimizing manually
-    chunkSizeWarningLimit: 600,
     sourcemap: false, // Disable sourcemaps in production for smaller bundle
     // PWA optimizations
     assetsDir: 'assets',

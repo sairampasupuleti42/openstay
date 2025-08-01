@@ -11,10 +11,10 @@ import {
   blockUser,
   selectIsFollowing 
 } from '@/store/slices/socialSlice';
-import type { UserProfile } from '@/services/userServiceEnhanced';
+import type { SerializableUserProfile } from '@/store/slices/socialSlice';
 
 interface UserCardProps {
-  user: UserProfile;
+  user: SerializableUserProfile;
   currentUserId?: string;
   showActions?: boolean;
   variant?: 'grid' | 'list';
