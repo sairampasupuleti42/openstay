@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, UserCheck, Loader2 } from 'lucide-react';
-import { getRandomUsers, followUser, unfollowUser } from '@/services/userService';
+import { getRandomUsers, followUser, unfollowUser, getUserProfile } from '@/services/userService';
 import type { UserProfile } from '@/services/userService';
 
 interface UserDiscoveryProps {
@@ -20,18 +20,28 @@ const UserDiscovery: React.FC<UserDiscoveryProps> = ({
   const [followingInProgress, setFollowingInProgress] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       try {
-        const randomUsers = await getRandomUsers(currentUserId, 8);
+        // Fetch random users and current user's profile in parallel
+        const [randomUsers, currentUserProfile] = await Promise.all([
+          getRandomUsers(currentUserId, 8),
+          getUserProfile(currentUserId)
+        ]);
+        
         setUsers(randomUsers);
+        
+        // Initialize following state with current user's following list
+        if (currentUserProfile?.following) {
+          setFollowingUsers(new Set(currentUserProfile.following));
+        }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUsers();
+    fetchData();
   }, [currentUserId]);
 
   const handleFollowToggle = async (targetUserId: string) => {

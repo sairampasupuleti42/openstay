@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Mail, Smartphone } from 'lucide-react';
 import { signInSchema, type SignInFormData } from '@/schemas/authSchemas';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { 
   signIn, 
@@ -31,6 +32,7 @@ import SEOMeta from '@/helpers/SEOMeta';
 const SignIn: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { currentUser, loading } = useAuth();
   
   // Redux state selectors
   const isSignInLoading = useAppSelector(selectSignInLoading);
@@ -41,6 +43,14 @@ const SignIn: React.FC = () => {
 
   // Local UI state (non-global state)
   const [showPassword, setShowPassword] = useState(false);
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (!loading && currentUser) {
+      // User is already signed in, redirect to appropriate page
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, loading, navigate]);
 
   const form = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
@@ -77,6 +87,18 @@ const SignIn: React.FC = () => {
   const handleGoogleSignIn = async () => {
     dispatch(signInWithGoogleAsync());
   };
+
+  // Show loading screen while checking authentication status
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

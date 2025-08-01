@@ -6,6 +6,7 @@ import './index.css'
 import { router } from './router'
 import { store } from '@/store'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { initializePWA } from '@/utils/pwa'
 
@@ -24,7 +25,9 @@ root.render(
     <Provider store={store}>
       <ErrorBoundary>
         <AuthProvider>
-          <RouterProvider router={router} />
+          <NotificationProvider>
+            <RouterProvider router={router} />
+          </NotificationProvider>
         </AuthProvider>
       </ErrorBoundary>
     </Provider>

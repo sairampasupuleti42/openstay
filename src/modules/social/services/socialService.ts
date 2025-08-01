@@ -150,6 +150,29 @@ class SocialService {
     return await userService.getUserFollowing(userId);
   }
 
+  // Get mutual friends (users who follow each other)
+  async getMutualFriends(userId: string): Promise<UserProfile[]> {
+    try {
+      const currentUser = await userService.getUserProfile(userId);
+      if (!currentUser?.following || currentUser.following.length === 0) {
+        return [];
+      }
+
+      // Get all users this user is following
+      const followingUsers = await this.getUserFollowing(userId);
+      
+      // Filter to only include mutual friends (users who also follow back)
+      const mutualFriends = followingUsers.filter(user => 
+        user.following?.includes(userId) || false
+      );
+
+      return mutualFriends;
+    } catch (error) {
+      console.error('Error getting mutual friends:', error);
+      return [];
+    }
+  }
+
   // Check if user is following another user
   async isFollowing(currentUserId: string, targetUserId: string): Promise<boolean> {
     try {

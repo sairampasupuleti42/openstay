@@ -29,8 +29,8 @@ const MessagingPage: React.FC = () => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showNewChat, setShowNewChat] = useState(false);
-  const [followingUsers, setFollowingUsers] = useState<SerializableUserProfile[]>([]);
-  const [loadingFollowing, setLoadingFollowing] = useState(false);
+  const [friendUsers, setFriendUsers] = useState<SerializableUserProfile[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(false);
 
@@ -126,24 +126,25 @@ const MessagingPage: React.FC = () => {
     };
   }, [currentUser]);
 
-  // Load following users when showing new chat
+  // Load mutual friends when showing new chat
   useEffect(() => {
-    const loadFollowingUsers = async () => {
+    const loadMutualFriends = async () => {
       if (!currentUser) return;
 
-      setLoadingFollowing(true);
+      setLoadingFriends(true);
       try {
-        const following = await socialService.getUserFollowing(currentUser.uid);
-        setFollowingUsers(following.map(serializeUserProfile));
+        // Get mutual friends instead of just following users
+        const mutualFriends = await socialService.getMutualFriends(currentUser.uid);
+        setFriendUsers(mutualFriends.map(serializeUserProfile));
       } catch (error) {
-        console.error('Error loading following users:', error);
+        console.error('Error loading mutual friends:', error);
       } finally {
-        setLoadingFollowing(false);
+        setLoadingFriends(false);
       }
     };
 
     if (showNewChat && currentUser) {
-      loadFollowingUsers();
+      loadMutualFriends();
     }
   }, [showNewChat, currentUser]);
 
@@ -163,7 +164,7 @@ const MessagingPage: React.FC = () => {
 
   const activeConversation = conversations.find(c => c.id === activeConversationId);
 
-  const filteredFollowing = followingUsers.filter(user =>
+  const filteredFriends = friendUsers.filter(user =>
     user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.location?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -206,22 +207,22 @@ const MessagingPage: React.FC = () => {
             />
           </div>
 
-          {/* Following users list */}
+          {/* Friends list */}
           <div className="flex-1 overflow-y-auto p-4">
-            {loadingFollowing ? (
+            {loadingFriends ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
                 <p className="text-gray-500">Loading...</p>
               </div>
-            ) : filteredFollowing.length === 0 ? (
+            ) : filteredFriends.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500">No users found</p>
-                <p className="text-sm text-gray-400">You can only message people you follow</p>
+                <p className="text-gray-500">No friends found</p>
+                <p className="text-sm text-gray-400">You can only message mutual friends</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {filteredFollowing.map((user) => (
+                {filteredFriends.map((user) => (
                   <div
                     key={user.uid}
                     onClick={() => handleStartChat(user.uid)}
@@ -319,22 +320,22 @@ const MessagingPage: React.FC = () => {
               />
             </div>
 
-            {/* Following users grid */}
+            {/* Friends grid */}
             <div className="p-6 overflow-y-auto">
-              {loadingFollowing ? (
+              {loadingFriends ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                  <p className="text-gray-500">Loading people you follow...</p>
+                  <p className="text-gray-500">Loading your friends...</p>
                 </div>
-              ) : filteredFollowing.length === 0 ? (
+              ) : filteredFriends.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-                  <p className="text-gray-500">You can only message people you follow</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No friends found</h3>
+                  <p className="text-gray-500">You can only message people who are mutual friends</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredFollowing.map((user) => (
+                  {filteredFriends.map((user) => (
                     <div key={user.uid} className="cursor-pointer" onClick={() => handleStartChat(user.uid)}>
                       <UserCard
                         user={user}

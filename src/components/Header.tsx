@@ -5,16 +5,14 @@ import {
   X,
   Bell,
   MessageSquare,
-  AlertTriangle,
-  Users,
-  UserCheck,
-  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/helpers/Logo";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
 import SearchInput from "@/components/SearchInput";
+import NotificationBell from "@/components/NotificationBell";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,6 +20,7 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, loading } = useAuth();
+  const { unreadCount } = useNotifications();
 
   // Handle scroll effect for header background
   useEffect(() => {
@@ -223,16 +222,7 @@ const Header: React.FC = () => {
               // Authenticated user actions
               <div className="hidden md:flex items-center space-x-3">
                 {/* Notifications */}
-                <button
-                  className="relative p-2 text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-all duration-200"
-                  aria-label="View notifications"
-                  title="Notifications"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    3
-                  </span>
-                </button>
+                <NotificationBell className="hover:bg-primary-50 rounded-full transition-all duration-200" />
 
                 {/* Messages */}
                 <Link
@@ -400,9 +390,11 @@ const Header: React.FC = () => {
                   >
                     <Bell className="w-5 h-5" />
                     <span>Notifications</span>
-                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      3
-                    </span>
+                    {unreadCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
                   </button>
                   <Link
                     to="/messages"

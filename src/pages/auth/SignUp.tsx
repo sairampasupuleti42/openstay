@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, User, Mail, Lock, CheckCircle, Users, Home } from 'lucide-react';
 import { signUpSchema, type SignUpFormData } from '@/schemas/authSchemas';
-import { signUpWithEmailPassword, signInWithGoogle } from '@/services/authService';
+import { signUpWithEmailPassword, signUpWithGoogle } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -29,7 +30,16 @@ const SignUp: React.FC = () => {
   
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { currentUser, loading } = useAuth();
   const urlRole = searchParams.get('role') as 'traveler' | 'host' | null;
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (!loading && currentUser) {
+      // User is already signed in, redirect to home page
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, loading, navigate]);
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
@@ -86,7 +96,10 @@ const SignUp: React.FC = () => {
     setSuccess('');
 
     try {
-      const result = await signInWithGoogle();
+      // Get the current role value from the form
+      const currentRole = form.getValues('role');
+      
+      const result = await signUpWithGoogle(currentRole);
       
       if (result.success) {
         setSuccess('Account created with Google successfully!');
@@ -118,6 +131,18 @@ const SignUp: React.FC = () => {
 
   const passwordStrength = getPasswordStrength(form.watch('password') || '');
   const passwordsMatch = form.watch('password') === form.watch('confirmPassword') && form.watch('confirmPassword') !== '';
+
+  // Show loading screen while checking authentication status
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (emailSent) {
     return (
@@ -238,7 +263,7 @@ const SignUp: React.FC = () => {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Sign up with Google
+              Sign up with Google as {form.watch('role') === 'host' ? 'Host' : 'Traveler'}
             </>
           )}
         </Button>

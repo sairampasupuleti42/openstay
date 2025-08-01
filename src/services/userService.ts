@@ -176,34 +176,62 @@ export const getRandomUsers = async (currentUserId: string, count: number = 10):
 
 // Follow a user
 export const followUser = async (currentUserId: string, targetUserId: string): Promise<void> => {
-  const currentUserRef = doc(db, 'users', currentUserId);
-  const targetUserRef = doc(db, 'users', targetUserId);
+  try {
+    const currentUserRef = doc(db, 'users', currentUserId);
+    const targetUserRef = doc(db, 'users', targetUserId);
 
-  // Add to current user's following list
-  await updateDoc(currentUserRef, {
-    following: arrayUnion(targetUserId)
-  });
+    // Get current user info for notification
+    const currentUserDoc = await getDoc(currentUserRef);
+    const currentUserData = currentUserDoc.data();
+    const currentUserName = currentUserData?.displayName || 'Someone';
 
-  // Add to target user's followers list
-  await updateDoc(targetUserRef, {
-    followers: arrayUnion(currentUserId)
-  });
+    // Add to current user's following list and target user's followers list
+    await Promise.all([
+      updateDoc(currentUserRef, {
+        following: arrayUnion(targetUserId),
+        updatedAt: new Date()
+      }),
+      updateDoc(targetUserRef, {
+        followers: arrayUnion(currentUserId),
+        updatedAt: new Date()
+      })
+    ]);
+
+    // Create notification for the followed user
+    try {
+      const { notificationService } = await import('@/modules/social/services/notificationService');
+      await notificationService.notifyUserFollowed(targetUserId, currentUserId, currentUserName);
+    } catch (notificationError) {
+      console.warn('Could not create follow notification:', notificationError);
+      // Don't throw error - follow action should still succeed
+    }
+  } catch (error) {
+    console.error('Error following user:', error);
+    throw error;
+  }
 };
 
 // Unfollow a user
 export const unfollowUser = async (currentUserId: string, targetUserId: string): Promise<void> => {
-  const currentUserRef = doc(db, 'users', currentUserId);
-  const targetUserRef = doc(db, 'users', targetUserId);
+  try {
+    const currentUserRef = doc(db, 'users', currentUserId);
+    const targetUserRef = doc(db, 'users', targetUserId);
 
-  // Remove from current user's following list
-  await updateDoc(currentUserRef, {
-    following: arrayRemove(targetUserId)
-  });
-
-  // Remove from target user's followers list
-  await updateDoc(targetUserRef, {
-    followers: arrayRemove(currentUserId)
-  });
+    // Remove from current user's following list and target user's followers list
+    await Promise.all([
+      updateDoc(currentUserRef, {
+        following: arrayRemove(targetUserId),
+        updatedAt: new Date()
+      }),
+      updateDoc(targetUserRef, {
+        followers: arrayRemove(currentUserId),
+        updatedAt: new Date()
+      })
+    ]);
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
+    throw error;
+  }
 };
 
 // Complete onboarding

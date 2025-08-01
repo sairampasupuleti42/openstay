@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Users, Shield, Heart, Star } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 import SEOMeta from "@/helpers/SEOMeta";
 import Title from "@/helpers/Title";
@@ -8,6 +9,7 @@ import AdvancedSearchInput from "@/components/AdvancedSearchInput";
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSearch = (query: string, filters?: any) => {
@@ -179,27 +181,29 @@ const HomePage: React.FC = () => {
             </div>
           </section>
 
-          {/* CTA Section */}
-          <section className="text-center bg-gradient-to-r from-primary-50 to-primary-100 rounded-2xl p-12">
-            <h2 className="text-3xl font-bold mb-4">Ready to Start Your Journey?</h2>
-            <p className="text-xl text-gray-700 mb-8">
-              Join thousands of travelers and hosts creating meaningful connections worldwide.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/auth/signup?role=traveler"
-                className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
-              >
-                Join as a Traveler
-              </Link>
-              <Link
-                to="/auth/signup?role=host"
-                className="bg-white border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-3 rounded-lg font-medium transition-colors"
-              >
-                Become a Host
-              </Link>
-            </div>
-          </section>
+          {/* CTA Section - Only show if user is not authenticated */}
+          {!currentUser && (
+            <section className="text-center bg-gradient-to-r from-primary-50 to-primary-100 rounded-2xl p-12">
+              <h2 className="text-3xl font-bold mb-4">Ready to Start Your Journey?</h2>
+              <p className="text-xl text-gray-700 mb-8">
+                Join thousands of travelers and hosts creating meaningful connections worldwide.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  to="/auth/signup?role=traveler"
+                  className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Join as a Traveler
+                </Link>
+                <Link
+                  to="/auth/signup?role=host"
+                  className="bg-white border-2 border-primary-600 text-primary-600 hover:bg-primary-50 px-8 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Become a Host
+                </Link>
+              </div>
+            </section>
+          )}
 
           {/* Features Section */}
           <section aria-labelledby="features-heading" className="mb-16">

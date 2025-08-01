@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail, ArrowLeft } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/schemas/authSchemas';
 import { sendPasswordReset } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,6 +24,17 @@ const ForgotPassword: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [emailSent, setEmailSent] = useState(false);
+  
+  const navigate = useNavigate();
+  const { currentUser, loading } = useAuth();
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (!loading && currentUser) {
+      // User is already signed in, redirect to home page
+      navigate('/', { replace: true });
+    }
+  }, [currentUser, loading, navigate]);
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -53,6 +65,18 @@ const ForgotPassword: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading screen while checking authentication status
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (emailSent) {
     return (

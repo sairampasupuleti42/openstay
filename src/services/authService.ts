@@ -9,7 +9,7 @@ import {
   updateProfile,
   type User
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { SignInFormData, SignUpFormData } from '@/schemas/authSchemas';
 
@@ -191,6 +191,7 @@ export const signInWithGoogle = async (): Promise<{ user: User | null; success: 
         photoURL: user.photoURL,
         firstName: user.displayName?.split(' ')[0] || '',
         lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        role: 'traveler', // Default role for existing Google signin
         bio: '',
         location: '',
         occupation: '',
@@ -208,6 +209,8 @@ export const signInWithGoogle = async (): Promise<{ user: User | null; success: 
         updatedAt: new Date(),
         isOnboardingComplete: false,
         emailVerified: user.emailVerified,
+        // Set host-specific fields based on role
+        isHost: false, // Default to false for existing signin
         // Travel preferences
         travelPreferences: {
           travelStyle: '',
@@ -219,41 +222,88 @@ export const signInWithGoogle = async (): Promise<{ user: User | null; success: 
     }
 
     return {
-      user: userCredential.user,
+      user,
       success: true,
-      message: 'Signed in with Google successfully!'
+      message: 'Successfully signed in with Google!'
     };
   } catch (error: unknown) {
     const firebaseError = error as { code?: string; message?: string };
     console.error('Google sign in error:', error);
-    
-    let message = 'Failed to sign in with Google. Please try again.';
-    
-    switch (firebaseError.code) {
-      case 'auth/configuration-not-found':
-        message = 'Google Sign-In is not properly configured. Please check Firebase Console settings.';
-        break;
-      case 'auth/account-exists-with-different-credential':
-        message = 'An account already exists with the same email address but different sign-in credentials.';
-        break;
-      case 'auth/cancelled-popup-request':
-        message = 'Sign in was cancelled.';
-        break;
-      case 'auth/popup-blocked':
-        message = 'Pop-up was blocked by the browser. Please enable pop-ups and try again.';
-        break;
-      case 'auth/popup-closed-by-user':
-        message = 'Sign in was cancelled.';
-        break;
-      case 'auth/unauthorized-domain':
-        message = 'This domain is not authorized for Google Sign-In. Please add it to Firebase Console.';
-        break;
-    }
-
     return {
       user: null,
       success: false,
-      message
+      message: firebaseError.message || 'Failed to sign in with Google. Please try again.'
+    };
+  }
+};
+
+// Sign up with Google with role selection
+export const signUpWithGoogle = async (role: 'traveler' | 'host'): Promise<{ user: User | null; success: boolean; message: string }> => {
+  try {
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    const user = userCredential.user;
+
+    // Check if this is a new user
+    const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
+    
+    if (isNewUser) {
+      // Create user profile in Firestore for new Google users with role
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        displayName: user.displayName || 'User',
+        email: user.email,
+        photoURL: user.photoURL,
+        firstName: user.displayName?.split(' ')[0] || '',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        role: role, // Use the provided role
+        bio: '',
+        location: '',
+        occupation: '',
+        interests: [],
+        languages: [],
+        verified: false,
+        rating: 0,
+        reviewCount: 0,
+        responseRate: 0,
+        responseTime: 'N/A',
+        hostingSince: new Date(),
+        followers: [],
+        following: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isOnboardingComplete: false,
+        emailVerified: user.emailVerified,
+        // Set host-specific fields based on role
+        isHost: role === 'host',
+        // Travel preferences
+        travelPreferences: {
+          travelStyle: '',
+          budget: '',
+          accommodation: '',
+          activities: []
+        }
+      });
+    } else {
+      // User already exists, just update the role if needed
+      await updateDoc(doc(db, 'users', user.uid), {
+        role: role,
+        isHost: role === 'host',
+        updatedAt: new Date()
+      });
+    }
+
+    return {
+      user,
+      success: true,
+      message: 'Successfully signed up with Google!'
+    };
+  } catch (error: unknown) {
+    const firebaseError = error as { code?: string; message?: string };
+    console.error('Google sign up error:', error);
+    return {
+      user: null,
+      success: false,
+      message: firebaseError.message || 'Failed to sign up with Google. Please try again.'
     };
   }
 };

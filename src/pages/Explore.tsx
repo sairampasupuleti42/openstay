@@ -97,7 +97,7 @@ const Explore: React.FC = () => {
 
   return (
     <>
-      <Title>Explore Community - Openstay</Title>
+      
       <SEOMeta
         title="Explore Community - Openstay"
         description="Discover and connect with fellow travelers and hosts in the Openstay community. Find people to follow and build your travel network."
