@@ -41,7 +41,7 @@ test.describe('Contact Form', () => {
   });
 
   test('should validate email format', async ({ page }) => {
-    await page.fill('input[name="email"]', 'invalid-email');
+    await page.locator('input[name="email"]').fill('invalid-email');
     await formHelpers.submitForm();
     
     await expect(page.locator('text=Please enter a valid email address')).toBeVisible();

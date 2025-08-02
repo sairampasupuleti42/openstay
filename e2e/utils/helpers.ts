@@ -47,25 +47,25 @@ export class AuthHelpers {
   }) {
     await this.page.goto('/auth/signup');
     
-    await this.page.fill('input[name="firstName"]', userData.firstName);
-    await this.page.fill('input[name="lastName"]', userData.lastName);
-    await this.page.fill('input[name="email"]', userData.email);
-    await this.page.fill('input[name="password"]', userData.password);
-    await this.page.fill('input[name="confirmPassword"]', userData.password);
+    await this.page.locator('input[name="firstName"]').fill(userData.firstName);
+    await this.page.locator('input[name="lastName"]').fill(userData.lastName);
+    await this.page.locator('input[name="email"]').fill(userData.email);
+    await this.page.locator('input[name="password"]').fill(userData.password);
+    await this.page.locator('input[name="confirmPassword"]').fill(userData.password);
     
     // Accept terms
-    await this.page.check('input[name="terms"]');
+    await this.page.locator('input[name="terms"]').check();
     
-    await this.page.click('button[type="submit"]');
+    await this.page.locator('button[type="submit"]').click();
   }
 
   async signIn(email: string, password: string) {
     await this.page.goto('/auth/signin');
     
-    await this.page.fill('input[name="emailOrPhone"]', email);
-    await this.page.fill('input[name="password"]', password);
+    await this.page.locator('input[name="emailOrPhone"]').fill(email);
+    await this.page.locator('input[name="password"]').fill(password);
     
-    await this.page.click('button[type="submit"]');
+    await this.page.locator('button[type="submit"]').click();
   }
 
   async signOut() {
@@ -99,14 +99,14 @@ export class FormHelpers {
     subject: string;
     message: string;
   }) {
-    await this.page.fill('input[name="name"]', formData.name);
-    await this.page.fill('input[name="email"]', formData.email);
-    await this.page.fill('input[name="subject"]', formData.subject);
-    await this.page.fill('textarea[name="message"]', formData.message);
+    await this.page.locator('input[name="name"]').fill(formData.name);
+    await this.page.locator('input[name="email"]').fill(formData.email);
+    await this.page.locator('input[name="subject"]').fill(formData.subject);
+    await this.page.locator('textarea[name="message"]').fill(formData.message);
   }
 
   async submitForm() {
-    await this.page.click('button[type="submit"]');
+    await this.page.locator('button[type="submit"]').click();
   }
 
   async waitForSuccessMessage() {

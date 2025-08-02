@@ -30,7 +30,7 @@ test.describe('Navigation', () => {
     await page.goto('/');
     
     // Test logo click
-    await page.click('a[aria-label*="Openstay"]');
+    await page.locator('a[aria-label*="Openstay"]').click();
     await expect(page).toHaveURL('/');
     
     // Test navigation links in header

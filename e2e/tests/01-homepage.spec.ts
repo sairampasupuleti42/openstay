@@ -20,14 +20,14 @@ test.describe('Homepage', () => {
 
   test('should have working navigation links', async ({ page }) => {
     // Test About link
-    await page.click('text=Learn More About Us');
+    await page.locator('text=Learn More About Us').click();
     await expect(page).toHaveURL('/about');
     
     // Go back to home
     await page.goto('/');
     
     // Test Contact link
-    await page.click('text=Get In Touch');
+    await page.locator('text=Get In Touch').click();
     await expect(page).toHaveURL('/contact');
   });
 

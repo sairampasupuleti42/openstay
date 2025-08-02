@@ -36,7 +36,7 @@ test.describe('Authentication', () => {
     await navHelpers.goToSignIn();
     
     // Try to submit empty form
-    await page.click('button[type="submit"]');
+    await page.locator('button[type="submit"]').click();
     
     // Should show validation errors
     await expect(page.locator('text=Email or phone number is required')).toBeVisible();
@@ -47,12 +47,12 @@ test.describe('Authentication', () => {
     await navHelpers.goToSignUp();
     
     // Fill with invalid data
-    await page.fill('input[name="firstName"]', 'A'); // Too short
-    await page.fill('input[name="email"]', 'invalid-email');
-    await page.fill('input[name="password"]', '123'); // Too weak
-    await page.fill('input[name="confirmPassword"]', '456'); // Doesn't match
+    await page.locator('input[name="firstName"]').fill('A'); // Too short
+    await page.locator('input[name="email"]').fill('invalid-email');
+    await page.locator('input[name="password"]').fill('123'); // Too weak
+    await page.locator('input[name="confirmPassword"]').fill('456'); // Doesn't match
     
-    await page.click('button[type="submit"]');
+    await page.locator('button[type="submit"]').click();
     
     // Should show validation errors
     await expect(page.locator('text=Name must be at least 2 characters')).toBeVisible();
@@ -81,15 +81,15 @@ test.describe('Authentication', () => {
     await navHelpers.goToSignIn();
     
     // Go to sign up
-    await page.click('text=Sign up for free');
+    await page.locator('text=Sign up for free').click();
     await expect(page).toHaveURL('/auth/signup');
     
     // Go back to sign in
-    await page.click('text=Sign in here');
+    await page.locator('text=Sign in here').click();
     await expect(page).toHaveURL('/auth/signin');
     
     // Go to forgot password
-    await page.click('text=Forgot your password?');
+    await page.locator('text=Forgot your password?').click();
     await expect(page).toHaveURL('/auth/forgot-password');
   });
 
@@ -104,8 +104,8 @@ test.describe('Authentication', () => {
   test('should handle forgot password form', async ({ page }) => {
     await page.goto('/auth/forgot-password');
     
-    await page.fill('input[name="email"]', testData.users.testUser.email);
-    await page.click('button[type="submit"]');
+    await page.locator('input[name="email"]').fill(testData.users.testUser.email);
+    await page.locator('button[type="submit"]').click();
     
     // Should show success message or email sent confirmation
     await expect(page.locator('text=Password reset email sent')).toBeVisible();
@@ -129,13 +129,13 @@ test.describe('Authentication', () => {
   test('should show password match indicator', async ({ page }) => {
     await navHelpers.goToSignUp();
     
-    await page.fill('input[name="password"]', 'TestPassword123!');
-    await page.fill('input[name="confirmPassword"]', 'DifferentPassword');
+    await page.locator('input[name="password"]').fill('TestPassword123!');
+    await page.locator('input[name="confirmPassword"]').fill('DifferentPassword');
     
     // Should show passwords don't match
     await expect(page.locator('text=Passwords do not match')).toBeVisible();
     
-    await page.fill('input[name="confirmPassword"]', 'TestPassword123!');
+    await page.locator('input[name="confirmPassword"]').fill('TestPassword123!');
     
     // Should show passwords match
     await expect(page.locator('text=Passwords match')).toBeVisible();
