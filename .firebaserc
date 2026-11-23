@@ -1,6 +1,6 @@
 {
   "projects": {
     "default": "demo-openstay",
-    "development": "openstay-dev"
+    "development": "open-stay"
   }
 }

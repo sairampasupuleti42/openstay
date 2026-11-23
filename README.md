@@ -55,16 +55,19 @@ npm run emulators
 
 The checked-in `.firebaserc` keeps `demo-openstay` as the local default, and the
 emulator script explicitly uses that demo ID so it cannot access production
-Firebase resources. The `development` alias is reserved for `openstay-dev`.
+Firebase resources. The `development` alias points to the `open-stay` Firebase
+project.
 
-Create the `openstay-dev` project in Firebase Console, then create Cloud
-Firestore in `asia-southeast1` (Singapore) before adding data. This region is a
-lasting infrastructure choice. Add a Firebase Web App and copy its exact web
-configuration and registered App Check reCAPTCHA site key into
-`src/environments/environment.ts`. Web app configuration values are public
-identifiers, not service-account credentials. Never commit service-account
-private keys or other secrets. Use the `development` alias only after the
-project exists; do not deploy yet.
+The `open-stay` project has a registered Web App and a Cloud Firestore database
+in `asia-south1`. The verified Web App configuration is in
+`src/environments/environment.ts`. Its Firebase values, including the API key,
+are public client identifiers, not service-account credentials. Never commit
+service-account private keys or other secrets.
+
+Before using Firebase outside the emulator, set the App Check reCAPTCHA site
+key in `appCheckSiteKey`; the Firebase Web App configuration does not include
+that key. Analytics is not initialized until an appropriate consent flow is in
+place. Do not deploy yet.
 
 ### Verify
 
