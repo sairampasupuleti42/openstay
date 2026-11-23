@@ -53,17 +53,18 @@ all configured emulators:
 npm run emulators
 ```
 
-The checked-in `.firebaserc` selects the `demo-openstay` project ID for local
-emulators; demo project IDs cannot access production Firebase resources. To use
-a real development project, create it in Firebase Console, add a Firebase Web
-App, then update the project alias and `src/environments/environment.ts` with
-that app's web configuration and its registered App Check reCAPTCHA site key.
-Web app configuration values are public identifiers, not service-account
-credentials. Never commit service-account private keys or other secrets.
+The checked-in `.firebaserc` keeps `demo-openstay` as the local default, and the
+emulator script explicitly uses that demo ID so it cannot access production
+Firebase resources. The `development` alias is reserved for `openstay-dev`.
 
-The Firestore location is intentionally not selected in this repository. Choose
-the region with the product and infrastructure owners before creating a
-Firestore database; changing it later is a significant migration.
+Create the `openstay-dev` project in Firebase Console, then create Cloud
+Firestore in `asia-southeast1` (Singapore) before adding data. This region is a
+lasting infrastructure choice. Add a Firebase Web App and copy its exact web
+configuration and registered App Check reCAPTCHA site key into
+`src/environments/environment.ts`. Web app configuration values are public
+identifiers, not service-account credentials. Never commit service-account
+private keys or other secrets. Use the `development` alias only after the
+project exists; do not deploy yet.
 
 ### Verify
 
