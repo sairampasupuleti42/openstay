@@ -69,6 +69,15 @@ key in `appCheckSiteKey`; the Firebase Web App configuration does not include
 that key. Analytics is not initialized until an appropriate consent flow is in
 place. Do not deploy yet.
 
+### GitHub Actions deployment
+
+The `Deploy to Firebase` workflow runs on pushes to `main` and can also be
+started manually. Before it can deploy, add a repository Actions secret named
+`FIREBASE_SERVICE_ACCOUNT_OPENSTAY` containing the Firebase service-account
+JSON for the `open-stay` project. The legacy name `FIREBASE_SERVICE_ACCOUNT`
+is also accepted. Do not commit the JSON key or expose it in logs. Without
+either secret, the workflow stops at its credential check and does not deploy.
+
 ### Verify
 
 ```bash

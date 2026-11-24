@@ -1,15 +1,18 @@
-import { Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, computed, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { AuthService } from '../../core/firebase/auth.service';
 
 @Component({
   selector: 'app-auth-page',
   imports: [
     RouterLink,
+    ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
@@ -17,41 +20,106 @@ import { map } from 'rxjs';
   template: `
     <section class="auth-page">
       <div class="auth-panel">
-        <a class="auth-brand" routerLink="/" aria-label="Openstay home">
-          <span>Openstay</span>
-        </a>
-        <p class="eyebrow">{{ isRegister() ? 'Join the community' : 'Welcome back' }}</p>
-        <h1>{{ isRegister() ? 'Create your account' : 'Sign in to Openstay' }}</h1>
-        <p class="intro">
-          {{ isRegister()
-            ? 'Start meeting local hosts and sharing meaningful travel experiences.'
-            : 'Continue planning meaningful stays and connecting with hosts.' }}
-        </p>
-        <form class="auth-form" action="#">
-          @if (isRegister()) {
-            <mat-form-field appearance="outline">
-              <mat-label>Full name</mat-label>
-              <input matInput name="name" autocomplete="name" />
-            </mat-form-field>
+        <a class="auth-brand" routerLink="/" aria-label="Openstay home">Openstay</a>
+
+        @if (isVerifyEmail()) {
+          <p class="eyebrow">One last step</p>
+          <h1>Check your inbox</h1>
+          <p class="intro">
+            We sent a verification link to
+            <strong>{{ auth.currentUser?.email || 'your email address' }}</strong>.
+            Verify your email, then come back here to continue.
+          </p>
+          <div class="auth-form">
+            <button mat-flat-button type="button" class="submit-button" (click)="checkVerification()">
+              I've verified my email
+            </button>
+            <button mat-stroked-button type="button" (click)="resendVerification()">
+              Resend verification email
+            </button>
+          </div>
+          @if (errorMessage()) {
+            <p class="form-message error" role="alert">{{ errorMessage() }}</p>
           }
-          <mat-form-field appearance="outline">
-            <mat-label>Email address</mat-label>
-            <input matInput name="email" type="email" autocomplete="email" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Password</mat-label>
-            <input matInput name="password" type="password" autocomplete="current-password" />
-          </mat-form-field>
-          <button mat-flat-button type="submit" class="submit-button">
-            {{ isRegister() ? 'Create account' : 'Sign in' }}
-          </button>
-        </form>
-        <p class="switch-mode">
-          {{ isRegister() ? 'Already have an account?' : 'New to Openstay?' }}
-          <a [routerLink]="isRegister() ? '/auth/login' : '/auth/register'">
-            {{ isRegister() ? 'Sign in' : 'Join Openstay' }}
-          </a>
-        </p>
+          @if (successMessage()) {
+            <p class="form-message success" role="status">{{ successMessage() }}</p>
+          }
+          <p class="switch-mode">Already verified? <a routerLink="/auth/login">Sign in</a></p>
+        } @else {
+          <p class="eyebrow">
+            {{ isRegister() ? 'Join the community' : isForgotPassword() ? 'Account recovery' : 'Welcome back' }}
+          </p>
+          <h1>
+            {{ isRegister() ? 'Create your account' : isForgotPassword() ? 'Reset your password' : 'Sign in to Openstay' }}
+          </h1>
+          <p class="intro">
+            {{ isRegister()
+              ? 'Start meeting local hosts and sharing meaningful travel experiences.'
+              : isForgotPassword()
+                ? 'Enter your email and we’ll send you a link to reset your password.'
+                : 'Continue planning meaningful stays and connecting with hosts.' }}
+          </p>
+          <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+            @if (isRegister()) {
+              <mat-form-field appearance="outline">
+                <mat-label>Full name</mat-label>
+                <input matInput formControlName="name" autocomplete="name" required />
+                @if (form.controls.name.touched && form.controls.name.invalid) {
+                  <mat-error>Please enter your name.</mat-error>
+                }
+              </mat-form-field>
+            }
+            <mat-form-field appearance="outline">
+              <mat-label>Email address</mat-label>
+              <input matInput formControlName="email" type="email" autocomplete="email" required />
+              @if (form.controls.email.touched && form.controls.email.invalid) {
+                <mat-error>Enter a valid email address.</mat-error>
+              }
+            </mat-form-field>
+            @if (!isForgotPassword()) {
+              <mat-form-field appearance="outline">
+                <mat-label>Password</mat-label>
+                <input
+                  matInput
+                  formControlName="password"
+                  type="password"
+                  [autocomplete]="isRegister() ? 'new-password' : 'current-password'"
+                  required
+                />
+                @if (form.controls.password.touched && form.controls.password.invalid) {
+                  <mat-error>Password must be at least 8 characters.</mat-error>
+                }
+              </mat-form-field>
+            }
+            @if (errorMessage()) {
+              <p class="form-message error" role="alert">{{ errorMessage() }}</p>
+            }
+            @if (successMessage()) {
+              <p class="form-message success" role="status">{{ successMessage() }}</p>
+            }
+            <button mat-flat-button type="submit" class="submit-button" [disabled]="isSubmitting()">
+              {{ submitLabel() }}
+            </button>
+          </form>
+
+          @if (!isRegister() && !isForgotPassword()) {
+            <button mat-stroked-button type="button" class="google-button" (click)="signInWithGoogle()" [disabled]="isSubmitting()">
+              Continue with Google
+            </button>
+            <p class="forgot-link"><a routerLink="/auth/forgot-password">Forgot your password?</a></p>
+          }
+
+          @if (!isForgotPassword()) {
+            <p class="switch-mode">
+              {{ isRegister() ? 'Already have an account?' : 'New to Openstay?' }}
+              <a [routerLink]="isRegister() ? '/auth/login' : '/auth/register'">
+                {{ isRegister() ? 'Sign in' : 'Join Openstay' }}
+              </a>
+            </p>
+          } @else {
+            <p class="switch-mode"><a routerLink="/auth/login">Back to sign in</a></p>
+          }
+        }
       </div>
     </section>
   `,
@@ -65,17 +133,117 @@ import { map } from 'rxjs';
     .intro { margin: 0 0 28px; color: var(--openstay-muted); line-height: 1.6; }
     .auth-form { display: grid; gap: 6px; }
     .auth-form mat-form-field { width: 100%; }
-    .submit-button { height: 48px; border-radius: 999px; background: var(--openstay-forest); color: #fff; }
+    .submit-button { min-height: 48px; border-radius: 999px; background: var(--openstay-forest); color: #fff; }
+    .submit-button:disabled { opacity: 0.65; }
+    .google-button { width: 100%; min-height: 48px; margin-top: 16px; border-radius: 999px; }
     .switch-mode { margin: 24px 0 0; text-align: center; color: var(--openstay-muted); }
-    .switch-mode a { color: var(--openstay-forest); font-weight: 800; }
+    .switch-mode a, .forgot-link a { color: var(--openstay-forest); font-weight: 800; }
+    .forgot-link { margin: 16px 0 0; text-align: center; }
+    .form-message { margin: 0 0 12px; line-height: 1.5; }
+    .error { color: #a4262c; }
+    .success { color: var(--openstay-forest); }
   `,
 })
 export class AuthPageComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly formBuilder = inject(FormBuilder).nonNullable;
+  readonly auth = inject(AuthService);
   private readonly mode = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('mode') ?? 'login')),
     { initialValue: 'login' },
   );
-
   readonly isRegister = computed(() => this.mode() === 'register');
+  readonly isForgotPassword = computed(() => this.mode() === 'forgot-password');
+  readonly isVerifyEmail = computed(() => this.mode() === 'verify-email');
+  readonly isSubmitting = signal(false);
+  readonly errorMessage = signal('');
+  readonly successMessage = signal('');
+  readonly form = this.formBuilder.group({
+    name: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+  });
+
+  readonly submitLabel = computed(() => {
+    if (this.isSubmitting()) return 'Please wait…';
+    if (this.isRegister()) return 'Create account';
+    if (this.isForgotPassword()) return 'Send reset link';
+    return 'Sign in';
+  });
+
+  async submit(): Promise<void> {
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    const requiredControls = this.isRegister()
+      ? [this.form.controls.name, this.form.controls.email, this.form.controls.password]
+      : this.isForgotPassword()
+        ? [this.form.controls.email]
+        : [this.form.controls.email, this.form.controls.password];
+    if (requiredControls.some((control) => control.invalid)) {
+      requiredControls.forEach((control) => control.markAsTouched());
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    try {
+      const { name, email, password } = this.form.getRawValue();
+      if (this.isRegister()) {
+        await this.auth.register(name.trim(), email.trim(), password);
+        await this.router.navigateByUrl('/auth/verify-email');
+      } else if (this.isForgotPassword()) {
+        try {
+          await this.auth.sendPasswordReset(email.trim());
+        } catch (error) {
+          if (!this.auth.isUnknownEmailError(error)) throw error;
+        }
+        this.successMessage.set('If an account exists for that email, a password reset link is on its way.');
+      } else {
+        const user = await this.auth.signIn(email.trim(), password);
+        await this.router.navigateByUrl(await this.auth.destinationFor(user));
+      }
+    } catch (error) {
+      this.errorMessage.set(this.auth.getErrorMessage(error));
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  async signInWithGoogle(): Promise<void> {
+    this.errorMessage.set('');
+    this.isSubmitting.set(true);
+    try {
+      const user = await this.auth.signInWithGoogle();
+      await this.router.navigateByUrl(await this.auth.destinationFor(user));
+    } catch (error) {
+      this.errorMessage.set(this.auth.getErrorMessage(error));
+    } finally {
+      this.isSubmitting.set(false);
+    }
+  }
+
+  async resendVerification(): Promise<void> {
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    try {
+      await this.auth.resendVerification();
+      this.successMessage.set('A new verification email has been sent.');
+    } catch (error) {
+      this.errorMessage.set(this.auth.getErrorMessage(error));
+    }
+  }
+
+  async checkVerification(): Promise<void> {
+    this.errorMessage.set('');
+    try {
+      const user = await this.auth.refreshCurrentUser();
+      if (!user?.emailVerified) {
+        this.errorMessage.set('Your email is not verified yet. Check your inbox and try again.');
+        return;
+      }
+      await this.router.navigateByUrl(await this.auth.destinationFor(user));
+    } catch (error) {
+      this.errorMessage.set(this.auth.getErrorMessage(error));
+    }
+  }
 }
