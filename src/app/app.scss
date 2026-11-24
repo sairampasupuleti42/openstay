@@ -12,21 +12,12 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  color: inherit;
-  font-size: 20px;
-  font-weight: 800;
   text-decoration: none;
 }
-.brand-mark {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--openstay-forest);
-  color: #fff;
-  font-family: Georgia, serif;
+.brand-logo {
+  display: block;
+  height: 48px;
+  width: auto;
 }
 .main-nav {
   display: flex;
