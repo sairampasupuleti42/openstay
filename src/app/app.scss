@@ -45,6 +45,31 @@
   color: #fff;
   box-shadow: 0 8px 20px rgba(36, 92, 69, 0.16);
 }
+.join-label-short {
+  display: none;
+}
+.main-nav .install-link {
+  display: inline-flex;
+  min-width: 42px;
+  height: 42px;
+  gap: 6px;
+  margin-left: 4px;
+  border-color: var(--openstay-forest);
+  color: var(--openstay-forest-dark);
+  font-weight: 700;
+}
+.install-icon {
+  font-size: 19px;
+  line-height: 1;
+}
+.install-message {
+  margin: 0;
+  padding: 10px clamp(20px, 5vw, 72px);
+  background: var(--openstay-cream);
+  color: var(--openstay-forest-dark);
+  font-size: 14px;
+  text-align: center;
+}
 .app-main { min-height: calc(100vh - 76px); }
 .app-footer {
   display: flex;
@@ -55,11 +80,18 @@
   font-size: 14px;
 }
 @media (max-width: 640px) {
-  .app-toolbar { min-height: 68px; }
-  .brand-logo { height: 40px; }
+  .app-toolbar { min-height: 68px; padding-inline: 12px; }
+  .brand-logo { height: 36px; }
   .main-nav a:not(.join-link):not(.signin-link) { display: inline-flex; }
   .main-nav a:not(.join-link):not(.signin-link):first-of-type { display: none; }
   .main-nav .signin-link { display: none; }
   .main-nav .join-link { height: 40px; font-size: 13px; }
+  .join-label-full { display: none; }
+  .join-label-short { display: inline; }
+  .main-nav .install-link { height: 40px; margin-left: 0; padding-inline: 9px; }
+  .install-label { display: none; }
   .app-footer { flex-direction: column; gap: 8px; }
+}
+@media (max-width: 360px) {
+  .main-nav a[href="/explore"] { display: none; }
 }

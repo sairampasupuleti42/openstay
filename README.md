@@ -19,7 +19,10 @@ work.
 
 The Angular 22 standalone app uses strict TypeScript, routing, SCSS, Angular
 Material, and reusable Openstay design tokens. It includes a responsive starter
-screen, Firebase modular SDK initialization for Auth, Firestore, Storage, and
+screen, production service-worker caching and installable PWA metadata, and a
+browser-aware install button with manual installation guidance when a native
+prompt is unavailable. The service worker is disabled in development. It also
+includes Firebase modular SDK initialization for Auth, Firestore, Storage, and
 Functions, App Check setup for configured non-emulator environments, default-
 deny Firestore and Storage rules, and a compiled Cloud Functions skeleton.
 AngularFire is intentionally not installed: the Phase 0 architecture selected

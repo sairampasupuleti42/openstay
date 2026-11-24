@@ -13,9 +13,33 @@
     <a mat-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
     <a mat-button routerLink="/explore" routerLinkActive="active">Explore</a>
     <a mat-button class="signin-link" routerLink="/auth/login">Sign in</a>
-    <a mat-flat-button class="join-link" routerLink="/auth/register">Join Openstay</a>
+    <a
+      mat-flat-button
+      class="join-link"
+      routerLink="/auth/register"
+      aria-label="Join Openstay"
+    >
+      <span class="join-label-full">Join Openstay</span>
+      <span class="join-label-short" aria-hidden="true">Join</span>
+    </a>
+    @if (!isInstalled()) {
+      <button
+        mat-stroked-button
+        class="install-link"
+        type="button"
+        aria-label="Install Openstay app"
+        (click)="installApp()"
+      >
+        <span class="material-symbols-outlined install-icon" aria-hidden="true">download</span>
+        <span class="install-label">Install app</span>
+      </button>
+    }
   </nav>
 </mat-toolbar>
+
+@if (installMessage) {
+  <p class="install-message" role="status" aria-live="polite">{{ installMessage }}</p>
+}
 
 <main class="app-main">
   <router-outlet />
