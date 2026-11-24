@@ -1,26 +1,49 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-discovery-page',
-  imports: [RouterLink, MatButtonModule],
+  imports: [FormsModule, RouterLink, MatButtonModule],
   template: `
     <section class="discovery">
       <p class="eyebrow">Explore</p>
       <h1>Find a place to belong</h1>
-      <p class="intro">Search by destination and find people who can make your trip feel local.</p>
-      <form class="search-panel" action="#">
+      <p class="intro">
+        Search by destination and find people who can make your trip feel local.
+      </p>
+      <form class="search-panel" (ngSubmit)="search()">
         <label>
           <span>Destination</span>
-          <input name="destination" type="search" placeholder="City or region" />
+          <input
+            name="destination"
+            type="search"
+            placeholder="City or region"
+            [ngModel]="destination()"
+            (ngModelChange)="destination.set($event)"
+          />
         </label>
-        <button mat-flat-button type="button">Search hosts</button>
+        <button mat-flat-button type="submit">Search hosts</button>
       </form>
       <div class="empty-state" role="status">
         <span class="empty-icon" aria-hidden="true">⌂</span>
-        <h2>Your next host is closer than you think</h2>
-        <p>Host discovery is coming in the next implementation phase. In the meantime, explore the Openstay community story.</p>
+        <h2>
+          {{
+            destination()
+              ? 'A local connection is on its way'
+              : 'Your next host is closer than you think'
+          }}
+        </h2>
+        <p>
+          @if (destination()) {
+            We’re getting ready to help you find a host in {{ destination() }}.
+            In the meantime, explore the Openstay community story.
+          } @else {
+            Host discovery is coming soon. In the meantime, explore the Openstay
+            community story.
+          }
+        </p>
         <a mat-stroked-button routerLink="/">Back home</a>
       </div>
     </section>
@@ -50,4 +73,19 @@ import { RouterLink } from '@angular/router';
     }
   `,
 })
-export class DiscoveryPageComponent {}
+export class DiscoveryPageComponent {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  readonly destination = signal(
+    this.route.snapshot.queryParamMap.get('destination') ?? '',
+  );
+
+  async search(): Promise<void> {
+    const destination = this.destination().trim();
+    this.destination.set(destination);
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { destination: destination || null },
+    });
+  }
+}
