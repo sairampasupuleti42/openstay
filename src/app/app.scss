@@ -2,12 +2,13 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  min-height: 72px;
+  min-height: 76px;
   padding: 0 clamp(20px, 5vw, 72px);
-  background: color-mix(in srgb, var(--openstay-cream) 96%, transparent);
+  background: color-mix(in srgb, var(--openstay-warm-white) 88%, transparent);
   color: var(--openstay-charcoal);
   border-bottom: 1px solid var(--openstay-border);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .brand {
   display: inline-flex;
@@ -21,11 +22,30 @@
 }
 .main-nav {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   margin-left: auto;
   align-items: center;
 }
-.app-main { min-height: calc(100vh - 72px); }
+.main-nav a {
+  height: 42px;
+  border-radius: 999px;
+  color: var(--openstay-charcoal);
+  font-weight: 700;
+}
+.main-nav a.active {
+  background: var(--openstay-sage);
+  color: var(--openstay-forest-dark);
+}
+.main-nav .signin-link {
+  margin-left: 4px;
+}
+.main-nav .join-link {
+  margin-left: 4px;
+  background: var(--openstay-forest);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(36, 92, 69, 0.16);
+}
+.app-main { min-height: calc(100vh - 76px); }
 .app-footer {
   display: flex;
   justify-content: space-between;
@@ -35,7 +55,11 @@
   font-size: 14px;
 }
 @media (max-width: 640px) {
-  .app-toolbar { min-height: 64px; }
-  .main-nav a:not(:last-child) { display: none; }
+  .app-toolbar { min-height: 68px; }
+  .brand-logo { height: 40px; }
+  .main-nav a:not(.join-link):not(.signin-link) { display: inline-flex; }
+  .main-nav a:not(.join-link):not(.signin-link):first-of-type { display: none; }
+  .main-nav .signin-link { display: none; }
+  .main-nav .join-link { height: 40px; font-size: 13px; }
   .app-footer { flex-direction: column; gap: 8px; }
 }

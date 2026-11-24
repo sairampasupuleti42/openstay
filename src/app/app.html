@@ -10,9 +10,10 @@
     <span class="visually-hidden">Openstay</span>
   </a>
   <nav class="main-nav" aria-label="Primary navigation">
-    <a mat-button routerLink="/explore">Explore</a>
-    <a mat-button routerLink="/auth/login">Sign in</a>
-    <a mat-flat-button routerLink="/auth/register">Join Openstay</a>
+    <a mat-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+    <a mat-button routerLink="/explore" routerLinkActive="active">Explore</a>
+    <a mat-button class="signin-link" routerLink="/auth/login">Sign in</a>
+    <a mat-flat-button class="join-link" routerLink="/auth/register">Join Openstay</a>
   </nav>
 </mat-toolbar>
 

@@ -15,5 +15,12 @@ export const routes: Routes = [
         (module) => module.DiscoveryPageComponent,
       ),
   },
+  {
+    path: 'auth/:mode',
+    loadComponent: () =>
+      import('./features/auth/auth-page.component').then(
+        (module) => module.AuthPageComponent,
+      ),
+  },
   { path: '**', redirectTo: '' },
 ];
