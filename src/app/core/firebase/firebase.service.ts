@@ -33,12 +33,14 @@ export class FirebaseService {
       }
 
       if (!environment.appCheckSiteKey.trim()) {
-        throw new Error('Configure the App Check reCAPTCHA site key before connecting to Firebase.');
+        console.warn(
+          'Firebase App Check is not configured. Set appCheckSiteKey before deploying to production.',
+        );
       }
     }
 
     this.app = initializeApp(environment.firebase);
-    this.appCheck = environment.useEmulators
+    this.appCheck = environment.useEmulators || !environment.appCheckSiteKey.trim()
       ? null
       : initializeAppCheck(this.app, {
           provider: new ReCaptchaV3Provider(environment.appCheckSiteKey),
