@@ -92,7 +92,7 @@
   .app-toolbar { min-height: 68px; padding-inline: 12px; }
   .app-toolbar.mobile-menu-open { z-index: 20; }
   .brand-logo { height: 36px; }
-  .mobile-menu-toggle { display: inline-flex; flex: 0 0 auto; }
+  .mobile-menu-toggle { display: inline-flex; flex: 0 0 auto; margin-left: auto; }
   .main-nav {
     position: fixed;
     z-index: 21;
