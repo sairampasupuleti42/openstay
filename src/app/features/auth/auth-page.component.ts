@@ -1,5 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -54,21 +61,12 @@ import { AuthService } from '../../core/firebase/auth.service';
           </h1>
           <p class="intro">
             {{ isRegister()
-              ? 'Start meeting local hosts and sharing meaningful travel experiences.'
+              ? 'Create an account to start meeting local hosts and sharing meaningful travel experiences.'
               : isForgotPassword()
                 ? 'Enter your email and we’ll send you a link to reset your password.'
                 : 'Continue planning meaningful stays and connecting with hosts.' }}
           </p>
           <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
-            @if (isRegister()) {
-              <mat-form-field appearance="outline">
-                <mat-label>Full name</mat-label>
-                <input matInput formControlName="name" autocomplete="name" required />
-                @if (form.controls.name.touched && form.controls.name.invalid) {
-                  <mat-error>Please enter your name.</mat-error>
-                }
-              </mat-form-field>
-            }
             <mat-form-field appearance="outline">
               <mat-label>Email address</mat-label>
               <input matInput formControlName="email" type="email" autocomplete="email" required />
@@ -90,6 +88,47 @@ import { AuthService } from '../../core/firebase/auth.service';
                   <mat-error>Password must be at least 8 characters.</mat-error>
                 }
               </mat-form-field>
+              @if (isRegister()) {
+                <div class="password-strength" aria-live="polite">
+                  <div class="strength-copy">
+                    <span>Password strength</span>
+                    <strong>{{ passwordStrength().label }}</strong>
+                  </div>
+                  <div
+                    class="strength-meter"
+                    role="progressbar"
+                    [attr.aria-valuenow]="passwordStrength().score"
+                    aria-valuemin="0"
+                    aria-valuemax="5"
+                    [attr.aria-label]="'Password strength: ' + passwordStrength().label"
+                  >
+                    <span
+                      [style.width.%]="passwordStrength().score * 20"
+                      [class.weak]="passwordStrength().score <= 1"
+                      [class.fair]="passwordStrength().score === 2"
+                      [class.good]="passwordStrength().score === 3"
+                      [class.strong]="passwordStrength().score >= 4"
+                    ></span>
+                  </div>
+                  <p>Use at least 8 characters. Longer passwords with mixed case, numbers, and symbols are stronger.</p>
+                </div>
+                <mat-form-field appearance="outline">
+                  <mat-label>Confirm password</mat-label>
+                  <input
+                    matInput
+                    formControlName="confirmPassword"
+                    type="password"
+                    autocomplete="new-password"
+                    required
+                  />
+                  @if (form.controls.confirmPassword.touched && form.controls.confirmPassword.hasError('required')) {
+                    <mat-error>Please confirm your password.</mat-error>
+                  }
+                  @if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
+                    <mat-error>Passwords do not match.</mat-error>
+                  }
+                </mat-form-field>
+              }
             }
             @if (errorMessage()) {
               <p class="form-message error" role="alert">{{ errorMessage() }}</p>
@@ -133,6 +172,16 @@ import { AuthService } from '../../core/firebase/auth.service';
     .intro { margin: 0 0 28px; color: var(--openstay-muted); line-height: 1.6; }
     .auth-form { display: grid; gap: 6px; }
     .auth-form mat-form-field { width: 100%; }
+    .password-strength { margin: -4px 0 10px; color: var(--openstay-muted); font-size: 13px; }
+    .strength-copy { display: flex; justify-content: space-between; gap: 12px; }
+    .strength-copy strong { color: var(--openstay-forest); }
+    .strength-meter { height: 6px; margin: 8px 0; overflow: hidden; border-radius: 999px; background: #e7e5df; }
+    .strength-meter span { display: block; height: 100%; border-radius: inherit; transition: width 160ms ease; }
+    .strength-meter span.weak { background: #b42318; }
+    .strength-meter span.fair { background: #c66a12; }
+    .strength-meter span.good { background: #8a9b32; }
+    .strength-meter span.strong { background: var(--openstay-forest); }
+    .password-strength p { margin: 0; line-height: 1.45; }
     .submit-button { min-height: 48px; border-radius: 999px; background: var(--openstay-forest); color: #fff; }
     .submit-button:disabled { opacity: 0.65; }
     .google-button { width: 100%; min-height: 48px; margin-top: 16px; border-radius: 999px; }
@@ -160,9 +209,34 @@ export class AuthPageComponent {
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
   readonly form = this.formBuilder.group({
-    name: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', Validators.required],
+  }, { validators: passwordMatchValidator });
+  private readonly passwordValue = toSignal(this.form.controls.password.valueChanges, {
+    initialValue: this.form.controls.password.value,
+  });
+  readonly passwordStrength = computed(() => {
+    const password = this.passwordValue();
+    const score = [
+      password.length >= 8,
+      password.length >= 12,
+      /[a-z]/.test(password) && /[A-Z]/.test(password),
+      /\d/.test(password),
+      /[^A-Za-z0-9]/.test(password),
+    ].filter(Boolean).length;
+    return {
+      score,
+      label: !password
+        ? 'Not entered'
+        : score <= 1
+          ? 'Weak'
+          : score === 2
+            ? 'Fair'
+            : score === 3
+              ? 'Good'
+              : 'Strong',
+    };
   });
 
   readonly submitLabel = computed(() => {
@@ -175,21 +249,28 @@ export class AuthPageComponent {
   async submit(): Promise<void> {
     this.errorMessage.set('');
     this.successMessage.set('');
-    const requiredControls = this.isRegister()
-      ? [this.form.controls.name, this.form.controls.email, this.form.controls.password]
-      : this.isForgotPassword()
-        ? [this.form.controls.email]
+    const requiredControls = this.isForgotPassword()
+      ? [this.form.controls.email]
+      : this.isRegister()
+        ? [
+            this.form.controls.email,
+            this.form.controls.password,
+            this.form.controls.confirmPassword,
+          ]
         : [this.form.controls.email, this.form.controls.password];
-    if (requiredControls.some((control) => control.invalid)) {
+    if (
+      requiredControls.some((control) => control.invalid) ||
+      (this.isRegister() && this.form.hasError('passwordMismatch'))
+    ) {
       requiredControls.forEach((control) => control.markAsTouched());
       return;
     }
 
     this.isSubmitting.set(true);
     try {
-      const { name, email, password } = this.form.getRawValue();
+      const { email, password } = this.form.getRawValue();
       if (this.isRegister()) {
-        await this.auth.register(name.trim(), email.trim(), password);
+        await this.auth.register(email.trim(), password);
         await this.router.navigateByUrl('/auth/verify-email');
       } else if (this.isForgotPassword()) {
         try {
@@ -247,3 +328,13 @@ export class AuthPageComponent {
     }
   }
 }
+
+const passwordMatchValidator: ValidatorFn = (
+  control: AbstractControl,
+): ValidationErrors | null => {
+  const password = control.get('password')?.value;
+  const confirmation = control.get('confirmPassword')?.value;
+  return confirmation && password !== confirmation
+    ? { passwordMismatch: true }
+    : null;
+};

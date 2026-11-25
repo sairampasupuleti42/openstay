@@ -66,7 +66,7 @@ export class ProfileOnboardingPageComponent {
   readonly isSubmitting = signal(false);
   readonly errorMessage = signal('');
   readonly form = this.formBuilder.group({
-    displayName: [this.auth.currentUser?.displayName ?? '', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
+    displayName: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
     homeBase: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
     bio: ['', [Validators.maxLength(500)]],
   });

@@ -10,7 +10,6 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
-  updateProfile,
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Observable, shareReplay } from 'rxjs';
@@ -38,14 +37,13 @@ export class AuthService {
     return this.firebase.auth.currentUser;
   }
 
-  async register(name: string, email: string, password: string): Promise<void> {
-    const credential = await createUserWithEmailAndPassword(
+  async register(email: string, password: string): Promise<void> {
+    const { user } = await createUserWithEmailAndPassword(
       this.firebase.auth,
       email,
       password,
     );
-    await updateProfile(credential.user, { displayName: name });
-    await sendEmailVerification(credential.user);
+    await sendEmailVerification(user);
   }
 
   async signIn(email: string, password: string): Promise<User> {
@@ -105,10 +103,6 @@ export class AuthService {
   }
 
   async saveProfile(uid: string, profile: TravellerProfile): Promise<void> {
-    const user = this.currentUser;
-    if (user?.uid === uid && user.displayName !== profile.displayName) {
-      await updateProfile(user, { displayName: profile.displayName });
-    }
     await setDoc(
       doc(this.firebase.firestore, 'users', uid),
       { ...profile, updatedAt: serverTimestamp() },
