@@ -7,6 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-openstay \"node --test firebase/firestore.rules.test.mjs\"",
     "emulators": "npm run build && npm --prefix functions run build && firebase emulators:start --project demo-openstay",
     "emulators:export": "firebase emulators:export .firebase/emulator-data"
   },
@@ -31,6 +32,7 @@
     "@angular/build": "^22.3.0",
     "@angular/cli": "^22.3.0",
     "@angular/compiler-cli": "^22.3.0",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "firebase-tools": "^15.37.0",
     "jsdom": "^31.0.0",
     "prettier": "^3.8.1",

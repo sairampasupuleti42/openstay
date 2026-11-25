@@ -5,6 +5,7 @@ import {
   User,
   authState,
   createUserWithEmailAndPassword,
+  deleteUser,
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -34,10 +35,30 @@ export class AuthService {
     profile: RegistrationProfile,
   ): Promise<void> {
     const { user } = await createUserWithEmailAndPassword(this.auth, email, password);
-    await this.profiles.createInitialProfile(user, {
-      displayName: profile.displayName,
-      username: profile.username,
-    });
+    try {
+      await this.profiles.createInitialProfile(user, {
+        displayName: profile.displayName,
+        username: profile.username,
+      });
+    } catch (profileError) {
+      try {
+        await deleteUser(user);
+      } catch (cleanupError) {
+        try {
+          await signOut(this.auth);
+        } catch (signOutError) {
+          throw new Error(
+            'Profile creation failed, and account cleanup could not be completed. Please contact support.',
+            { cause: new AggregateError([profileError, cleanupError, signOutError]) },
+          );
+        }
+        throw new Error(
+          'Profile creation failed, and the new account could not be removed. You have been signed out; please contact support.',
+          { cause: new AggregateError([profileError, cleanupError]) },
+        );
+      }
+      throw profileError;
+    }
     await sendEmailVerification(user);
   }
 

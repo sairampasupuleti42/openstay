@@ -96,8 +96,12 @@ either secret, the workflow stops at its credential check and does not deploy.
 ```bash
 npm run build
 npm test -- --watch=false
+npm run test:rules
 npm --prefix functions run build
 ```
+
+`npm run test:rules` runs the Firestore security-rule tests against the local
+Firestore Emulator and uses the `demo-openstay` project ID.
 
 ## Development roadmap
 

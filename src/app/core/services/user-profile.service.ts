@@ -59,22 +59,20 @@ export class UserProfileService {
     profile: { displayName: string; username: string },
   ): Promise<void> {
     if (!user.email) throw new Error('MISSING_ACCOUNT_EMAIL');
-    const userRef = doc(this.firestore, 'users', user.uid);
-    await setDoc(userRef, {
-      uid: user.uid,
-      displayName: profile.displayName,
-      username: profile.username,
-      email: user.email,
-      emailVerified: user.emailVerified,
-      ...(user.photoURL ? { photoURL: user.photoURL } : {}),
-      languages: [],
-      interests: [],
-      roles: ['traveller'],
-      accountStatus: 'active',
-      verificationStatus: 'unverified',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    await this.writeInitialProfile(
+      user.uid,
+      profile.displayName,
+      profile.username,
+      user.email,
+      user.emailVerified,
+      user.photoURL,
+    );
+  }
+
+  async createProfile(uid: string, displayName: string, email: string): Promise<void> {
+    const emailName = email.split('@')[0] ?? '';
+    const username = this.usernameFrom(emailName, uid);
+    await this.writeInitialProfile(uid, displayName, username, email, false);
   }
 
   async ensureProfile(user: User): Promise<UserProfile> {
@@ -116,6 +114,31 @@ export class UserProfileService {
 
   private optionalString(value: unknown): boolean {
     return value === undefined || typeof value === 'string';
+  }
+
+  private async writeInitialProfile(
+    uid: string,
+    displayName: string,
+    username: string,
+    email: string,
+    emailVerified: boolean,
+    photoURL?: string | null,
+  ): Promise<void> {
+    await setDoc(doc(this.firestore, 'users', uid), {
+      uid,
+      displayName,
+      username,
+      email,
+      emailVerified,
+      ...(photoURL ? { photoURL } : {}),
+      languages: [],
+      interests: [],
+      roles: ['traveller'],
+      accountStatus: 'active',
+      verificationStatus: 'unverified',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
   }
 
   private usernameFrom(value: string, uid: string): string {
