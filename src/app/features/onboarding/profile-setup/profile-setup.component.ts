@@ -4,10 +4,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
-import { AuthService } from '../../core/firebase/auth.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
-  selector: 'app-profile-onboarding-page',
+  selector: 'app-profile-setup',
   imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   template: `
     <section class="onboarding-page">
@@ -24,9 +24,9 @@ import { AuthService } from '../../core/firebase/auth.service';
             }
           </mat-form-field>
           <mat-form-field appearance="outline">
-            <mat-label>Where are you based?</mat-label>
-            <input matInput formControlName="homeBase" placeholder="City or region" autocomplete="address-level2" required />
-            @if (form.controls.homeBase.touched && form.controls.homeBase.invalid) {
+            <mat-label>City or region</mat-label>
+            <input matInput formControlName="city" placeholder="City or region" autocomplete="address-level2" required />
+            @if (form.controls.city.touched && form.controls.city.invalid) {
               <mat-error>Please enter a city or region.</mat-error>
             }
           </mat-form-field>
@@ -67,7 +67,7 @@ export class ProfileOnboardingPageComponent {
   readonly errorMessage = signal('');
   readonly form = this.formBuilder.group({
     displayName: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
-    homeBase: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
+    city: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
     bio: ['', [Validators.maxLength(500)]],
   });
 
@@ -87,10 +87,10 @@ export class ProfileOnboardingPageComponent {
       const values = this.form.getRawValue();
       const profile = {
         displayName: values.displayName.trim(),
-        homeBase: values.homeBase.trim(),
+        city: values.city.trim(),
         bio: values.bio.trim(),
       };
-      await this.auth.saveProfile(user.uid, { ...profile, onboardingComplete: true });
+      await this.auth.saveProfile(user.uid, profile);
       await this.router.navigateByUrl('/dashboard');
     } catch (error) {
       this.errorMessage.set(this.auth.getErrorMessage(error));

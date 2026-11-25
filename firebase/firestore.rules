@@ -11,35 +11,94 @@ service cloud.firestore {
         return request.auth.token.email_verified == true;
       }
 
-      function validProfile() {
+      function allowedProfileFields() {
         return request.resource.data.keys().hasOnly([
+            'uid',
             'displayName',
-            'homeBase',
+            'username',
+            'email',
+            'emailVerified',
+            'photoURL',
             'bio',
-            'onboardingComplete',
+            'country',
+            'city',
+            'languages',
+            'interests',
+            'roles',
+            'accountStatus',
+            'verificationStatus',
+            'createdAt',
             'updatedAt'
-          ])
-          && request.resource.data.keys().hasAll([
+          ]);
+      }
+
+      function requiredProfileFields() {
+        return request.resource.data.keys().hasAll([
+            'uid',
             'displayName',
-            'homeBase',
-            'bio',
-            'onboardingComplete',
+            'username',
+            'email',
+            'emailVerified',
+            'languages',
+            'interests',
+            'roles',
+            'accountStatus',
+            'verificationStatus',
+            'createdAt',
             'updatedAt'
-          ])
+          ]);
+      }
+
+      function validProfileFields() {
+        return allowedProfileFields()
+          && requiredProfileFields()
+          && request.resource.data.uid == userId
           && request.resource.data.displayName is string
           && request.resource.data.displayName.size() > 0
           && request.resource.data.displayName.size() <= 100
-          && request.resource.data.homeBase is string
-          && request.resource.data.homeBase.size() > 0
-          && request.resource.data.homeBase.size() <= 100
-          && request.resource.data.bio is string
-          && request.resource.data.bio.size() <= 500
-          && request.resource.data.onboardingComplete == true
+          && request.resource.data.username is string
+          && request.resource.data.username.matches('^[a-z0-9_]{3,20}$')
+          && request.resource.data.email is string
+          && request.resource.data.email.size() <= 320
+          && request.resource.data.email == request.auth.token.email
+          && request.resource.data.emailVerified == isVerified()
+          && request.resource.data.languages is list
+          && request.resource.data.interests is list
+          && request.resource.data.roles is list
+          && request.resource.data.languages.size() <= 50
+          && request.resource.data.interests.size() <= 50
+          && request.resource.data.accountStatus in ['active', 'suspended', 'deleted']
+          && request.resource.data.verificationStatus in ['unverified', 'pending', 'verified']
+          && (!('photoURL' in request.resource.data) ||
+            (request.resource.data.photoURL is string && request.resource.data.photoURL.size() <= 2048))
+          && (!('bio' in request.resource.data) ||
+            (request.resource.data.bio is string && request.resource.data.bio.size() <= 500))
+          && (!('country' in request.resource.data) ||
+            (request.resource.data.country is string && request.resource.data.country.size() <= 100))
+          && (!('city' in request.resource.data) ||
+            (request.resource.data.city is string && request.resource.data.city.size() <= 100))
           && request.resource.data.updatedAt == request.time;
       }
 
-      allow read: if isOwner() && isVerified();
-      allow create, update: if isOwner() && isVerified() && validProfile();
+      allow read: if isOwner();
+      allow create: if isOwner()
+        && validProfileFields()
+        && request.resource.data.roles == ['traveller']
+        && request.resource.data.accountStatus == 'active'
+        && request.resource.data.verificationStatus == 'unverified'
+        && request.resource.data.languages == []
+        && request.resource.data.interests == []
+        && request.resource.data.createdAt == request.time;
+      allow update: if isOwner()
+        && isVerified()
+        && validProfileFields()
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.roles == resource.data.roles
+        && request.resource.data.accountStatus == resource.data.accountStatus
+        && request.resource.data.verificationStatus == resource.data.verificationStatus
+        && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
     }
 

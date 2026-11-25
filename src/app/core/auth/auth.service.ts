@@ -1,65 +1,62 @@
 import { Injectable, inject } from '@angular/core';
 import {
+  Auth,
   GoogleAuthProvider,
   User,
+  authState,
   createUserWithEmailAndPassword,
-  onAuthStateChanged,
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
-} from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+} from '@angular/fire/auth';
 import { Observable, shareReplay } from 'rxjs';
-import { FirebaseService } from './firebase.service';
-
-export interface TravellerProfile {
-  displayName: string;
-  homeBase: string;
-  bio: string;
-  onboardingComplete: boolean;
-}
+import { RegistrationProfile } from './auth.models';
+import { UserProfileService } from '../services/user-profile.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly firebase = inject(FirebaseService);
-  readonly user$ = new Observable<User | null>((subscriber) =>
-    onAuthStateChanged(
-      this.firebase.auth,
-      (user) => subscriber.next(user),
-      (error) => subscriber.error(error),
-    ),
-  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+  private readonly auth = inject(Auth);
+  private readonly profiles = inject(UserProfileService);
+  readonly user$: Observable<User | null> = authState(this.auth).pipe(
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
 
   get currentUser(): User | null {
-    return this.firebase.auth.currentUser;
+    return this.auth.currentUser;
   }
 
-  async register(email: string, password: string): Promise<void> {
-    const { user } = await createUserWithEmailAndPassword(
-      this.firebase.auth,
-      email,
-      password,
-    );
+  async register(
+    email: string,
+    password: string,
+    profile: RegistrationProfile,
+  ): Promise<void> {
+    const { user } = await createUserWithEmailAndPassword(this.auth, email, password);
+    await this.profiles.createInitialProfile(user, {
+      displayName: profile.displayName,
+      username: profile.username,
+    });
     await sendEmailVerification(user);
   }
 
   async signIn(email: string, password: string): Promise<User> {
-    const { user } = await signInWithEmailAndPassword(this.firebase.auth, email, password);
+    const { user } = await signInWithEmailAndPassword(this.auth, email, password);
+    await this.profiles.ensureProfile(user);
     if (!user.emailVerified) await sendEmailVerification(user);
     return user;
   }
 
   async signInWithGoogle(): Promise<User> {
-    const { user } = await signInWithPopup(this.firebase.auth, new GoogleAuthProvider());
+    const { user } = await signInWithPopup(this.auth, new GoogleAuthProvider());
+    await this.profiles.ensureProfile(user);
     if (!user.emailVerified) await sendEmailVerification(user);
     return user;
   }
 
   async sendPasswordReset(email: string): Promise<void> {
-    await sendPasswordResetEmail(this.firebase.auth, email);
+    await sendPasswordResetEmail(this.auth, email);
   }
 
   async resendVerification(): Promise<void> {
@@ -72,51 +69,37 @@ export class AuthService {
     const user = this.currentUser;
     if (!user) return null;
     await reload(user);
-    if (user.emailVerified) await user.getIdToken(true);
+    if (user.emailVerified) {
+      await user.getIdToken(true);
+      await this.profiles.updateEmailVerified(user.uid, true);
+    }
     return user;
   }
 
   async destinationFor(user: User): Promise<string> {
     if (!user.emailVerified) return '/auth/verify-email';
-    const profile = await this.getProfile(user.uid);
-    return profile?.onboardingComplete ? '/dashboard' : '/onboarding';
+    const profile = await this.profiles.ensureProfile(user);
+    return profile.city?.trim() ? '/dashboard' : '/onboarding';
   }
 
-  async getProfile(uid: string): Promise<TravellerProfile | null> {
-    const snapshot = await getDoc(doc(this.firebase.firestore, 'users', uid));
-    if (!snapshot.exists()) return null;
-    const data = snapshot.data();
-    if (
-      typeof data['displayName'] !== 'string' ||
-      typeof data['homeBase'] !== 'string' ||
-      typeof data['bio'] !== 'string' ||
-      typeof data['onboardingComplete'] !== 'boolean'
-    ) {
-      throw new Error('The saved traveller profile is invalid. Please contact support.');
-    }
-    return {
-      displayName: data['displayName'],
-      homeBase: data['homeBase'],
-      bio: data['bio'],
-      onboardingComplete: data['onboardingComplete'],
-    };
+  getProfile(uid: string) {
+    return this.profiles.getProfile(uid);
   }
 
-  async saveProfile(uid: string, profile: TravellerProfile): Promise<void> {
-    await setDoc(
-      doc(this.firebase.firestore, 'users', uid),
-      { ...profile, updatedAt: serverTimestamp() },
-      { merge: true },
-    );
+  saveProfile(uid: string, profile: Parameters<UserProfileService['updateProfile']>[1]) {
+    return this.profiles.updateProfile(uid, profile);
   }
 
   async logOut(): Promise<void> {
-    await signOut(this.firebase.auth);
+    await signOut(this.auth);
   }
 
   getErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message === 'NO_SIGNED_IN_USER') {
       return 'Sign in again to request a verification email.';
+    }
+    if (error instanceof Error && error.message === 'MISSING_ACCOUNT_EMAIL') {
+      return 'Your account does not have an email address. Please contact support.';
     }
     const code = typeof error === 'object' && error !== null && 'code' in error
       ? String(error.code)

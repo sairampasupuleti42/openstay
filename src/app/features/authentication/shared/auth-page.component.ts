@@ -13,7 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { AuthService } from '../../core/firebase/auth.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-auth-page',
@@ -67,6 +67,22 @@ import { AuthService } from '../../core/firebase/auth.service';
                 : 'Continue planning meaningful stays and connecting with hosts.' }}
           </p>
           <form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+            @if (isRegister()) {
+              <mat-form-field appearance="outline">
+                <mat-label>Display name</mat-label>
+                <input matInput formControlName="displayName" autocomplete="name" required />
+                @if (form.controls.displayName.touched && form.controls.displayName.invalid) {
+                  <mat-error>Enter a display name of up to 100 characters.</mat-error>
+                }
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Username</mat-label>
+                <input matInput formControlName="username" autocomplete="username" required />
+                @if (form.controls.username.touched && form.controls.username.invalid) {
+                  <mat-error>Use 3–20 lowercase letters, numbers, or underscores.</mat-error>
+                }
+              </mat-form-field>
+            }
             <mat-form-field appearance="outline">
               <mat-label>Email address</mat-label>
               <input matInput formControlName="email" type="email" autocomplete="email" required />
@@ -199,7 +215,9 @@ export class AuthPageComponent {
   private readonly formBuilder = inject(FormBuilder).nonNullable;
   readonly auth = inject(AuthService);
   private readonly mode = toSignal(
-    this.route.paramMap.pipe(map((params) => params.get('mode') ?? 'login')),
+    this.route.data.pipe(
+      map((data) => typeof data['mode'] === 'string' ? data['mode'] : 'login'),
+    ),
     { initialValue: 'login' },
   );
   readonly isRegister = computed(() => this.mode() === 'register');
@@ -209,6 +227,8 @@ export class AuthPageComponent {
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
   readonly form = this.formBuilder.group({
+    displayName: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
+    username: ['', [Validators.required, Validators.pattern(/^[a-z0-9_]{3,20}$/)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', Validators.required],
@@ -253,6 +273,8 @@ export class AuthPageComponent {
       ? [this.form.controls.email]
       : this.isRegister()
         ? [
+            this.form.controls.displayName,
+            this.form.controls.username,
             this.form.controls.email,
             this.form.controls.password,
             this.form.controls.confirmPassword,
@@ -268,9 +290,12 @@ export class AuthPageComponent {
 
     this.isSubmitting.set(true);
     try {
-      const { email, password } = this.form.getRawValue();
+      const { email, password, displayName, username } = this.form.getRawValue();
       if (this.isRegister()) {
-        await this.auth.register(email.trim(), password);
+        await this.auth.register(email.trim(), password, {
+          displayName: displayName.trim(),
+          username: username.trim(),
+        });
         await this.router.navigateByUrl('/auth/verify-email');
       } else if (this.isForgotPassword()) {
         try {

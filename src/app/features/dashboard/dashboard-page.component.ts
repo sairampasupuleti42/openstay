@@ -1,7 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService, TravellerProfile } from '../../core/firebase/auth.service';
+import { AuthService } from '../../core/auth/auth.service';
+import { UserProfile } from '../../core/models/user.model';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -12,7 +13,9 @@ import { AuthService, TravellerProfile } from '../../core/firebase/auth.service'
         <p class="eyebrow">Your Openstay</p>
         <h1>Welcome, {{ profile()?.displayName || 'traveller' }}.</h1>
         @if (profile(); as traveller) {
-          <p class="home-base">Based in {{ traveller.homeBase }}</p>
+          @if (traveller.city) {
+            <p class="home-base">Based in {{ traveller.city }}</p>
+          }
           @if (traveller.bio) {
             <p class="bio">{{ traveller.bio }}</p>
           }
@@ -43,7 +46,7 @@ import { AuthService, TravellerProfile } from '../../core/firebase/auth.service'
 export class DashboardPageComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  readonly profile = signal<TravellerProfile | null>(null);
+  readonly profile = signal<UserProfile | null>(null);
   readonly errorMessage = signal('');
 
   constructor() {

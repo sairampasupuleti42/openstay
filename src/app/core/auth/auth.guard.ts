@@ -23,7 +23,7 @@ export const onboardingGuard: CanActivateFn = async () => {
   if (!user) return router.createUrlTree(['/auth/login']);
   if (!user.emailVerified) return router.createUrlTree(['/auth/verify-email']);
   const profile = await auth.getProfile(user.uid);
-  return profile?.onboardingComplete
+  return profile?.city?.trim()
     ? router.createUrlTree(['/dashboard'])
     : true;
 };
@@ -35,7 +35,7 @@ export const dashboardGuard: CanActivateFn = async () => {
   if (!user) return router.createUrlTree(['/auth/login']);
   if (!user.emailVerified) return router.createUrlTree(['/auth/verify-email']);
   const profile = await auth.getProfile(user.uid);
-  return profile?.onboardingComplete
+  return profile?.city?.trim()
     ? true
     : router.createUrlTree(['/onboarding']);
 };

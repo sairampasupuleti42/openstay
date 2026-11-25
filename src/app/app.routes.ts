@@ -2,9 +2,10 @@ import { Routes } from '@angular/router';
 import {
   authenticatedGuard,
   dashboardGuard,
-  onboardingGuard,
   welcomeGuard,
-} from './core/firebase/auth.guards';
+} from './core/auth/auth.guard';
+import { authenticationRoutes } from './features/authentication/authentication.routes';
+import { onboardingRoutes } from './features/onboarding/onboarding.routes';
 
 export const routes: Routes = [
   {
@@ -22,20 +23,10 @@ export const routes: Routes = [
         (module) => module.DiscoveryPageComponent,
       ),
   },
-  {
-    path: 'auth/:mode',
-    loadComponent: () =>
-      import('./features/auth/auth-page.component').then(
-        (module) => module.AuthPageComponent,
-      ),
-  },
+  { path: 'auth', children: authenticationRoutes },
   {
     path: 'onboarding',
-    canActivate: [authenticatedGuard, onboardingGuard],
-    loadComponent: () =>
-      import('./features/profile/profile-onboarding-page.component').then(
-        (module) => module.ProfileOnboardingPageComponent,
-      ),
+    children: onboardingRoutes,
   },
   {
     path: 'dashboard',
