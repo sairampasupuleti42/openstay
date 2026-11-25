@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
   useEmulators: true,
-  appCheckSiteKey: '',
+  appCheckSiteKey: '6LfrpTEuAAAAAJuulxCQXy0BdgqlAidWEh17tjcK',
   firebase: {
     apiKey: 'demo-openstay',
     authDomain: 'demo-openstay.firebaseapp.com',
