@@ -5,7 +5,6 @@ import {
   User,
   authState,
   createUserWithEmailAndPassword,
-  deleteUser,
   reload,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -36,30 +35,10 @@ export class AuthService {
     profile: RegistrationProfile,
   ): Promise<void> {
     const { user } = await createUserWithEmailAndPassword(this.auth, email, password);
-    try {
-      await this.profiles.createInitialProfile(user, {
-        displayName: profile.displayName,
-        username: profile.username,
-      });
-    } catch (profileError) {
-      try {
-        await deleteUser(user);
-      } catch (cleanupError) {
-        try {
-          await signOut(this.auth);
-        } catch (signOutError) {
-          throw new Error(
-            'Profile creation failed, and account cleanup could not be completed. Please contact support.',
-            { cause: new AggregateError([profileError, cleanupError, signOutError]) },
-          );
-        }
-        throw new Error(
-          'Profile creation failed, and the new account could not be removed. You have been signed out; please contact support.',
-          { cause: new AggregateError([profileError, cleanupError]) },
-        );
-      }
-      throw profileError;
-    }
+    await this.profiles.createInitialProfile(user, {
+      displayName: profile.displayName,
+      username: profile.username,
+    });
     await sendEmailVerification(user);
   }
 
@@ -91,21 +70,29 @@ export class AuthService {
     const user = this.currentUser;
     if (!user) return null;
     await reload(user);
-    if (user.emailVerified) {
-      await user.getIdToken(true);
-      await this.profiles.updateEmailVerified(user.uid, true);
-    }
+    if (user.emailVerified) await user.getIdToken(true);
     return user;
   }
 
   async destinationFor(user: User): Promise<string> {
-    const profile = await this.ensureAccountAccess(user);
+    const profile = await this.getAccountProfile(user);
     if (!user.emailVerified) return '/auth/verify-email';
-    return profile.city?.trim() ? '/dashboard' : '/onboarding';
+    return profile?.city?.trim() ? '/dashboard' : '/onboarding';
   }
 
   async ensureAccountAccess(user: User): Promise<UserProfile> {
     const profile = await this.profiles.ensureProfile(user);
+    await this.assertAccountActive(profile);
+    return profile;
+  }
+
+  async getAccountProfile(user: User): Promise<UserProfile | null> {
+    const profile = await this.profiles.getProfile(user.uid);
+    if (profile) await this.assertAccountActive(profile);
+    return profile;
+  }
+
+  private async assertAccountActive(profile: UserProfile): Promise<void> {
     if (profile.accountStatus !== 'active') {
       await signOut(this.auth);
       throw new Error(
@@ -114,7 +101,6 @@ export class AuthService {
           : 'ACCOUNT_DELETED',
       );
     }
-    return profile;
   }
 
   isAccountUnavailableError(error: unknown): boolean {
@@ -135,6 +121,16 @@ export class AuthService {
   }
 
   getErrorMessage(error: unknown): string {
+    if (error instanceof Error && [
+      'USERNAME_TAKEN',
+      'USERNAME_CONFLICT',
+      'USERNAME_INVALID',
+    ].includes(error.message)) {
+      if (error.message === 'USERNAME_INVALID') {
+        return 'Use 3–20 lowercase letters, numbers, or underscores.';
+      }
+      return 'That username is already in use. Choose another username.';
+    }
     if (error instanceof Error && error.message === 'ACCOUNT_SUSPENDED') {
       return 'This account has been suspended. Contact support for assistance.';
     }
@@ -143,9 +139,6 @@ export class AuthService {
     }
     if (error instanceof Error && error.message === 'NO_SIGNED_IN_USER') {
       return 'Sign in again to request a verification email.';
-    }
-    if (error instanceof Error && error.message === 'MISSING_ACCOUNT_EMAIL') {
-      return 'Your account does not have an email address. Please contact support.';
     }
     const code = typeof error === 'object' && error !== null && 'code' in error
       ? String(error.code)
@@ -161,6 +154,11 @@ export class AuthService {
         return 'Choose a stronger password with at least 8 characters.';
       case 'auth/invalid-email':
         return 'Enter a valid email address.';
+      case 'USERNAME_TAKEN':
+      case 'USERNAME_CONFLICT':
+        return 'That username is already in use. Choose another username.';
+      case 'USERNAME_INVALID':
+        return 'Use 3–20 lowercase letters, numbers, or underscores.';
       case 'auth/popup-closed-by-user':
         return 'Google sign-in was cancelled.';
       case 'auth/popup-blocked':

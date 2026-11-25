@@ -8,8 +8,6 @@ export interface UserProfile {
   uid: string;
   displayName: string;
   username: string;
-  email: string;
-  emailVerified: boolean;
   photoURL?: string;
   bio?: string;
   country?: string;
@@ -19,6 +17,19 @@ export interface UserProfile {
   roles: UserRole[];
   accountStatus: AccountStatus;
   verificationStatus: VerificationStatus;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface UserPrivateProfile {
+  uid: string;
+  phoneNumber?: string;
+  privatePreferences: Record<string, unknown>;
+  updatedAt: Timestamp;
+}
+
+export interface UsernameReservation {
+  uid: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

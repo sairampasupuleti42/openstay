@@ -31,10 +31,10 @@ describe('dashboardGuard', () => {
     });
   });
 
-  it('redirects an unverified user to email verification before loading profile data', async () => {
+  it('redirects an unverified user without creating or synchronizing a profile', async () => {
     const verificationRoute = {} as UrlTree;
     const createUrlTree = vi.fn().mockReturnValue(verificationRoute);
-    const ensureAccountAccess = vi.fn().mockResolvedValue({
+    const getAccountProfile = vi.fn().mockResolvedValue({
       accountStatus: 'active',
       city: undefined,
     });
@@ -45,7 +45,7 @@ describe('dashboardGuard', () => {
           provide: AuthService,
           useValue: {
             user$: of({ uid: 'traveller-1', emailVerified: false } as User),
-            ensureAccountAccess,
+            getAccountProfile,
             isAccountUnavailableError: vi.fn(),
           },
         },
@@ -62,13 +62,13 @@ describe('dashboardGuard', () => {
 
     expect(result).toBe(verificationRoute);
     expect(createUrlTree).toHaveBeenCalledWith(['/auth/verify-email']);
-    expect(ensureAccountAccess).toHaveBeenCalled();
+    expect(getAccountProfile).toHaveBeenCalled();
   });
 
   it('routes a verified user without a completed profile to onboarding', async () => {
     const onboardingRoute = {} as UrlTree;
     const createUrlTree = vi.fn().mockReturnValue(onboardingRoute);
-    const ensureAccountAccess = vi.fn().mockResolvedValue({
+    const getAccountProfile = vi.fn().mockResolvedValue({
       accountStatus: 'active',
       city: undefined,
     });
@@ -79,7 +79,7 @@ describe('dashboardGuard', () => {
           provide: AuthService,
           useValue: {
             user$: of({ uid: 'traveller-1', emailVerified: true } as User),
-            ensureAccountAccess,
+            getAccountProfile,
             isAccountUnavailableError: vi.fn(),
           },
         },
@@ -99,7 +99,7 @@ describe('dashboardGuard', () => {
   });
 
   it('allows a verified user with a completed profile into the dashboard', async () => {
-    const ensureAccountAccess = vi.fn().mockResolvedValue({
+    const getAccountProfile = vi.fn().mockResolvedValue({
       accountStatus: 'active',
       city: 'Wellington',
     });
@@ -110,7 +110,7 @@ describe('dashboardGuard', () => {
           provide: AuthService,
           useValue: {
             user$: of({ uid: 'traveller-1', emailVerified: true } as User),
-            ensureAccountAccess,
+            getAccountProfile,
             isAccountUnavailableError: vi.fn(),
           },
         },
@@ -126,13 +126,13 @@ describe('dashboardGuard', () => {
     );
 
     expect(result).toBe(true);
-    expect(ensureAccountAccess).toHaveBeenCalled();
+    expect(getAccountProfile).toHaveBeenCalled();
   });
 
   it('blocks a suspended user even when their email is unverified', async () => {
     const unavailableRoute = {} as UrlTree;
     const createUrlTree = vi.fn().mockReturnValue(unavailableRoute);
-    const ensureAccountAccess = vi.fn().mockRejectedValue(new Error('ACCOUNT_SUSPENDED'));
+    const getAccountProfile = vi.fn().mockRejectedValue(new Error('ACCOUNT_SUSPENDED'));
     const isAccountUnavailableError = vi.fn((error: unknown) =>
       error instanceof Error && error.message === 'ACCOUNT_SUSPENDED',
     );
@@ -143,7 +143,7 @@ describe('dashboardGuard', () => {
           provide: AuthService,
           useValue: {
             user$: of({ uid: 'traveller-1', emailVerified: false } as User),
-            ensureAccountAccess,
+            getAccountProfile,
             isAccountUnavailableError,
           },
         },
@@ -165,7 +165,7 @@ describe('dashboardGuard', () => {
   it('sends active authenticated users to verification until their email is verified', async () => {
     const verificationRoute = {} as UrlTree;
     const createUrlTree = vi.fn().mockReturnValue(verificationRoute);
-    const ensureAccountAccess = vi.fn().mockResolvedValue({ accountStatus: 'active' });
+    const getAccountProfile = vi.fn().mockResolvedValue({ accountStatus: 'active' });
 
     TestBed.configureTestingModule({
       providers: [
@@ -173,7 +173,7 @@ describe('dashboardGuard', () => {
           provide: AuthService,
           useValue: {
             user$: of({ uid: 'traveller-1', emailVerified: false } as User),
-            ensureAccountAccess,
+            getAccountProfile,
             isAccountUnavailableError: vi.fn(),
           },
         },

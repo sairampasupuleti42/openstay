@@ -28,7 +28,7 @@ export const onboardingGuard: CanActivateFn = async () => {
     return router.createUrlTree(['/auth/account-unavailable']);
   }
   if (!user.emailVerified) return router.createUrlTree(['/auth/verify-email']);
-  const profile = await auth.ensureAccountAccess(user);
+  const profile = await auth.getAccountProfile(user);
   return profile?.city?.trim()
     ? router.createUrlTree(['/dashboard'])
     : true;
@@ -43,7 +43,7 @@ export const dashboardGuard: CanActivateFn = async () => {
     return router.createUrlTree(['/auth/account-unavailable']);
   }
   if (!user.emailVerified) return router.createUrlTree(['/auth/verify-email']);
-  const profile = await auth.ensureAccountAccess(user);
+  const profile = await auth.getAccountProfile(user);
   return profile?.city?.trim()
     ? true
     : router.createUrlTree(['/onboarding']);
@@ -62,7 +62,7 @@ async function accountUnavailable(
   user: NonNullable<AuthService['currentUser']>,
 ): Promise<boolean> {
   try {
-    await auth.ensureAccountAccess(user);
+    await auth.getAccountProfile(user);
     return false;
   } catch (error) {
     if (auth.isAccountUnavailableError(error)) return true;
