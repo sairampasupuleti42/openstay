@@ -215,18 +215,31 @@ is part of G1–G5. Inventory findings do not approve a migration, Firestore
 changes, or deployment of security rules. Stage G does not approve migration
 or security-rules deployment.
 
-Before any future authorized migration, create and verify a Firestore export
-to a secured, access-controlled Cloud Storage location:
+Stage I preparation for any future production read-only inventory—including
+project confirmation, least-privilege IAM, credential controls, backup and
+recovery, report handling, approval gates, execution checklist, and risks—is
+documented in
+[docs/production-inventory-preparation-stage-i.md](docs/production-inventory-preparation-stage-i.md).
+The guide is not authorization to connect to production or run the inventory.
+
+Any backup/export for a future migration is a separate operation requiring
+separate backup/export approval. The following is an illustrative command
+template only, not a current operational instruction or approval to export.
+Do not execute it without that separate approval and confirmation of the
+source, destination, identity, and retention controls. The commented command
+and bracketed placeholders are intentionally non-executable as shown:
 
 ```bash
-gcloud firestore export gs://<approved-backup-bucket>/<unique-export-prefix> \
-  --project=<approved-project-id>
+# ILLUSTRATIVE TEMPLATE ONLY — NOT APPROVED; DO NOT EXECUTE.
+# gcloud firestore export \
+#   [APPROVED_BUCKET_URI/UNIQUE_EXPORT_PREFIX] \
+#   --project=[APPROVED_PROJECT_ID]
 ```
 
-Confirm the project and bucket, export completion, retention/access controls,
-and restore procedure with the project owner. Do not use this command with
-production until separately approved; the migration utility itself will not
-apply to a production project.
+Under a separately approved backup procedure, the project owner must confirm
+the project and bucket, export completion, retention/access controls, and
+restore procedure. This example does not authorize or direct a production
+export; the migration utility itself will not apply to a production project.
 
 Before deploying the new Firestore rules, run a dry-run against the approved
 isolated target, inspect the complete JSON report, resolve every
