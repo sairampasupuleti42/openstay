@@ -22,9 +22,11 @@ Material, and reusable Openstay design tokens. It includes a responsive starter
 screen, production service-worker caching and installable PWA metadata, and a
 browser-aware install button with manual installation guidance when a native
 prompt is unavailable. The service worker is disabled in development. It also
-includes Firebase modular SDK initialization for Auth, Firestore, Storage, and
-Functions, App Check setup for configured non-emulator environments, default-
-deny Firestore and Storage rules, and a compiled Cloud Functions skeleton.
+includes Firebase Authentication with email/password and Google sign-in,
+Firestore-backed user profiles, Firebase modular SDK initialization for
+Storage and Functions, App Check setup for configured non-emulator
+environments, default-deny Firestore and Storage rules, and a compiled Cloud
+Functions skeleton.
 AngularFire is intentionally not installed: the Phase 0 architecture selected
 one consistent integration pattern using the Firebase modular Web SDK, and the
 latest AngularFire release does not declare compatibility with Angular 22 and
@@ -71,6 +73,14 @@ Before using Firebase outside the emulator, set the App Check reCAPTCHA site
 key in `appCheckSiteKey`; the Firebase Web App configuration does not include
 that key. Analytics is not initialized until an appropriate consent flow is in
 place. Do not deploy yet.
+
+Google sign-in is implemented in the app and uses the configured Firebase
+Authentication instance. In the Firebase Console for `open-stay`, enable the
+Google provider under **Authentication → Sign-in method** and ensure the
+deployed site's domain is listed under **Authentication → Settings →
+Authorized domains**. These are Firebase project settings; the app does not
+need a service-account key or elevated Firestore permissions for Google sign-in.
+Local development continues to use the Auth and Firestore emulators.
 
 ### GitHub Actions deployment
 
