@@ -5,7 +5,16 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 
 const projectId = 'demo-openstay';
 let testEnv;
@@ -28,8 +37,6 @@ function initialProfile(uid, overrides = {}) {
     uid,
     displayName: 'Traveller',
     username: 'traveller_1',
-    email: 'traveller@example.com',
-    emailVerified: false,
     languages: [],
     interests: [],
     roles: ['traveller'],
@@ -38,6 +45,23 @@ function initialProfile(uid, overrides = {}) {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     ...overrides,
+  };
+}
+
+function initialPrivateProfile(uid, overrides = {}) {
+  return {
+    uid,
+    privatePreferences: {},
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  };
+}
+
+function initialUsernameReservation(uid) {
+  return {
+    uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 }
 
@@ -74,6 +98,15 @@ test('denies client-assigned verified status and elevated roles', async (t) => {
       setDoc(
         doc(db, 'users/traveller-1'),
         initialProfile('traveller-1', { emailVerified: true }),
+      ),
+    );
+  });
+
+  await t.test('email field', async () => {
+    await assertFails(
+      setDoc(
+        doc(db, 'users/traveller-1'),
+        initialProfile('traveller-1', { email: 'traveller@example.com' }),
       ),
     );
   });
@@ -117,6 +150,10 @@ test('denies elevating profile privileges after initial creation', async (t) => 
   await t.test('verified email flag', async () => {
     await assertFails(updateDoc(profileRef, { emailVerified: true }));
   });
+
+  await t.test('email field', async () => {
+    await assertFails(updateDoc(profileRef, { email: 'new@example.com' }));
+  });
 });
 
 test('denies profile updates from an unverified user', async () => {
@@ -136,7 +173,7 @@ test('denies profile updates for a suspended account', async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await setDoc(
       doc(context.firestore(), `users/${uid}`),
-      initialProfile(uid, { emailVerified: true, accountStatus: 'suspended' }),
+      initialProfile(uid, { accountStatus: 'suspended' }),
     );
   });
 
@@ -145,4 +182,85 @@ test('denies profile updates for a suspended account', async () => {
     email_verified: true,
   }).firestore();
   await assertFails(updateDoc(doc(db, `users/${uid}`), { bio: 'A new profile bio' }));
+});
+
+test('allows owners to create and read private profiles without email', async (t) => {
+  const uid = 'private-profile-owner';
+  const ownerDb = testEnv.authenticatedContext(uid).firestore();
+  const ownerRef = doc(ownerDb, `userPrivate/${uid}`);
+
+  await assertSucceeds(setDoc(ownerRef, initialPrivateProfile(uid)));
+  await assertSucceeds(getDoc(ownerRef));
+
+  await t.test('denies access to another owner', async () => {
+    const otherDb = testEnv.authenticatedContext('another-user').firestore();
+    await assertFails(getDoc(doc(otherDb, `userPrivate/${uid}`)));
+    await assertFails(
+      setDoc(
+        doc(otherDb, 'userPrivate/someone-else'),
+        initialPrivateProfile('someone-else'),
+      ),
+    );
+  });
+});
+
+test('allows private preference updates and protects the UID', async () => {
+  const uid = 'private-profile-update';
+  const db = testEnv.authenticatedContext(uid).firestore();
+  const profileRef = doc(db, `userPrivate/${uid}`);
+  await assertSucceeds(setDoc(profileRef, initialPrivateProfile(uid)));
+
+  await assertSucceeds(updateDoc(profileRef, {
+    phoneNumber: '+64210000000',
+    privatePreferences: { notifications: true },
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(profileRef, {
+    uid: 'another-user',
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(profileRef, {
+    email: 'new@example.com',
+    updatedAt: serverTimestamp(),
+  }));
+});
+
+test('allows updating legacy private documents without changing their email', async () => {
+  const uid = 'legacy-private-profile';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(
+      doc(context.firestore(), `userPrivate/${uid}`),
+      initialPrivateProfile(uid, { email: 'legacy@example.com' }),
+    );
+  });
+
+  const db = testEnv.authenticatedContext(uid).firestore();
+  await assertSucceeds(updateDoc(doc(db, `userPrivate/${uid}`), {
+    phoneNumber: '+64210000000',
+    updatedAt: serverTimestamp(),
+  }));
+});
+
+test('supports username reservation transactions without allowing listing', async (t) => {
+  const uid = 'username-owner';
+  const ownerDb = testEnv.authenticatedContext(uid).firestore();
+  const reservationRef = doc(ownerDb, 'usernames/traveller_1');
+  await assertSucceeds(setDoc(reservationRef, initialUsernameReservation(uid)));
+
+  await t.test('authenticated users can get individual reservations', async () => {
+    const otherDb = testEnv.authenticatedContext('another-user').firestore();
+    await assertSucceeds(getDoc(doc(otherDb, 'usernames/traveller_1')));
+    await assertFails(getDocs(collection(otherDb, 'usernames')));
+  });
+
+  await t.test('only the owner can mutate or delete the reservation', async () => {
+    const otherDb = testEnv.authenticatedContext('another-user').firestore();
+    await assertFails(updateDoc(doc(otherDb, 'usernames/traveller_1'), {
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(deleteDoc(doc(otherDb, 'usernames/traveller_1')));
+    await assertFails(setDoc(doc(otherDb, 'usernames/claimed_name'), {
+      ...initialUsernameReservation(uid),
+    }));
+  });
 });
