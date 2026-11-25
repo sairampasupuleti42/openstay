@@ -7,6 +7,30 @@ import { AuthService } from './auth.service';
 import { authenticatedGuard, dashboardGuard } from './auth.guard';
 
 describe('dashboardGuard', () => {
+  it('redirects a logged-out user to login with a return URL', async () => {
+    const loginRoute = {} as UrlTree;
+    const createUrlTree = vi.fn().mockReturnValue(loginRoute);
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthService, useValue: { user$: of(null) } },
+        { provide: Router, useValue: { createUrlTree } },
+      ],
+    });
+
+    const result = await TestBed.runInInjectionContext(() =>
+      authenticatedGuard(
+        {} as ActivatedRouteSnapshot,
+        { url: '/dashboard' } as RouterStateSnapshot,
+      ),
+    );
+
+    expect(result).toBe(loginRoute);
+    expect(createUrlTree).toHaveBeenCalledWith(['/auth/login'], {
+      queryParams: { returnUrl: '/dashboard' },
+    });
+  });
+
   it('redirects an unverified user to email verification before loading profile data', async () => {
     const verificationRoute = {} as UrlTree;
     const createUrlTree = vi.fn().mockReturnValue(verificationRoute);
@@ -72,6 +96,37 @@ describe('dashboardGuard', () => {
 
     expect(result).toBe(onboardingRoute);
     expect(createUrlTree).toHaveBeenCalledWith(['/onboarding']);
+  });
+
+  it('allows a verified user with a completed profile into the dashboard', async () => {
+    const ensureAccountAccess = vi.fn().mockResolvedValue({
+      accountStatus: 'active',
+      city: 'Wellington',
+    });
+
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AuthService,
+          useValue: {
+            user$: of({ uid: 'traveller-1', emailVerified: true } as User),
+            ensureAccountAccess,
+            isAccountUnavailableError: vi.fn(),
+          },
+        },
+        { provide: Router, useValue: { createUrlTree: vi.fn() } },
+      ],
+    });
+
+    const result = await TestBed.runInInjectionContext(() =>
+      dashboardGuard(
+        {} as ActivatedRouteSnapshot,
+        { url: '/dashboard' } as RouterStateSnapshot,
+      ),
+    );
+
+    expect(result).toBe(true);
+    expect(ensureAccountAccess).toHaveBeenCalled();
   });
 
   it('blocks a suspended user even when their email is unverified', async () => {

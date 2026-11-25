@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -232,7 +232,7 @@ import { AuthService } from '../../../core/auth/auth.service';
     .success { color: var(--openstay-forest); }
   `,
 })
-export class AuthPageComponent {
+export class AuthPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly formBuilder = inject(FormBuilder).nonNullable;
@@ -283,6 +283,10 @@ export class AuthPageComponent {
               : 'Strong',
     };
   });
+
+  ngOnInit(): void {
+    if (this.isVerifyEmail()) void this.refreshVerificationStatus(false);
+  }
 
   readonly submitLabel = computed(() => {
     if (this.isSubmitting()) return 'Please wait…';
@@ -369,11 +373,17 @@ export class AuthPageComponent {
   }
 
   async checkVerification(): Promise<void> {
+    await this.refreshVerificationStatus(true);
+  }
+
+  private async refreshVerificationStatus(showPendingMessage: boolean): Promise<void> {
     this.errorMessage.set('');
     try {
       const user = await this.auth.refreshCurrentUser();
       if (!user?.emailVerified) {
-        this.errorMessage.set('Your email is not verified yet. Check your inbox and try again.');
+        if (showPendingMessage) {
+          this.errorMessage.set('Your email is not verified yet. Check your inbox and try again.');
+        }
         return;
       }
       await this.router.navigateByUrl(await this.auth.destinationFor(user));
