@@ -2,12 +2,15 @@
   "name": "openstay-functions",
   "private": true,
   "main": "lib/index.js",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
-    "migrate:profiles": "node scripts/migrations/migrate-legacy-profiles.mjs"
+    "migrate:profiles": "node scripts/migrations/migrate-legacy-profiles.mjs",
+    "inventory:profiles": "node scripts/migrations/inventory-legacy-profiles.mjs"
   },
   "dependencies": {
     "firebase-admin": "^13.4.0",

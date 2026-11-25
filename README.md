@@ -153,6 +153,63 @@ contested reservations, or invent account/verification state. A record needing
 review may still have the explicitly approved legacy fields removed; no other
 field is changed.
 
+### Legacy profile inventory (Phase 3.5, Stage G)
+
+The separate inventory utility performs a read-only, paginated inventory of
+`users`, `userPrivate`, and `usernames`. It validates the public and private
+profile fields and reconciles public usernames with their reservation
+documents. It never writes, updates, deletes, creates, batches, transacts, or
+repairs Firestore data.
+
+Schema comparison found a current-code discrepancy: the model and rules require
+`privatePreferences` and require `updatedAt` on username reservations, while
+the Stage G inventory contract treats the former as optional and expects only
+`uid` and `createdAt` on reservations. The inventory follows the Stage G
+contract; therefore, an existing reservation `updatedAt` is reported as an
+unexpected field. No model or rules change is included here.
+
+Inventory records use these classifications:
+
+- `SAFE_TO_MIGRATE`: only the approved legacy `email` and/or `emailVerified`
+  fields are present for removal; no schema or ownership issue was detected.
+- `NEEDS_REVIEW`: a schema, username, reservation, ownership, or incomplete-scan
+  issue exists. Cross-collection inconsistencies are attached to the relevant
+  profile and/or reservation; a missing/orphan result is emitted only when the
+  collection required to verify it was completely scanned.
+- `NO_CHANGE`: no approved legacy field removal or manual review is indicated.
+
+Run the emulator-backed inventory tests (also included in
+`npm run test:migration`) with:
+
+```bash
+npm run test:inventory
+```
+
+For a manual emulator-only inventory, start Firestore Emulator with the demo
+project and set its loopback host explicitly:
+
+```bash
+firebase emulators:start --only firestore --project demo-openstay
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm --prefix functions run inventory:profiles -- \
+  --project-id demo-openstay --emulator --page-size 400 --max-pages 10000 \
+  --report ./legacy-profile-inventory-report.json
+```
+
+The JSON report is printed and optionally saved at the requested report path.
+Reports contain document IDs/paths where useful for reconciliation and are
+sensitive operational metadata; restrict access and retention. They exclude
+email addresses, phone numbers, private preferences, document contents, and
+credentials. A failed page or pagination bound makes the inventory incomplete
+and identifies the affected collection without silently treating its omitted
+documents as absent.
+
+The utility does not access a live project unless separately and explicitly
+invoked with `--project-id <id> --live-read-only`; that mode requires separate
+explicit user approval and is not authorized by this stage. No live inventory
+is part of G1–G5. Inventory findings do not approve a migration, Firestore
+changes, or deployment of security rules. Stage G does not approve migration
+or security-rules deployment.
+
 Before any future authorized migration, create and verify a Firestore export
 to a secured, access-controlled Cloud Storage location:
 
