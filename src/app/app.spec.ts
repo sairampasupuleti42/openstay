@@ -53,10 +53,17 @@ describe('App', () => {
       fixture.nativeElement.querySelector('.nav-backdrop'),
     ).toBeTruthy();
 
-    (fixture.nativeElement.querySelector('.nav-backdrop') as HTMLButtonElement).click();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     fixture.detectChanges();
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
     expect(navigation.classList.contains('mobile-open')).toBe(false);
+    expect(fixture.nativeElement.querySelector('.nav-backdrop')).toBeNull();
+
+    menuToggle.click();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.nav-backdrop') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
     expect(fixture.nativeElement.querySelector('.nav-backdrop')).toBeNull();
   });
 

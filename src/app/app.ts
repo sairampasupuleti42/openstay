@@ -29,6 +29,11 @@ export class App {
     this.isMobileNavOpen.set(false);
   }
 
+  @HostListener('document:keydown', ['$event'])
+  closeMobileNavOnEscape(event: KeyboardEvent): void {
+    if (event.key === 'Escape') this.closeMobileNav();
+  }
+
   @HostListener('window:beforeinstallprompt', ['$event'])
   captureInstallPrompt(event: Event): void {
     if (this.isInstalled()) return;
