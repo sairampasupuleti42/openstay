@@ -104,6 +104,75 @@ npm --prefix functions run build
 `npm run test:rules` runs the Firestore security-rule tests against the local
 Firestore Emulator and uses the `demo-openstay` project ID.
 
+### Legacy profile migration utility
+
+The profile migration utility is a separate Admin SDK tool. It scans
+`users/{uid}`, `userPrivate/{uid}`, and `usernames/{normalizedUsername}` using
+paginated reads. Dry-run is the default and never writes. Reports classify each
+record as `SAFE_TO_MIGRATE`, `NEEDS_REVIEW`, or `NO_CHANGE`; only the legacy
+`email` and `emailVerified` fields are eligible for automatic removal. All
+other inconsistencies are reported for manual review and are never guessed or
+rewritten. Logs and reports do not include email addresses, phone numbers,
+private preferences, or profile field values.
+
+Run the emulator-backed automated tests with:
+
+```bash
+npm run test:migration
+```
+
+For an isolated manual dry run, start only the Firestore Emulator with the demo
+project ID, then run the utility in another terminal. No project is selected
+implicitly:
+
+```bash
+firebase emulators:start --only firestore --project demo-openstay
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 npm run migrate:profiles -- \
+  --project-id demo-openstay --report ./profile-migration-report.json
+```
+
+To test writes, run the command through the emulator environment and include
+`--apply` explicitly:
+
+```bash
+firebase emulators:exec --only firestore --project demo-openstay \
+  "npm run migrate:profiles -- --project-id demo-openstay --apply --report ./profile-migration-report.json"
+```
+
+Both dry-run and apply reject non-`demo-*` project IDs and require a loopback
+`FIRESTORE_EMULATOR_HOST`; neither mode can read from a live Firebase project.
+The utility also refuses project IDs assigned to `prod` or `production` aliases
+in `.firebaserc`. This stage does not provide production execution or an
+approval bypass.
+
+Review the JSON report's `summary`, `records[].classification`,
+`records[].issues`, and `records[].fieldsToRemove`. Record paths are included
+to locate documents, but no profile values are emitted. Review and resolve
+`NEEDS_REVIEW` items manually; do not transfer contested usernames, delete
+contested reservations, or invent account/verification state. A record needing
+review may still have the explicitly approved legacy fields removed; no other
+field is changed.
+
+Before any future authorized migration, create and verify a Firestore export
+to a secured, access-controlled Cloud Storage location:
+
+```bash
+gcloud firestore export gs://<approved-backup-bucket>/<unique-export-prefix> \
+  --project=<approved-project-id>
+```
+
+Confirm the project and bucket, export completion, retention/access controls,
+and restore procedure with the project owner. Do not use this command with
+production until separately approved; the migration utility itself will not
+apply to a production project.
+
+Before deploying the new Firestore rules, run a dry-run against the approved
+isolated target, inspect the complete JSON report, resolve every
+`NEEDS_REVIEW` record, apply only the approved legacy-field removals in a
+non-production environment, and run the scan again. Confirm zero missing
+reservations and no unresolved schema or ownership conflicts before requesting
+the separately approved rules deployment. This utility does not deploy rules.
+
 ## Development roadmap
 
 The roadmap below reflects the proposed architecture in

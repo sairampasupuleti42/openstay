@@ -7,17 +7,11 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      function isVerified() {
-        return request.auth.token.email_verified == true;
-      }
-
-      function allowedProfileFields() {
-        return request.resource.data.keys().hasOnly([
+      function validPublicProfile(profile) {
+        return profile.keys().hasOnly([
             'uid',
             'displayName',
             'username',
-            'email',
-            'emailVerified',
             'photoURL',
             'bio',
             'country',
@@ -29,11 +23,8 @@ service cloud.firestore {
             'verificationStatus',
             'createdAt',
             'updatedAt'
-          ]);
-      }
-
-      function requiredProfileFields() {
-        return request.resource.data.keys().hasAll([
+          ])
+          && profile.keys().hasAll([
             'uid',
             'displayName',
             'username',
@@ -44,71 +35,96 @@ service cloud.firestore {
             'verificationStatus',
             'createdAt',
             'updatedAt'
-          ]);
+          ])
+          && profile.uid == userId
+          && profile.displayName is string
+          && profile.displayName.size() > 0
+          && profile.displayName.size() <= 100
+          && profile.username is string
+          && profile.username.matches('^[a-z0-9_]{3,20}$')
+          && profile.languages is list
+          && profile.languages.size() <= 50
+          && profile.interests is list
+          && profile.interests.size() <= 50
+          && profile.roles is list
+          && profile.roles.size() >= 1
+          && profile.roles.size() <= 2
+          && profile.roles.hasOnly(['traveller', 'host'])
+          && profile.accountStatus in ['active', 'suspended', 'deleted']
+          && profile.verificationStatus in ['unverified', 'pending', 'verified']
+          && (!('photoURL' in profile) ||
+            (profile.photoURL is string && profile.photoURL.size() <= 2048))
+          && (!('bio' in profile) ||
+            (profile.bio is string && profile.bio.size() <= 500))
+          && (!('country' in profile) ||
+            (profile.country is string && profile.country.size() <= 100))
+          && (!('city' in profile) ||
+            (profile.city is string && profile.city.size() <= 100))
+          && profile.createdAt is timestamp
+          && profile.updatedAt is timestamp;
       }
 
-      function validProfileFields() {
-        return allowedProfileFields()
-          && requiredProfileFields()
-          && request.resource.data.uid == userId
-          && request.resource.data.displayName is string
-          && request.resource.data.displayName.size() > 0
-          && request.resource.data.displayName.size() <= 100
-          && request.resource.data.username is string
-          && request.resource.data.username.matches('^[a-z0-9_]{3,20}$')
-          && (!('email' in request.resource.data) ||
-            (request.resource.data.email is string && request.resource.data.email.size() <= 320))
-          && (!('emailVerified' in request.resource.data) ||
-            request.resource.data.emailVerified is bool)
-          && request.resource.data.languages is list
-          && request.resource.data.interests is list
-          && request.resource.data.roles is list
-          && request.resource.data.languages.size() <= 50
-          && request.resource.data.interests.size() <= 50
-          && request.resource.data.accountStatus in ['active', 'suspended', 'deleted']
-          && request.resource.data.verificationStatus in ['unverified', 'pending', 'verified']
-          && (!('photoURL' in request.resource.data) ||
-            (request.resource.data.photoURL is string && request.resource.data.photoURL.size() <= 2048))
-          && (!('bio' in request.resource.data) ||
-            (request.resource.data.bio is string && request.resource.data.bio.size() <= 500))
-          && (!('country' in request.resource.data) ||
-            (request.resource.data.country is string && request.resource.data.country.size() <= 100))
-          && (!('city' in request.resource.data) ||
-            (request.resource.data.city is string && request.resource.data.city.size() <= 100))
-          && request.resource.data.updatedAt == request.time;
+      function usernameReservationMatches(profile) {
+        let reservationPath = /databases/$(database)/documents/usernames/$(profile.username);
+        return existsAfter(reservationPath)
+          && getAfter(reservationPath).data.uid == profile.uid;
       }
 
-      function legacyEmailFieldsNotAddedOrChanged() {
-        return (!('email' in request.resource.data) ||
-            ('email' in resource.data
-              && request.resource.data.email == resource.data.email))
-          && (!('emailVerified' in request.resource.data) ||
-            ('emailVerified' in resource.data
-              && request.resource.data.emailVerified == resource.data.emailVerified));
+      function oldUsernameReservationReleased() {
+        let reservationPath = /databases/$(database)/documents/usernames/$(resource.data.username);
+        return request.resource.data.username == resource.data.username
+          || !existsAfter(reservationPath);
       }
 
-      allow read: if isOwner();
-      allow create: if isOwner()
-        && validProfileFields()
-        && !('email' in request.resource.data)
-        && !('emailVerified' in request.resource.data)
-        && request.resource.data.roles == ['traveller']
-        && request.resource.data.accountStatus == 'active'
-        && request.resource.data.verificationStatus == 'unverified'
-        && request.resource.data.languages == []
-        && request.resource.data.interests == []
-        && request.resource.data.createdAt == request.time;
+      function validNewProfile() {
+        return validPublicProfile(request.resource.data)
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.roles == ['traveller']
+          && request.resource.data.accountStatus == 'active'
+          && request.resource.data.verificationStatus == 'unverified'
+          && request.resource.data.languages == []
+          && request.resource.data.interests == []
+          && usernameReservationMatches(request.resource.data);
+      }
+
+      function validProfileUpdate() {
+        return validPublicProfile(request.resource.data)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.roles == resource.data.roles
+          && request.resource.data.accountStatus == resource.data.accountStatus
+          && request.resource.data.verificationStatus == resource.data.verificationStatus
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName',
+            'username',
+            'photoURL',
+            'bio',
+            'country',
+            'city',
+            'languages',
+            'interests',
+            'updatedAt'
+          ])
+          && usernameReservationMatches(request.resource.data)
+          && oldUsernameReservationReleased();
+      }
+
+      function isVerified() {
+        return request.auth.token.email_verified == true;
+      }
+
+      function isPublicProfile() {
+        return validPublicProfile(resource.data);
+      }
+
+      allow read: if isOwner() || isPublicProfile();
+      allow create: if isOwner() && validNewProfile();
       allow update: if isOwner()
         && isVerified()
         && resource.data.accountStatus == 'active'
-        && validProfileFields()
-        && legacyEmailFieldsNotAddedOrChanged()
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.username == resource.data.username
-        && request.resource.data.roles == resource.data.roles
-        && request.resource.data.accountStatus == resource.data.accountStatus
-        && request.resource.data.verificationStatus == resource.data.verificationStatus
-        && request.resource.data.createdAt == resource.data.createdAt;
+        && validProfileUpdate();
       allow delete: if false;
     }
 
@@ -117,83 +133,97 @@ service cloud.firestore {
         return request.auth != null && request.auth.uid == userId;
       }
 
-      function allowedPrivateFields() {
-        return request.resource.data.keys().hasOnly([
-          'uid',
-          'email',
-          'phoneNumber',
-          'privatePreferences',
-          'updatedAt'
-        ]);
-      }
-
-      function validPrivateFields() {
-        return allowedPrivateFields()
-          && request.resource.data.keys().hasAll([
+      function validPrivateProfile(profile) {
+        return profile.keys().hasOnly([
+            'uid',
+            'phoneNumber',
+            'privatePreferences',
+            'updatedAt'
+          ])
+          && profile.keys().hasAll([
             'uid',
             'privatePreferences',
             'updatedAt'
           ])
-          && request.resource.data.uid == userId
-          && request.resource.data.privatePreferences is map
-          && (!('phoneNumber' in request.resource.data) ||
-            request.resource.data.phoneNumber is string)
-          && (!('email' in request.resource.data) ||
-            (request.resource.data.email is string
-              && request.resource.data.email.size() <= 320))
-          && request.resource.data.updatedAt == request.time;
-      }
-
-      function legacyEmailNotAddedOrChanged() {
-        return !('email' in request.resource.data)
-          || ('email' in resource.data
-            && request.resource.data.email == resource.data.email);
+          && profile.uid == userId
+          && profile.privatePreferences is map
+          && profile.privatePreferences.keys().size() <= 50
+          && (!('phoneNumber' in profile) ||
+            (profile.phoneNumber is string && profile.phoneNumber.size() <= 32))
+          && profile.updatedAt is timestamp;
       }
 
       allow read: if isOwner();
       allow create: if isOwner()
-        && validPrivateFields()
-        && !('email' in request.resource.data);
+        && validPrivateProfile(request.resource.data)
+        && request.resource.data.updatedAt == request.time;
       allow update: if isOwner()
-        && validPrivateFields()
-        && legacyEmailNotAddedOrChanged()
-        && request.resource.data.uid == resource.data.uid;
+        && validPrivateProfile(request.resource.data)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'phoneNumber',
+          'privatePreferences',
+          'updatedAt'
+        ]);
       allow delete: if false;
     }
 
     match /usernames/{username} {
       function isReservationOwner() {
-        return request.auth != null
-          && resource.data.uid == request.auth.uid;
+        return request.auth != null && resource.data.uid == request.auth.uid;
       }
 
-      function validReservation() {
-        return request.resource.data.keys().hasOnly([
+      function profileMatchesReservationAfter() {
+        let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
+        return existsAfter(profilePath)
+          && getAfter(profilePath).data.uid == request.auth.uid
+          && getAfter(profilePath).data.username == username;
+      }
+
+      function validReservation(reservation) {
+        return reservation.keys().hasOnly([
+            'uid',
+            'createdAt',
+            'updatedAt'
+          ])
+          && reservation.keys().hasAll([
             'uid',
             'createdAt',
             'updatedAt'
           ])
           && username.matches('^[a-z0-9_]{3,20}$')
-          && request.resource.data.keys().hasAll([
-            'uid',
-            'createdAt',
-            'updatedAt'
-          ])
-          && request.resource.data.uid == request.auth.uid
-          && request.resource.data.createdAt is timestamp
-          && request.resource.data.updatedAt == request.time;
+          && reservation.uid == request.auth.uid
+          && reservation.uid is string
+          && reservation.uid.size() > 0
+          && reservation.uid.size() <= 128
+          && reservation.createdAt is timestamp
+          && reservation.updatedAt == request.time;
+      }
+
+      function deletingOldReservation() {
+        let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
+        return resource.data.keys().hasOnly(['uid', 'createdAt', 'updatedAt'])
+          && isReservationOwner()
+          && exists(profilePath)
+          && get(profilePath).data.username == username
+          && existsAfter(profilePath)
+          && getAfter(profilePath).data.username != username;
       }
 
       allow get: if request.auth != null;
       allow list: if false;
       allow create: if request.auth != null
-        && validReservation()
-        && request.resource.data.createdAt == request.time;
+        && validReservation(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && profileMatchesReservationAfter();
       allow update: if isReservationOwner()
-        && validReservation()
+        && validReservation(request.resource.data)
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.createdAt == resource.data.createdAt;
-      allow delete: if isReservationOwner();
+        && request.resource.data.createdAt == resource.data.createdAt
+        && resource.data.keys().hasOnly(['uid', 'createdAt', 'updatedAt'])
+        && profileMatchesReservationAfter();
+      allow delete: if deletingOldReservation();
     }
 
     match /{document=**} {
