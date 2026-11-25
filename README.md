@@ -24,7 +24,8 @@ browser-aware install button with manual installation guidance when a native
 prompt is unavailable. The service worker is disabled in development. It also
 includes Firebase Authentication with email/password and Google sign-in,
 Firestore-backed user profiles, Firebase modular SDK initialization for
-Storage and Functions, App Check setup for configured non-emulator
+Storage and Functions, persistent Firebase Auth state, email-verification and
+account-status route guards, App Check setup for configured non-emulator
 environments, default-deny Firestore and Storage rules, and a compiled Cloud
 Functions skeleton.
 AngularFire is intentionally not installed: the Phase 0 architecture selected

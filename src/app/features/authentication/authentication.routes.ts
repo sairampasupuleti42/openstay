@@ -10,5 +10,13 @@ export const authenticationRoutes: Routes = [
   ...registerRoutes,
   ...forgotPasswordRoutes,
   ...verifyEmailRoutes,
+  {
+    path: 'account-unavailable',
+    data: { mode: 'account-unavailable' },
+    loadComponent: () =>
+      import('./shared/auth-page.component').then(
+        (module) => module.AuthPageComponent,
+      ),
+  },
   { path: '**', redirectTo: 'login' },
 ];

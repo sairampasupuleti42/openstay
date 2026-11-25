@@ -91,6 +91,7 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
       allow update: if isOwner()
         && isVerified()
+        && resource.data.accountStatus == 'active'
         && validProfileFields()
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.username == resource.data.username

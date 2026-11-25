@@ -130,3 +130,19 @@ test('denies profile updates from an unverified user', async () => {
 
   await assertFails(updateDoc(profileRef, { bio: 'A new profile bio' }));
 });
+
+test('denies profile updates for a suspended account', async () => {
+  const uid = 'suspended-user';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(
+      doc(context.firestore(), `users/${uid}`),
+      initialProfile(uid, { emailVerified: true, accountStatus: 'suspended' }),
+    );
+  });
+
+  const db = testEnv.authenticatedContext(uid, {
+    email: 'traveller@example.com',
+    email_verified: true,
+  }).firestore();
+  await assertFails(updateDoc(doc(db, `users/${uid}`), { bio: 'A new profile bio' }));
+});

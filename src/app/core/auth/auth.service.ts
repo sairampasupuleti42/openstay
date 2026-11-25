@@ -16,6 +16,7 @@ import {
 import { Observable, shareReplay } from 'rxjs';
 import { RegistrationProfile } from './auth.models';
 import { UserProfileService } from '../services/user-profile.service';
+import { UserProfile } from '../models/user.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -64,14 +65,14 @@ export class AuthService {
 
   async signIn(email: string, password: string): Promise<User> {
     const { user } = await signInWithEmailAndPassword(this.auth, email, password);
-    await this.profiles.ensureProfile(user);
+    await this.ensureAccountAccess(user);
     if (!user.emailVerified) await sendEmailVerification(user);
     return user;
   }
 
   async signInWithGoogle(): Promise<User> {
     const { user } = await signInWithPopup(this.auth, new GoogleAuthProvider());
-    await this.profiles.ensureProfile(user);
+    await this.ensureAccountAccess(user);
     if (!user.emailVerified) await sendEmailVerification(user);
     return user;
   }
@@ -98,9 +99,27 @@ export class AuthService {
   }
 
   async destinationFor(user: User): Promise<string> {
+    const profile = await this.ensureAccountAccess(user);
     if (!user.emailVerified) return '/auth/verify-email';
-    const profile = await this.profiles.ensureProfile(user);
     return profile.city?.trim() ? '/dashboard' : '/onboarding';
+  }
+
+  async ensureAccountAccess(user: User): Promise<UserProfile> {
+    const profile = await this.profiles.ensureProfile(user);
+    if (profile.accountStatus !== 'active') {
+      await signOut(this.auth);
+      throw new Error(
+        profile.accountStatus === 'suspended'
+          ? 'ACCOUNT_SUSPENDED'
+          : 'ACCOUNT_DELETED',
+      );
+    }
+    return profile;
+  }
+
+  isAccountUnavailableError(error: unknown): boolean {
+    return error instanceof Error &&
+      (error.message === 'ACCOUNT_SUSPENDED' || error.message === 'ACCOUNT_DELETED');
   }
 
   getProfile(uid: string) {
@@ -116,6 +135,12 @@ export class AuthService {
   }
 
   getErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message === 'ACCOUNT_SUSPENDED') {
+      return 'This account has been suspended. Contact support for assistance.';
+    }
+    if (error instanceof Error && error.message === 'ACCOUNT_DELETED') {
+      return 'This account is no longer available. Contact support for assistance.';
+    }
     if (error instanceof Error && error.message === 'NO_SIGNED_IN_USER') {
       return 'Sign in again to request a verification email.';
     }

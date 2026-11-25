@@ -27,7 +27,9 @@ import { AuthService } from '../../../core/auth/auth.service';
   template: `
     <section class="auth-page">
       <div class="auth-panel">
-        <a class="auth-brand" routerLink="/" aria-label="Openstay home">Openstay</a>
+        <a class="auth-brand" routerLink="/" aria-label="Openstay home">
+          <img src="/logo-primary-COQDrkLb.png" alt="Openstay" />
+        </a>
 
         @if (isVerifyEmail()) {
           <p class="eyebrow">One last step</p>
@@ -52,6 +54,13 @@ import { AuthService } from '../../../core/auth/auth.service';
             <p class="form-message success" role="status">{{ successMessage() }}</p>
           }
           <p class="switch-mode">Already verified? <a routerLink="/auth/login">Sign in</a></p>
+        } @else if (isAccountUnavailable()) {
+          <p class="eyebrow">Account unavailable</p>
+          <h1>We can’t access this account</h1>
+          <p class="intro">
+            This account is suspended or no longer active. Contact support if you believe this is a mistake.
+          </p>
+          <p class="switch-mode"><a routerLink="/auth/login">Return to sign in</a></p>
         } @else {
           <p class="eyebrow">
             {{ isRegister() ? 'Join the community' : isForgotPassword() ? 'Account recovery' : 'Welcome back' }}
@@ -94,12 +103,24 @@ import { AuthService } from '../../../core/auth/auth.service';
               <mat-form-field appearance="outline">
                 <mat-label>Password</mat-label>
                 <input
+                  id="auth-password"
                   matInput
                   formControlName="password"
-                  type="password"
+                  [type]="passwordVisible() ? 'text' : 'password'"
                   [autocomplete]="isRegister() ? 'new-password' : 'current-password'"
                   required
                 />
+                <button
+                  mat-button
+                  matSuffix
+                  type="button"
+                  class="password-toggle"
+                  [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+                  [attr.aria-pressed]="passwordVisible()"
+                  (click)="togglePasswordVisibility()"
+                >
+                  {{ passwordVisible() ? 'Hide' : 'Show' }}
+                </button>
                 @if (form.controls.password.touched && form.controls.password.invalid) {
                   <mat-error>Password must be at least 8 characters.</mat-error>
                 }
@@ -182,12 +203,14 @@ import { AuthService } from '../../../core/auth/auth.service';
     :host { display: block; min-height: calc(100vh - 76px); background: var(--openstay-cream); }
     .auth-page { min-height: calc(100vh - 76px); display: grid; place-items: center; padding: 48px 20px; }
     .auth-panel { width: min(100%, 460px); padding: clamp(28px, 5vw, 44px); border: 1px solid var(--openstay-border); border-radius: 28px; background: var(--openstay-warm-white); box-shadow: var(--openstay-card-shadow); }
-    .auth-brand { display: inline-flex; margin-bottom: 36px; color: var(--openstay-forest); font-size: 22px; font-weight: 800; text-decoration: none; }
+    .auth-brand { display: inline-flex; margin-bottom: 36px; text-decoration: none; }
+    .auth-brand img { display: block; width: 184px; height: auto; }
     .eyebrow { margin: 0 0 10px; color: var(--openstay-forest); font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
     h1 { margin: 0 0 12px; font-size: clamp(32px, 6vw, 44px); line-height: 1.08; letter-spacing: -0.03em; }
     .intro { margin: 0 0 28px; color: var(--openstay-muted); line-height: 1.6; }
     .auth-form { display: grid; gap: 6px; }
     .auth-form mat-form-field { width: 100%; }
+    .password-toggle { min-width: 48px; }
     .password-strength { margin: -4px 0 10px; color: var(--openstay-muted); font-size: 13px; }
     .strength-copy { display: flex; justify-content: space-between; gap: 12px; }
     .strength-copy strong { color: var(--openstay-forest); }
@@ -223,7 +246,9 @@ export class AuthPageComponent {
   readonly isRegister = computed(() => this.mode() === 'register');
   readonly isForgotPassword = computed(() => this.mode() === 'forgot-password');
   readonly isVerifyEmail = computed(() => this.mode() === 'verify-email');
+  readonly isAccountUnavailable = computed(() => this.mode() === 'account-unavailable');
   readonly isSubmitting = signal(false);
+  readonly passwordVisible = signal(false);
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
   readonly form = this.formBuilder.group({
@@ -265,6 +290,10 @@ export class AuthPageComponent {
     if (this.isForgotPassword()) return 'Send reset link';
     return 'Sign in';
   });
+
+  togglePasswordVisibility(): void {
+    this.passwordVisible.update((visible) => !visible);
+  }
 
   async submit(): Promise<void> {
     this.errorMessage.set('');
