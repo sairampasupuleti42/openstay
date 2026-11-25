@@ -27,14 +27,14 @@ const PUBLIC_FIELDS = new Set([
   ...PUBLIC_OPTIONAL_FIELDS,
   ...LEGACY_FIELDS,
 ]);
-const PRIVATE_REQUIRED_FIELDS = ["uid", "updatedAt"];
-const PRIVATE_OPTIONAL_FIELDS = ["phoneNumber", "privatePreferences"];
+const PRIVATE_REQUIRED_FIELDS = ["uid", "privatePreferences", "updatedAt"];
+const PRIVATE_OPTIONAL_FIELDS = ["phoneNumber"];
 const PRIVATE_FIELDS = new Set([
   ...PRIVATE_REQUIRED_FIELDS,
   ...PRIVATE_OPTIONAL_FIELDS,
   ...LEGACY_FIELDS,
 ]);
-const USERNAME_REQUIRED_FIELDS = ["uid", "createdAt"];
+const USERNAME_REQUIRED_FIELDS = ["uid", "createdAt", "updatedAt"];
 const USERNAME_FIELDS = new Set(USERNAME_REQUIRED_FIELDS);
 const COLLECTION_NAMES = ["users", "userPrivate", "usernames"];
 const READ_ERROR_CATEGORIES = new Set([
@@ -441,9 +441,8 @@ function validatePrivateProfile({ id, data }) {
     issues.push(issue("invalid_field", ["phoneNumber"]));
   }
   if (
-    fields.privatePreferences !== undefined &&
-    (!isPlainRecord(fields.privatePreferences) ||
-      Object.keys(fields.privatePreferences).length > 50)
+    !isPlainRecord(fields.privatePreferences) ||
+    Object.keys(fields.privatePreferences).length > 50
   ) {
     issues.push(issue("invalid_field", ["privatePreferences"]));
   }
@@ -471,6 +470,9 @@ function validateUsernameReservation({ id, data }) {
   }
   if (!(fields.createdAt instanceof Timestamp)) {
     issues.push(issue("invalid_field", ["createdAt"]));
+  }
+  if (!(fields.updatedAt instanceof Timestamp)) {
+    issues.push(issue("invalid_field", ["updatedAt"]));
   }
   return issues;
 }

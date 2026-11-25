@@ -56,11 +56,21 @@ function validProfile(uid, username, overrides = {}) {
 }
 
 function validPrivateProfile(uid, overrides = {}) {
-  return { uid, updatedAt: Timestamp.now(), ...overrides };
+  return {
+    uid,
+    privatePreferences: {},
+    updatedAt: Timestamp.now(),
+    ...overrides,
+  };
 }
 
 function reservation(uid, overrides = {}) {
-  return { uid, createdAt: Timestamp.now(), ...overrides };
+  return {
+    uid,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+    ...overrides,
+  };
 }
 
 async function seed(collection, id, data) {
@@ -119,6 +129,35 @@ test("valid public, private, and reservation records need no review", async () =
   assert.equal(report.status, "complete");
 });
 
+test("private preferences and reservation update timestamps are required", async () => {
+  await seed("userPrivate", "missing-private-preferences", {
+    uid: "missing-private-preferences",
+    updatedAt: Timestamp.now(),
+  });
+  await seed("usernames", "missing-reservation-updated-at", {
+    uid: "missing-owner",
+    createdAt: Timestamp.now(),
+  });
+
+  const report = await run();
+  const privateRecord = getRecord(
+    report,
+    "userPrivate",
+    "missing-private-preferences",
+  );
+  const reservationRecord = getRecord(
+    report,
+    "usernames",
+    "missing-reservation-updated-at",
+  );
+
+  assert.equal(privateRecord.classification, "NEEDS_REVIEW");
+  assert.ok(hasIssue(privateRecord, "missing_required_fields"));
+  assert.equal(reservationRecord.classification, "NEEDS_REVIEW");
+  assert.ok(hasIssue(reservationRecord, "missing_required_fields"));
+  assert.ok(hasIssue(reservationRecord, "invalid_field"));
+});
+
 test("legacy public email fields are classified as safe to migrate", async () => {
   await seedAccount("legacy-public", "legacy_public", {
     profile: { email: "private-person@example.test", emailVerified: true },
@@ -168,7 +207,7 @@ test("unexpected public and private fields require review", async () => {
   await seed(
     "usernames",
     "extra-reservation-field",
-    reservation("unmatched-owner", { updatedAt: Timestamp.now() }),
+    reservation("unmatched-owner", { extraReservationField: true }),
   );
 
   const report = await run();
@@ -337,6 +376,7 @@ test("multiple simultaneous findings are retained without exposing values", asyn
   await seed("usernames", "BAD-NAME", {
     uid: "missing-owner",
     createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
     email: "reservation@example.test",
   });
 

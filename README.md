@@ -153,6 +153,13 @@ contested reservations, or invent account/verification state. A record needing
 review may still have the explicitly approved legacy fields removed; no other
 field is changed.
 
+Reports and batch failure details may contain Firestore document IDs or paths.
+Treat retained reports as sensitive operational metadata and restrict access.
+Report file saving happens after migration batches. If saving the report fails
+after successful writes, documents may already have changed even though the
+command exits unsuccessfully. Inspect Firestore and investigate the failure
+before rerunning the utility.
+
 ### Legacy profile inventory (Phase 3.5, Stage G)
 
 The separate inventory utility performs a read-only, paginated inventory of
@@ -161,12 +168,10 @@ profile fields and reconciles public usernames with their reservation
 documents. It never writes, updates, deletes, creates, batches, transacts, or
 repairs Firestore data.
 
-Schema comparison found a current-code discrepancy: the model and rules require
-`privatePreferences` and require `updatedAt` on username reservations, while
-the Stage G inventory contract treats the former as optional and expects only
-`uid` and `createdAt` on reservations. The inventory follows the Stage G
-contract; therefore, an existing reservation `updatedAt` is reported as an
-unexpected field. No model or rules change is included here.
+The inventory validates against the current application model, service, and
+Firestore rules. Private profiles require `privatePreferences` as a map and
+`updatedAt` as a timestamp; username reservations require `uid`, `createdAt`,
+and `updatedAt`, all with their canonical types.
 
 Inventory records use these classifications:
 

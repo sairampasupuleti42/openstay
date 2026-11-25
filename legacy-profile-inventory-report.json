@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "reportSensitivity": "Sensitive operational metadata",
+  "inventoryTimestamp": "2026-11-25T14:35:46.085Z",
+  "projectId": "demo-openstay",
+  "mode": "emulator",
+  "pageSize": 2,
+  "maxPages": 10000,
+  "status": "complete",
+  "paginationComplete": true,
+  "scanned": {
+    "users": {
+      "documents": 6,
+      "pages": 4,
+      "pageSize": 2,
+      "paginationComplete": true
+    },
+    "userPrivate": {
+      "documents": 6,
+      "pages": 4,
+      "pageSize": 2,
+      "paginationComplete": true
+    },
+    "usernames": {
+      "documents": 5,
+      "pages": 3,
+      "pageSize": 2,
+      "paginationComplete": true
+    }
+  },
+  "summary": {
+    "scannedDocuments": 17,
+    "classifications": {
+      "SAFE_TO_MIGRATE": 2,
+      "NEEDS_REVIEW": 5,
+      "NO_CHANGE": 10
+    },
+    "findingsByIssueType": {
+      "reservation_owner_mismatch": 1,
+      "uid_mismatch": 1,
+      "missing_username_reservation": 1,
+      "invalid_field": 1,
+      "duplicate_username_claim": 1,
+      "reservation_references_missing_user": 1
+    }
+  },
+  "scanErrors": [],
+  "records": [
+    {
+      "collection": "users",
+      "documentId": "stageh-clean",
+      "documentPath": "users/stageh-clean",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "users",
+      "documentId": "stageh-conflict",
+      "documentPath": "users/stageh-conflict",
+      "classification": "NEEDS_REVIEW",
+      "issues": [
+        {
+          "code": "reservation_owner_mismatch",
+          "fields": []
+        }
+      ],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "users",
+      "documentId": "stageh-legacy",
+      "documentPath": "users/stageh-legacy",
+      "classification": "SAFE_TO_MIGRATE",
+      "issues": [],
+      "legacyFieldsPresent": ["email", "emailVerified"]
+    },
+    {
+      "collection": "users",
+      "documentId": "stageh-malformed",
+      "documentPath": "users/stageh-malformed",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "users",
+      "documentId": "stageh-mismatch",
+      "documentPath": "users/stageh-mismatch",
+      "classification": "NEEDS_REVIEW",
+      "issues": [
+        {
+          "code": "uid_mismatch",
+          "fields": ["uid"]
+        }
+      ],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "users",
+      "documentId": "stageh-missing",
+      "documentPath": "users/stageh-missing",
+      "classification": "NEEDS_REVIEW",
+      "issues": [
+        {
+          "code": "missing_username_reservation",
+          "fields": []
+        }
+      ],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "userPrivate",
+      "documentId": "stageh-clean",
+      "documentPath": "userPrivate/stageh-clean",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "userPrivate",
+      "documentId": "stageh-conflict",
+      "documentPath": "userPrivate/stageh-conflict",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "userPrivate",
+      "documentId": "stageh-legacy",
+      "documentPath": "userPrivate/stageh-legacy",
+      "classification": "SAFE_TO_MIGRATE",
+      "issues": [],
+      "legacyFieldsPresent": ["email", "emailVerified"]
+    },
+    {
+      "collection": "userPrivate",
+      "documentId": "stageh-malformed",
+      "documentPath": "userPrivate/stageh-malformed",
+      "classification": "NEEDS_REVIEW",
+      "issues": [
+        {
+          "code": "invalid_field",
+          "fields": ["privatePreferences"]
+        }
+      ],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "userPrivate",
+      "documentId": "stageh-mismatch",
+      "documentPath": "userPrivate/stageh-mismatch",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "userPrivate",
+      "documentId": "stageh-missing",
+      "documentPath": "userPrivate/stageh-missing",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "usernames",
+      "documentId": "stageh_clean",
+      "documentPath": "usernames/stageh_clean",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "usernames",
+      "documentId": "stageh_conflict",
+      "documentPath": "usernames/stageh_conflict",
+      "classification": "NEEDS_REVIEW",
+      "issues": [
+        {
+          "code": "duplicate_username_claim",
+          "fields": []
+        },
+        {
+          "code": "reservation_references_missing_user",
+          "fields": []
+        }
+      ],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "usernames",
+      "documentId": "stageh_legacy",
+      "documentPath": "usernames/stageh_legacy",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "usernames",
+      "documentId": "stageh_malformed",
+      "documentPath": "usernames/stageh_malformed",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    },
+    {
+      "collection": "usernames",
+      "documentId": "stageh_mismatch",
+      "documentPath": "usernames/stageh_mismatch",
+      "classification": "NO_CHANGE",
+      "issues": [],
+      "legacyFieldsPresent": []
+    }
+  ]
+}

@@ -376,6 +376,57 @@ test("reports failed write batches without claiming the removals succeeded", asy
   );
 });
 
+test("dry-run refuses unsafe targets before scanning or writing", async () => {
+  const calls = { collectionScans: 0, documentReads: 0, writes: 0 };
+  const query = {
+    orderBy() {
+      return query;
+    },
+    limit() {
+      return query;
+    },
+    async get() {
+      calls.documentReads += 1;
+      return { docs: [], size: 0 };
+    },
+  };
+  const trackingDb = {
+    collection() {
+      calls.collectionScans += 1;
+      return query;
+    },
+    batch() {
+      calls.writes += 1;
+      return { update() {}, async commit() {} };
+    },
+  };
+
+  await assert.rejects(
+    runMigration({
+      db: trackingDb,
+      projectId: "open-stay",
+      emulatorHost,
+      logger: silentLogger,
+    }),
+    /restricted to demo-\* Firestore Emulator/,
+  );
+  await assert.rejects(
+    runMigration({
+      db: trackingDb,
+      projectId,
+      emulatorHost: null,
+      logger: silentLogger,
+    }),
+    /Migration requires FIRESTORE_EMULATOR_HOST on a loopback address/,
+  );
+
+  assert.deepEqual(calls, {
+    collectionScans: 0,
+    documentReads: 0,
+    writes: 0,
+  });
+});
+
 test("apply refuses non-demo projects and non-loopback emulator endpoints", async () => {
   await assert.rejects(
     runMigration({
