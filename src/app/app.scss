@@ -26,6 +26,15 @@
   margin-left: auto;
   align-items: center;
 }
+.mobile-menu-toggle {
+  display: none;
+}
+.mobile-nav-header {
+  display: none;
+}
+.nav-backdrop {
+  display: none;
+}
 .main-nav a {
   height: 42px;
   border-radius: 999px;
@@ -79,19 +88,82 @@
   color: var(--openstay-muted);
   font-size: 14px;
 }
-@media (max-width: 640px) {
+@media (max-width: 820px) {
   .app-toolbar { min-height: 68px; padding-inline: 12px; }
+  .app-toolbar.mobile-menu-open { z-index: 20; }
   .brand-logo { height: 36px; }
-  .main-nav a:not(.join-link):not(.signin-link) { display: inline-flex; }
-  .main-nav a:not(.join-link):not(.signin-link):first-of-type { display: none; }
-  .main-nav .signin-link { display: none; }
-  .main-nav .join-link { height: 40px; font-size: 13px; }
-  .join-label-full { display: none; }
-  .join-label-short { display: inline; }
-  .main-nav .install-link { height: 40px; margin-left: 0; padding-inline: 9px; }
-  .install-label { display: none; }
+  .mobile-menu-toggle { display: inline-flex; flex: 0 0 auto; }
+  .main-nav {
+    position: fixed;
+    z-index: 21;
+    inset: 0 auto 0 0;
+    width: min(320px, calc(100vw - 56px));
+    height: 100dvh;
+    overflow-y: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin: 0;
+    padding: max(18px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+    border-right: 1px solid var(--openstay-border);
+    background: var(--openstay-warm-white);
+    box-shadow: 8px 0 32px rgba(28, 42, 35, 0.14);
+    transform: translateX(-105%);
+    visibility: hidden;
+    transition:
+      transform 220ms ease,
+      visibility 220ms ease;
+  }
+  .main-nav.mobile-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  .mobile-nav-header {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 4px 12px 8px;
+    border-bottom: 1px solid var(--openstay-border);
+  }
+  .mobile-nav-brand {
+    color: var(--openstay-forest);
+    font-size: 20px;
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .drawer-close { flex: 0 0 auto; }
+  .nav-backdrop {
+    position: fixed;
+    z-index: 15;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgba(17, 29, 22, 0.42);
+  }
+  .main-nav a,
+  .main-nav .install-link {
+    display: inline-flex;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 48px;
+    height: 48px;
+    margin: 0;
+    padding-inline: 14px;
+  }
+  .main-nav a.active { background: var(--openstay-sage); }
+  .main-nav .join-link { font-size: 14px; }
+  .join-label-full { display: inline; }
+  .join-label-short { display: none; }
+  .main-nav .install-link { gap: 8px; }
+  .install-label { display: inline; }
+}
+@media (max-width: 640px) {
   .app-footer { flex-direction: column; gap: 8px; }
 }
-@media (max-width: 360px) {
-  .main-nav a[href="/explore"] { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .main-nav { transition: none; }
 }

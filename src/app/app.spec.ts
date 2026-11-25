@@ -28,6 +28,38 @@ describe('App', () => {
     expect(compiled.querySelector('.brand')?.textContent).toContain('Openstay');
   });
 
+  it('keeps all primary links available in the collapsible mobile navigation', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    const menuToggle = fixture.nativeElement.querySelector(
+      '.mobile-menu-toggle',
+    ) as HTMLButtonElement;
+    expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
+
+    menuToggle.click();
+    fixture.detectChanges();
+
+    const navigation = fixture.nativeElement.querySelector(
+      '#primary-navigation',
+    ) as HTMLElement;
+    expect(menuToggle.getAttribute('aria-expanded')).toBe('true');
+    expect(navigation.classList.contains('mobile-open')).toBe(true);
+    expect(navigation.textContent).toContain('Home');
+    expect(navigation.textContent).toContain('Explore');
+    expect(navigation.textContent).toContain('Sign in');
+    expect(navigation.textContent).toContain('Join Openstay');
+    expect(
+      fixture.nativeElement.querySelector('.nav-backdrop'),
+    ).toBeTruthy();
+
+    (fixture.nativeElement.querySelector('.nav-backdrop') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
+    expect(navigation.classList.contains('mobile-open')).toBe(false);
+    expect(fixture.nativeElement.querySelector('.nav-backdrop')).toBeNull();
+  });
+
   it('should prompt supported browsers to install the app', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

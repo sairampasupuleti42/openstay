@@ -1,4 +1,4 @@
-<mat-toolbar class="app-toolbar">
+<mat-toolbar class="app-toolbar" [class.mobile-menu-open]="isMobileNavOpen()">
   <a class="brand" routerLink="/" aria-label="Openstay home">
     <img
       class="brand-logo"
@@ -9,15 +9,57 @@
     />
     <span class="visually-hidden">Openstay</span>
   </a>
-  <nav class="main-nav" aria-label="Primary navigation">
-    <a mat-button routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
-    <a mat-button routerLink="/explore" routerLinkActive="active">Explore</a>
-    <a mat-button class="signin-link" routerLink="/auth/login">Sign in</a>
+  <nav
+    id="primary-navigation"
+    class="main-nav"
+    aria-label="Primary navigation"
+    [class.mobile-open]="isMobileNavOpen()"
+  >
+    <div class="mobile-nav-header">
+      <a class="mobile-nav-brand" routerLink="/" (click)="closeMobileNav()">
+        Openstay
+      </a>
+      <button
+        mat-icon-button
+        class="drawer-close"
+        type="button"
+        aria-label="Close navigation menu"
+        (click)="closeMobileNav()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <a
+      mat-button
+      routerLink="/"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      (click)="closeMobileNav()"
+    >
+      Home
+    </a>
+    <a
+      mat-button
+      routerLink="/explore"
+      routerLinkActive="active"
+      (click)="closeMobileNav()"
+    >
+      Explore
+    </a>
+    <a
+      mat-button
+      class="signin-link"
+      routerLink="/auth/login"
+      (click)="closeMobileNav()"
+    >
+      Sign in
+    </a>
     <a
       mat-flat-button
       class="join-link"
       routerLink="/auth/register"
       aria-label="Join Openstay"
+      (click)="closeMobileNav()"
     >
       <span class="join-label-full">Join Openstay</span>
       <span class="join-label-short" aria-hidden="true">Join</span>
@@ -28,14 +70,38 @@
         class="install-link"
         type="button"
         aria-label="Install Openstay app"
-        (click)="installApp()"
+        (click)="closeMobileNav(); installApp()"
       >
-        <span class="material-symbols-outlined install-icon" aria-hidden="true">download</span>
+        <span class="material-symbols-outlined install-icon" aria-hidden="true">
+          download
+        </span>
         <span class="install-label">Install app</span>
       </button>
     }
   </nav>
+  <button
+    mat-icon-button
+    class="mobile-menu-toggle"
+    type="button"
+    [attr.aria-expanded]="isMobileNavOpen()"
+    aria-controls="primary-navigation"
+    [attr.aria-label]="isMobileNavOpen() ? 'Close navigation menu' : 'Open navigation menu'"
+    (click)="toggleMobileNav()"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">
+      {{ isMobileNavOpen() ? 'close' : 'menu' }}
+    </span>
+  </button>
 </mat-toolbar>
+
+@if (isMobileNavOpen()) {
+  <button
+    class="nav-backdrop"
+    type="button"
+    aria-label="Close navigation menu"
+    (click)="closeMobileNav()"
+  ></button>
+}
 
 @if (installMessage) {
   <p class="install-message" role="status" aria-live="polite">{{ installMessage }}</p>

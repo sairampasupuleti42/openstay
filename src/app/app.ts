@@ -17,8 +17,17 @@ interface BeforeInstallPromptEvent extends Event {
 })
 export class App {
   readonly isInstalled = signal(this.isRunningStandalone());
+  readonly isMobileNavOpen = signal(false);
   installMessage = '';
   private installPrompt: BeforeInstallPromptEvent | null = null;
+
+  toggleMobileNav(): void {
+    this.isMobileNavOpen.update((isOpen) => !isOpen);
+  }
+
+  closeMobileNav(): void {
+    this.isMobileNavOpen.set(false);
+  }
 
   @HostListener('window:beforeinstallprompt', ['$event'])
   captureInstallPrompt(event: Event): void {
@@ -35,6 +44,7 @@ export class App {
   }
 
   async installApp(): Promise<void> {
+    this.closeMobileNav();
     this.installMessage = '';
     const prompt = this.installPrompt;
 
