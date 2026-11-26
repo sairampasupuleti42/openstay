@@ -23,9 +23,11 @@ independently validate those results; do not treat them as production approval.
 - The only future production operation covered here is the Stage G inventory
   with `--live-read-only`. Never use the migration utility or `--apply` against
   production.
-- The inventory requires an explicit project ID and mode. Live mode rejects a
-  configured `FIRESTORE_EMULATOR_HOST`, but does not independently confirm the
-  human operator's intended project or credential identity.
+- The approved project ID for this inventory is `open-stay`; live mode rejects
+  any other project ID and requires an explicit project ID, mode, and
+  `GOOGLE_APPLICATION_CREDENTIALS` configuration. It rejects a configured
+  `FIRESTORE_EMULATOR_HOST`, but does not independently verify the configured
+  credential principal or its effective IAM permissions.
 - The scan is paginated, sequential across collections, and not a single
   point-in-time snapshot. Concurrent application writes can produce transient
   cross-collection mismatches. It can read up to `page-size × max-pages`
@@ -57,10 +59,10 @@ Before any future invocation:
    inventory request. Record the project ID, project number, database ID
    (which must be `(default)`), environment, and confirmation time in the
    approval record.
-3. Confirm that the ID is the intended production project and not `open-stay`,
-   `demo-openstay`, or another project by coincidence. Do not infer the
-   production project ID from this repository: its checked-in aliases contain
-   `demo-openstay` and `open-stay`, not a production alias.
+3. Confirm that the ID is exactly `open-stay`, the approved project for this
+   inventory, and is the intended production project. The utility rejects any
+   other project ID. Do not infer the production target from a checked-in
+   Firebase alias; obtain independent owner confirmation.
 4. Stop if the project, database, or identity is ambiguous, if reviewers
    disagree, or if the command target differs from the approved record. Do not
    probe Firebase to resolve uncertainty.
@@ -95,11 +97,10 @@ request:
   least-privilege access through its normal process. No backup/export
   permissions are needed by the inventory identity.
 - The Admin SDK initializes with Application Default Credentials (ADC); it
-  does not take a credential argument in this script. Credential sources can
-  include `GOOGLE_APPLICATION_CREDENTIALS`, local ADC created by
-  `gcloud auth application-default login`, or workload/metadata credentials
-  supplied by the execution environment. A project ID flag does not select or
-  constrain the credential principal.
+  does not take a credential argument in this script. Live mode requires
+  `GOOGLE_APPLICATION_CREDENTIALS` to be explicitly set, preventing fallback
+  to local ADC or workload/metadata credentials. The script does not inspect
+  the config file or verify its principal or permissions.
 - For a future approved run, use an approved isolated execution environment
   and explicit, short-lived Workload Identity Federation / impersonated
   credential configuration, with the read-only principal verified by the
@@ -214,7 +215,7 @@ not be a developer-default credential or a long-lived key.
 env -u FIRESTORE_EMULATOR_HOST \
   GOOGLE_APPLICATION_CREDENTIALS="<APPROVED_SHORT_LIVED_ADC_CONFIG>" \
   node functions/scripts/migrations/inventory-legacy-profiles.mjs \
-  --project-id "<CONFIRMED_PRODUCTION_PROJECT_ID>" \
+  --project-id "open-stay" \
   --live-read-only \
   --page-size 400 \
   --max-pages 10000 \
@@ -232,8 +233,9 @@ The inventory report identifies itself as **Sensitive operational metadata**.
 It contains project ID, timestamps, scan counts, issue codes, classifications,
 legacy field names, and document IDs/paths. Username reservation document IDs
 can themselves be usernames. The script omits profile values, email addresses,
-phone numbers, private preferences, and credentials; it redacts some
-email/phone-shaped document IDs, but this is not comprehensive
+phone numbers, private preference values, and credentials. It redacts IDs
+containing `@` or at least seven digits; shorter or otherwise encoded
+identifiers may still be sensitive, so this is not comprehensive
 de-identification.
 
 - Store the report only in the pre-approved encrypted location with access

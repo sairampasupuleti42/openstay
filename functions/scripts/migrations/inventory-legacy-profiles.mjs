@@ -5,6 +5,7 @@ import { initializeApp } from "firebase-admin/app";
 import { FieldPath, Timestamp, getFirestore } from "firebase-admin/firestore";
 
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
+const LIVE_PROJECT_ID = "open-stay";
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 const DEFAULT_PAGE_SIZE = 400;
 const DEFAULT_MAX_PAGES = 10000;
@@ -163,6 +164,7 @@ export function validateExecutionOptions({
   projectId,
   mode,
   emulatorHost,
+  credentialConfigPath = process.env.GOOGLE_APPLICATION_CREDENTIALS,
   pageSize = DEFAULT_PAGE_SIZE,
   maxPages = DEFAULT_MAX_PAGES,
 }) {
@@ -197,6 +199,20 @@ export function validateExecutionOptions({
     throw new Error(
       "Live-read-only mode refuses FIRESTORE_EMULATOR_HOST; remove the emulator endpoint to verify the target.",
     );
+  } else {
+    if (projectId !== LIVE_PROJECT_ID) {
+      throw new Error(
+        `Live-read-only mode is restricted to Firebase project ${LIVE_PROJECT_ID}.`,
+      );
+    }
+    if (
+      typeof credentialConfigPath !== "string" ||
+      !credentialConfigPath.trim()
+    ) {
+      throw new Error(
+        "Live-read-only mode requires an explicit GOOGLE_APPLICATION_CREDENTIALS configuration.",
+      );
+    }
   }
 }
 
@@ -540,10 +556,12 @@ function isPlainRecord(value) {
 }
 
 function safeDocumentId(id) {
+  const digitCount =
+    typeof id === "string" ? (id.match(/\d/g) ?? []).length : 0;
   if (
     typeof id !== "string" ||
     id.includes("@") ||
-    /\+?\d[\d ()-]{6,}\d/.test(id)
+    digitCount >= 7
   ) {
     return "[redacted]";
   }

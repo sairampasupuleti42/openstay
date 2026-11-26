@@ -548,12 +548,18 @@ test("JSON and human-readable output exclude email, phone, and private preferenc
     "+12025550123",
     validProfile("+12025550123", "person_phone"),
   );
+  await seed(
+    "users",
+    "202.555.0123",
+    validProfile("202.555.0123", "dotted_person_phone"),
+  );
   const report = await run();
   const output = `${JSON.stringify(report)}\n${formatHumanSummary(report)}`;
 
   for (const value of [
     "redact-me@example.test",
     "+12025550123",
+    "202.555.0123",
     "preference-secret-value",
   ]) {
     assert.equal(output.includes(value), false);
@@ -593,6 +599,16 @@ test("execution modes, explicit project IDs, and conflicting flags are validated
         projectId: "",
         mode: "emulator",
         emulatorHost,
+      }),
+    /explicit --project-id/,
+  );
+  assert.throws(
+    () =>
+      validateExecutionOptions({
+        projectId: undefined,
+        mode: "live-read-only",
+        emulatorHost: undefined,
+        credentialConfigPath: "/approved/adc-config.json",
       }),
     /explicit --project-id/,
   );
@@ -654,7 +670,27 @@ test("emulator mode requires demo project ID and verified loopback endpoint", ()
       projectId: "open-stay",
       mode: "live-read-only",
       emulatorHost: undefined,
+      credentialConfigPath: "/approved/adc-config.json",
     }),
+  );
+  assert.throws(
+    () =>
+      validateExecutionOptions({
+        projectId: "another-project",
+        mode: "live-read-only",
+        emulatorHost: undefined,
+        credentialConfigPath: "/approved/adc-config.json",
+      }),
+    /restricted to Firebase project open-stay/,
+  );
+  assert.throws(
+    () =>
+      validateExecutionOptions({
+        projectId: "open-stay",
+        mode: "live-read-only",
+        emulatorHost: undefined,
+      }),
+    /explicit GOOGLE_APPLICATION_CREDENTIALS/,
   );
   assert.throws(
     () =>
@@ -662,6 +698,7 @@ test("emulator mode requires demo project ID and verified loopback endpoint", ()
         projectId: "open-stay",
         mode: "live-read-only",
         emulatorHost: "127.0.0.1:8080",
+        credentialConfigPath: "/approved/adc-config.json",
       }),
     /refuses FIRESTORE_EMULATOR_HOST/,
   );
