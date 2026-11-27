@@ -8,6 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:rules": "firebase emulators:exec --only firestore --project demo-openstay \"node --test firebase/firestore.rules.test.mjs\"",
+    "test:hosting": "npm --prefix functions run build && firebase emulators:exec --only firestore --project demo-openstay \"node --test functions/test/host-participation.test.mjs\"",
     "test:migration": "firebase emulators:exec --only firestore --project demo-openstay \"node --test functions/scripts/migrations/migrate-legacy-profiles.test.mjs functions/scripts/migrations/inventory-legacy-profiles.test.mjs\"",
     "test:inventory": "firebase emulators:exec --only firestore --project demo-openstay \"node --test functions/scripts/migrations/inventory-legacy-profiles.test.mjs\"",
     "migrate:profiles": "npm --prefix functions run migrate:profiles --",

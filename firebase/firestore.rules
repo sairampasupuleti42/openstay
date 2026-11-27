@@ -169,6 +169,123 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /hostProfiles/{hostUid} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == hostUid;
+      }
+
+      function validLanguageAt(profile, index) {
+        return profile.languages.size() <= index
+          || (profile.languages[index] is string
+            && profile.languages[index].matches('^[a-z]{2,3}(-[A-Z]{2})?$'));
+      }
+
+      function validHostProfile(profile) {
+        return profile.keys().hasOnly([
+            'uid',
+            'displayName',
+            'introduction',
+            'languages',
+            'visibility',
+            'createdAt',
+            'updatedAt'
+          ])
+          && profile.keys().hasAll([
+            'uid',
+            'displayName',
+            'languages',
+            'visibility',
+            'createdAt',
+            'updatedAt'
+          ])
+          && profile.uid == hostUid
+          && profile.displayName is string
+          && profile.displayName.size() > 0
+          && profile.displayName.size() <= 100
+          && (!('introduction' in profile) ||
+            (profile.introduction is string && profile.introduction.size() <= 500))
+          && profile.languages is list
+          && profile.languages.size() <= 10
+          && profile.languages.toSet().size() == profile.languages.size()
+          && validLanguageAt(profile, 0)
+          && validLanguageAt(profile, 1)
+          && validLanguageAt(profile, 2)
+          && validLanguageAt(profile, 3)
+          && validLanguageAt(profile, 4)
+          && validLanguageAt(profile, 5)
+          && validLanguageAt(profile, 6)
+          && validLanguageAt(profile, 7)
+          && validLanguageAt(profile, 8)
+          && validLanguageAt(profile, 9)
+          && profile.visibility in ['private', 'public']
+          && profile.createdAt is timestamp
+          && profile.updatedAt is timestamp;
+      }
+
+      function hasCurrentHostConsent() {
+        let consentPath = /databases/$(database)/documents/hostPrivate/$(hostUid);
+        return exists(consentPath)
+          && get(consentPath).data.uid == hostUid
+          && get(consentPath).data.termsVersion == 'host-participation-v1'
+          && get(consentPath).data.termsDigest == '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b'
+          && get(consentPath).data.consentState == 'accepted'
+          && get(consentPath).data.eventId is string;
+      }
+
+      function hasActiveAccount() {
+        let userPath = /databases/$(database)/documents/users/$(hostUid);
+        return exists(userPath) && get(userPath).data.accountStatus == 'active';
+      }
+
+      function isPublicHostProfile() {
+        return validHostProfile(resource.data)
+          && resource.data.visibility == 'public'
+          && hasActiveAccount()
+          && hasCurrentHostConsent();
+      }
+
+      allow get: if isOwner() || isPublicHostProfile();
+      allow list: if isPublicHostProfile();
+      allow create: if isOwner()
+        && request.auth.token.email_verified == true
+        && hasActiveAccount()
+        && hasCurrentHostConsent()
+        && validHostProfile(request.resource.data)
+        && request.resource.data.visibility == 'private'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if isOwner()
+        && request.auth.token.email_verified == true
+        && hasActiveAccount()
+        && validHostProfile(request.resource.data)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && (request.resource.data.visibility != 'public' || hasCurrentHostConsent())
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'displayName',
+          'introduction',
+          'languages',
+          'visibility',
+          'updatedAt'
+        ]);
+      allow delete: if false;
+    }
+
+    match /hostPrivate/{hostUid} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == hostUid;
+      }
+
+      allow get, list: if isOwner();
+      allow create, update, delete: if false;
+
+      match /consentEvents/{eventId} {
+        allow get, list: if request.auth != null && request.auth.uid == hostUid;
+        allow create, update, delete: if false;
+      }
+    }
+
     match /usernames/{username} {
       function isReservationOwner() {
         return request.auth != null && resource.data.uid == request.auth.uid;

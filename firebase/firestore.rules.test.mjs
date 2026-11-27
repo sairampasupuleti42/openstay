@@ -58,6 +58,56 @@ function privateProfile(uid, overrides = {}) {
   };
 }
 
+function hostProfile(uid, overrides = {}) {
+  return {
+    uid,
+    displayName: 'Host',
+    languages: ['en'],
+    visibility: 'private',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  };
+}
+
+function hostPrivateProfile(uid, overrides = {}) {
+  return {
+    uid,
+    termsVersion: 'host-participation-v1',
+    termsDigest: '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b',
+    consentState: 'accepted',
+    eventId: 'consent-event-1',
+    updatedAt: serverTimestamp(),
+    ...overrides,
+  };
+}
+
+async function seedHostConsent(uid, consentState = 'accepted') {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const userRef = doc(context.firestore(), `users/${uid}`);
+    if (!(await getDoc(userRef)).exists()) {
+      await setDoc(userRef, { uid, accountStatus: 'active' });
+    }
+    await setDoc(
+      doc(context.firestore(), `hostPrivate/${uid}`),
+      hostPrivateProfile(uid, { consentState }),
+    );
+  });
+}
+
+function hostConsentEvent(uid, overrides = {}) {
+  return {
+    eventId: 'consent-event-1',
+    uid,
+    eventType: 'accepted',
+    termsVersion: 'host-participation-v1',
+    termsDigest: 'a'.repeat(64),
+    recordedAt: serverTimestamp(),
+    idempotencyKey: 'stable-request-key-1234',
+    ...overrides,
+  };
+}
+
 function usernameReservation(uid) {
   return {
     uid,
@@ -500,5 +550,211 @@ test('prevents creating profiles for another UID and denies unspecified collecti
     await assertFails(setDoc(doc(db, 'privateMessages/message-1'), {
       content: 'not allowed',
     }));
+  });
+});
+
+test('host profiles are owner-created as private and support allowlisted updates', async (t) => {
+  const uid = 'host-profile-owner';
+  const db = authenticatedDb(uid, true);
+  const hostRef = doc(db, `hostProfiles/${uid}`);
+
+  await seedHostConsent(uid);
+  await assertSucceeds(setDoc(hostRef, hostProfile(uid)));
+  await assertSucceeds(updateDoc(hostRef, {
+    displayName: 'Updated Host',
+    introduction: 'A short public introduction.',
+    languages: ['en', 'mi'],
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(hostRef, {
+    uid: 'different-user',
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(hostRef, {
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(hostRef, {
+    privatePhoneNumber: '+64000000000',
+    updatedAt: serverTimestamp(),
+  }));
+
+  await t.test('a profile cannot be created as public', async () => {
+    const publicUid = 'public-on-create';
+    await seedHostConsent(publicUid);
+    await assertFails(setDoc(
+      doc(authenticatedDb(publicUid, true), `hostProfiles/${publicUid}`),
+      hostProfile(publicUid, { visibility: 'public' }),
+    ));
+  });
+
+  await t.test('unverified email cannot create or update a host profile', async () => {
+    const unverifiedUid = 'unverified-host';
+    const unverifiedDb = authenticatedDb(unverifiedUid);
+    await seedHostConsent(unverifiedUid);
+    await assertFails(setDoc(
+      doc(unverifiedDb, `hostProfiles/${unverifiedUid}`),
+      hostProfile(unverifiedUid),
+    ));
+  });
+});
+
+test('host profile writes are bound to the authenticated UID', async () => {
+  const attackerUid = 'host-profile-attacker';
+  const victimUid = 'host-profile-victim';
+  const attackerDb = authenticatedDb(attackerUid, true);
+  await seedHostConsent(victimUid);
+
+  await assertFails(setDoc(
+    doc(attackerDb, `hostProfiles/${victimUid}`),
+    hostProfile(victimUid),
+  ));
+});
+
+test('host profile writes require an active account', async () => {
+  const uid = 'suspended-host';
+  const db = authenticatedDb(uid, true);
+  const hostRef = doc(db, `hostProfiles/${uid}`);
+  await seedHostConsent(uid);
+  await assertSucceeds(setDoc(hostRef, hostProfile(uid)));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), `users/${uid}`), { accountStatus: 'suspended' });
+  });
+  await assertFails(updateDoc(hostRef, { visibility: 'public', updatedAt: serverTimestamp() }));
+  await assertFails(setDoc(hostRef, hostProfile(uid)));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await deleteDoc(doc(context.firestore(), `hostProfiles/${uid}`));
+  });
+  await assertFails(setDoc(hostRef, hostProfile(uid)));
+});
+
+test('public host reads are denied after suspension', async () => {
+  const uid = 'suspended-public-host';
+  const owner = authenticatedDb(uid, true);
+  const anonymous = testEnv.unauthenticatedContext().firestore();
+  await seedHostConsent(uid);
+  await assertSucceeds(setDoc(doc(owner, `hostProfiles/${uid}`), hostProfile(uid)));
+  await assertSucceeds(updateDoc(doc(owner, `hostProfiles/${uid}`), {
+    visibility: 'public', updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(getDoc(doc(anonymous, `hostProfiles/${uid}`)));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), `users/${uid}`), { accountStatus: 'suspended' });
+  });
+  await assertFails(getDoc(doc(anonymous, `hostProfiles/${uid}`)));
+  await assertFails(getDoc(doc(authenticatedDb('other-host', true), `hostProfiles/${uid}`)));
+  await assertSucceeds(getDoc(doc(owner, `hostProfiles/${uid}`)));
+});
+
+test('host profiles cannot be created without trusted current consent', async () => {
+  const uid = 'host-without-consent';
+  await assertFails(setDoc(
+    doc(authenticatedDb(uid, true), `hostProfiles/${uid}`),
+    hostProfile(uid),
+  ));
+});
+
+test('host profile rules reject unknown fields and invalid types', async (t) => {
+  const invalidCases = [
+    ['unknown field', { internalNotes: 'private' }],
+    ['display name type', { displayName: 7 }],
+    ['introduction type', { introduction: false }],
+    ['languages type', { languages: 'en' }],
+    ['language item type', { languages: [7] }],
+    ['invalid language code', { languages: ['English'] }],
+    ['duplicate language', { languages: ['en', 'en'] }],
+    ['too many languages', { languages: Array(11).fill('en') }],
+    ['invalid visibility', { visibility: 'draft' }],
+  ];
+
+  for (const [index, [label, overrides]] of invalidCases.entries()) {
+    await t.test(label, async () => {
+      const uid = `invalid-host-${index}`;
+      await seedHostConsent(uid);
+      await assertFails(setDoc(
+        doc(authenticatedDb(uid, true), `hostProfiles/${uid}`),
+        hostProfile(uid, overrides),
+      ));
+    });
+  }
+});
+
+test('public host profiles are readable publicly only after visibility changes', async () => {
+  const uid = 'host-visibility-owner';
+  const ownerDb = authenticatedDb(uid, true);
+  await seedHostConsent(uid);
+  await assertSucceeds(setDoc(
+    doc(ownerDb, `hostProfiles/${uid}`),
+    hostProfile(uid),
+  ));
+
+  const anonymousDb = testEnv.unauthenticatedContext().firestore();
+  await assertFails(getDoc(doc(anonymousDb, `hostProfiles/${uid}`)));
+  await assertSucceeds(updateDoc(doc(ownerDb, `hostProfiles/${uid}`), {
+    visibility: 'public',
+    updatedAt: serverTimestamp(),
+  }));
+  await assertSucceeds(getDoc(doc(anonymousDb, `hostProfiles/${uid}`)));
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), `hostPrivate/${uid}`), { termsDigest: 'old-digest' });
+  });
+  await assertFails(getDoc(doc(anonymousDb, `hostProfiles/${uid}`)));
+
+  await seedHostConsent(uid, 'withdrawn');
+  await assertFails(getDoc(doc(anonymousDb, `hostProfiles/${uid}`)));
+  await assertFails(updateDoc(doc(ownerDb, `hostProfiles/${uid}`), {
+    visibility: 'public',
+    updatedAt: serverTimestamp(),
+  }));
+});
+
+test('host private state and consent history are owner-readable and client-immutable', async (t) => {
+  const uid = 'host-private-owner';
+  const eventId = 'consent-event-1';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const adminDb = context.firestore();
+    await setDoc(doc(adminDb, `hostPrivate/${uid}`), hostPrivateProfile(uid));
+    await setDoc(
+      doc(adminDb, `hostPrivate/${uid}/consentEvents/${eventId}`),
+      hostConsentEvent(uid),
+    );
+  });
+
+  const ownerDb = authenticatedDb(uid);
+  const otherDb = authenticatedDb('host-private-outsider');
+  const privateRef = doc(ownerDb, `hostPrivate/${uid}`);
+  const eventRef = doc(ownerDb, `hostPrivate/${uid}/consentEvents/${eventId}`);
+  await assertSucceeds(getDoc(privateRef));
+  await assertSucceeds(getDoc(eventRef));
+
+  await t.test('another user cannot read private state or consent events', async () => {
+    await assertFails(getDoc(doc(otherDb, `hostPrivate/${uid}`)));
+    await assertFails(getDoc(doc(otherDb, `hostPrivate/${uid}/consentEvents/${eventId}`)));
+  });
+
+  await t.test('client-created or rewritten consent is rejected', async () => {
+    await assertFails(setDoc(
+      doc(ownerDb, `hostPrivate/${uid}/consentEvents/fake-event`),
+      hostConsentEvent(uid, { eventId: 'fake-event' }),
+    ));
+    await assertFails(updateDoc(eventRef, {
+      recordedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(privateRef, {
+      consentState: 'withdrawn',
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  await t.test('another user cannot write private host state or events', async () => {
+    await assertFails(setDoc(
+      doc(otherDb, `hostPrivate/${uid}`),
+      hostPrivateProfile(uid),
+    ));
+    await assertFails(setDoc(
+      doc(otherDb, `hostPrivate/${uid}/consentEvents/outsider-event`),
+      hostConsentEvent('host-private-outsider', { eventId: 'outsider-event' }),
+    ));
   });
 });
