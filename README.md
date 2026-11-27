@@ -11,9 +11,9 @@ The proposed product requirements, MVP scope, system architecture, data model,
 API inventory, security approach, milestones, and review checklist are in
 [docs/phase-0-architecture.md](docs/phase-0-architecture.md).
 
-Phase 1 foundation work is underway. This foundation does not implement account
-flows or other product features; those remain subsequent, separately validated
-work.
+Implementation has progressed through host listing management and an initial
+public discovery experience. The roadmap remains a proposal; implementation
+and deployment of a feature do not by themselves establish launch readiness.
 
 ## Current implementation
 
@@ -25,16 +25,16 @@ prompt is unavailable. The service worker is disabled in development. It also
 includes Firebase Authentication with email/password and Google sign-in,
 Firestore-backed user profiles, Firebase modular SDK initialization for
 Storage and Functions, persistent Firebase Auth state, email-verification and
-account-status route guards, App Check setup for configured non-emulator
-environments, default-deny Firestore and Storage rules, and a compiled Cloud
-Functions skeleton. Host participation includes opt-in private host profiles,
-consent history managed by App Check-protected callables, and public visibility
-gated on current consent and an active account. Listings and booking behavior
-remain out of scope.
-AngularFire is intentionally not installed: the Phase 0 architecture selected
-one consistent integration pattern using the Firebase modular Web SDK, and the
-latest AngularFire release does not declare compatibility with Angular 22 and
-TypeScript 6.
+account-status route guards, and App Check setup for configured non-emulator
+environments. Host participation includes opt-in private profiles and consent
+history managed by trusted callables. Hosts can create drafts and use trusted
+lifecycle actions; public discovery and detail use bounded, screened callable
+responses. Direct listing and host-profile document reads are owner-only.
+
+See [M3.3 host listings](docs/m3.3-host-listings-architecture.md) for the
+implemented behavior, limitations, and outstanding work. In particular,
+availability, hosting requests, bookings, photos, and an independent
+moderation/reporting workflow are not implemented by M3.3.
 
 ### Prerequisites
 
@@ -73,15 +73,41 @@ in `asia-south1`. The verified Web App configuration is in
 are public client identifiers, not service-account credentials. Never commit
 service-account private keys or other secrets.
 
-Before using Firebase outside the emulator, set the App Check reCAPTCHA site
-key in `appCheckSiteKey`; the Firebase Web App configuration does not include
-that key. The host consent callables enforce App Check; verify the provider and
-authorized domains before deployment. Consent changes, including withdrawals,
+The non-emulator configuration includes an App Check reCAPTCHA site key.
+Verify the provider, enforcement, and authorized domains in the target project
+before relying on App Check. The host consent and listing callables enforce
+App Check outside the emulator. Consent changes, including withdrawals,
 are limited to ten events per account in any rolling hour; idempotent retries
 do not consume quota. Withdrawal can be delayed until a slot opens.
 Monitor abuse and establish additional controls before public launch. Analytics
 is not initialized until an appropriate consent flow is in
-place. Do not deploy yet.
+place. Production deployment remains subject to the launch prerequisites below
+and in the M3.3 implementation record.
+
+### Outstanding M3 and deployment work
+
+- **Content safety:** Screening is heuristic and host confirmation is a
+  self-attestation, not proof of review or independent moderation. Implement
+  and staff independent moderation, reporting, and abuse-handling processes
+  before public launch; sensitive or harmful text can still evade screening.
+- **Discovery and future features:** Initial discovery supports exact country
+  and city, accommodation type, and minimum guest filters with bounded
+  pagination. Date availability needs an approved availability model; remaining
+  discovery acceptance, including privacy review and cost measurement, belongs
+  to M4. M4 feature development may proceed; this is not production deployment
+  approval. Photos, availability, requests, bookings, and messaging require
+  separate implementation and approval.
+- **Development deployment (2026-11-27):** Hosting, Firestore rules, and index
+  definitions were deployed to `open-stay`. Index build readiness was not
+  confirmed. Functions deployment failed because required APIs could not be
+  enabled without the Blaze billing plan; the deployed app must not be assumed
+  to have the current callable backend. After authorized billing approval,
+  deploy the Functions and verify their availability and compatibility with
+  the deployed client and rules.
+- **External controls:** Verify App Check and production deployment protections,
+  restrict deployment credentials, and complete operational safety and abuse
+  readiness before production release. The development deployments above are
+  not production approval.
 
 Google sign-in is implemented in the app and uses the configured Firebase
 Authentication instance. In the Firebase Console for `open-stay`, enable the
