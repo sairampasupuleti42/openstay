@@ -54,4 +54,4 @@ jobs:
       - name: Deploy to Firebase
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
-        run: npx firebase-tools@15.37.0 deploy --only hosting,firestore:rules,storage:rules,functions --project open-stay --non-interactive
+        run: npx firebase-tools@15.37.0 deploy --only hosting,firestore:rules,firestore:indexes,storage:rules,functions --project open-stay --non-interactive
