@@ -6,15 +6,25 @@
     <button mat-button type="button" (click)="load(items().length > 0)">Try again</button>
   }
   @if (!loading() && !error() && items().length === 0) {
-    <p class="card">No hosting requests yet.</p>
+    <p class="card">No hosting requests or stays yet.</p>
   }
-  @for (request of items(); track request.requestId) {
-    <article class="card">
-      <h2>Request for {{ request.startDate }} to {{ request.endDate }}</h2>
-      <p>{{ request.guestCount }} guest(s) · {{ request.status === 'accepted' ? 'Confirmed stay' : request.status }}</p>
-      <a mat-stroked-button [routerLink]="['/requests', request.requestId]">View details</a>
-      <a mat-button [routerLink]="['/listings', request.listingId]">View listing</a>
-    </article>
+  @for (section of sections(); track section.key) {
+    <section class="request-section" [attr.aria-labelledby]="'heading-' + section.key">
+      <h2 [id]="'heading-' + section.key">{{ section.title }}</h2>
+      @if (section.items.length === 0) {
+        <p class="muted">No {{ section.title.toLowerCase() }}.</p>
+      }
+      @for (request of section.items; track request.requestId) {
+        <article class="card">
+          <h3>Stay dates: {{ request.startDate }} to {{ request.endDate }}</h3>
+          <p>{{ request.guestCount }} guest(s) ·
+            {{ request.status === 'accepted' ? 'Accepted' : request.status }}
+          </p>
+          <a mat-stroked-button [routerLink]="['/requests', request.requestId]">View details</a>
+          <a mat-button [routerLink]="['/listings', request.listingId]">View listing</a>
+        </article>
+      }
+    </section>
   }
   @if (cursor() && !loading() && !error()) {
     <button mat-button type="button" (click)="load(true)">Load more</button>

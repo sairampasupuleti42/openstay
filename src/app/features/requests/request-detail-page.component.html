@@ -17,7 +17,15 @@
       }
       <p>Arrival: {{ request.startDate }} · Checkout: {{ request.endDate }}</p>
       <p>Guests: {{ request.guestCount }}</p>
-      @if (request.traveller; as traveller) { <p>Traveller: {{ traveller.displayName }}</p> }
+      @if (request.listingLocation) { <p>Location: {{ request.listingLocation }}</p> }
+      @if (request.otherParticipantName) {
+        <p>{{ request.viewerIsHost ? 'Traveller' : 'Host' }}: {{ request.otherParticipantName }}</p>
+      }
+      @if (request.status === 'accepted') {
+        <button mat-flat-button type="button" [disabled]="openingConversation()" (click)="openConversation()">
+          {{ openingConversation() ? 'Opening…' : 'Message ' + (request.otherParticipantName || 'participant') }}
+        </button>
+      }
       @if (success()) { <p role="status">{{ success() }}</p> }
       @if (actionError()) { <p class="error" role="alert">{{ actionError() }}</p> }
       @if (acting()) { <p role="status">Saving decision…</p> }

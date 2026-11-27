@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HostingRequest } from '../../core/models/hosting-request.model';
@@ -23,6 +23,28 @@ export class RequestListPageComponent implements OnInit {
   readonly cursor = signal<string | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly sections = computed(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const groups = [
+      { key: 'pending', title: this.kind === 'incoming' ? 'Incoming pending requests' : 'Pending requests', items: [] as HostingRequest[] },
+      { key: 'upcoming', title: 'Upcoming accepted stays', items: [] as HostingRequest[] },
+      { key: 'cancelled', title: 'Cancelled stays and requests', items: [] as HostingRequest[] },
+      { key: 'declined', title: 'Declined requests', items: [] as HostingRequest[] },
+      { key: 'past', title: 'Past-dated accepted stays', items: [] as HostingRequest[] },
+    ];
+    for (const request of this.items()) {
+      if (request.status === 'pending') groups[0].items.push(request);
+      else if (request.status === 'accepted' && request.endDate <= today) groups[4].items.push(request);
+      else if (request.status === 'accepted') groups[1].items.push(request);
+      else if (request.status === 'cancelled') groups[2].items.push(request);
+      else groups[3].items.push(request);
+    }
+    for (const group of groups) {
+      group.items.sort((first, second) => first.startDate.localeCompare(second.startDate));
+    }
+    groups[4].items.reverse();
+    return groups;
+  });
 
   ngOnInit(): void { void this.load(); }
 

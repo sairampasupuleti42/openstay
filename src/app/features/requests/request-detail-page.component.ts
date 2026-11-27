@@ -1,7 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HostingRequestDetails } from '../../core/models/hosting-request.model';
+import { ConversationService } from '../../core/services/conversation.service';
 import { HostingRequestService } from '../../core/services/hosting-request.service';
 
 @Component({
@@ -18,13 +19,16 @@ import { HostingRequestService } from '../../core/services/hosting-request.servi
 })
 export class RequestDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly service = inject(HostingRequestService);
+  private readonly conversations = inject(ConversationService);
   readonly details = signal<HostingRequestDetails | null>(null);
   readonly loading = signal(true);
   readonly error = signal('');
   readonly actionError = signal('');
   readonly success = signal('');
   readonly acting = signal(false);
+  readonly openingConversation = signal(false);
   private requestId = '';
 
   ngOnInit(): void {
@@ -63,6 +67,20 @@ export class RequestDetailPageComponent implements OnInit {
       this.actionError.set(this.service.errorMessage(error));
     } finally {
       this.acting.set(false);
+    }
+  }
+
+  async openConversation(): Promise<void> {
+    if (this.openingConversation() || this.details()?.status !== 'accepted') return;
+    this.openingConversation.set(true);
+    this.actionError.set('');
+    try {
+      const conversation = await this.conversations.open(this.requestId);
+      await this.router.navigateByUrl(`/messages/${conversation.conversationId}`);
+    } catch (error) {
+      this.actionError.set(this.conversations.errorMessage(error));
+    } finally {
+      this.openingConversation.set(false);
     }
   }
 }

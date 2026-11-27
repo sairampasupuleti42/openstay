@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { ListingService } from '../../core/services/listing.service';
+import { ConversationService } from '../../core/services/conversation.service';
 import { HostingRequestService } from '../../core/services/hosting-request.service';
 import { RequestFormPageComponent } from './request-form-page.component';
 import { RequestListPageComponent } from './request-list-page.component';
@@ -21,15 +22,24 @@ describe('hosting request pages', () => {
   const list = vi.fn();
   const details = vi.fn();
   const decide = vi.fn();
+  const openConversation = vi.fn();
   const getPublicListingDetails = vi.fn();
   const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'Error';
   let route: { snapshot: { paramMap: { get: () => string }; data: { kind: string } } };
 
   beforeEach(async () => {
     vi.resetAllMocks();
+    openConversation.mockResolvedValue({
+      conversationId: 'c'.repeat(64), requestId: 'c'.repeat(64), listingId: 'listing-1',
+      status: 'accepted', otherParticipantName: 'Traveller',
+    });
     getPublicListingDetails.mockResolvedValue(listing);
     list.mockResolvedValue({ items: [request], nextCursor: null });
-    details.mockResolvedValue({ ...request, viewerIsHost: true, listingTitle: listing.title, traveller: { displayName: 'Traveller' } });
+    details.mockResolvedValue({
+      ...request, viewerIsHost: true, listingTitle: listing.title,
+      listingLocation: 'Wellington, New Zealand', otherParticipantName: 'Traveller',
+      traveller: { displayName: 'Traveller' },
+    });
     route = { snapshot: { paramMap: { get: () => 'listing-1' }, data: { kind: 'mine' } } };
     await TestBed.configureTestingModule({
       imports: [RequestFormPageComponent, RequestListPageComponent, RequestDetailPageComponent],
@@ -38,6 +48,7 @@ describe('hosting request pages', () => {
         { provide: ActivatedRoute, useValue: route },
         { provide: ListingService, useValue: { getPublicListingDetails, getErrorMessage: errorMessage } },
         { provide: HostingRequestService, useValue: { create, list, details, decide, errorMessage } },
+        { provide: ConversationService, useValue: { open: openConversation, errorMessage } },
       ],
     }).compileComponents();
   });
@@ -89,6 +100,30 @@ describe('hosting request pages', () => {
     }
   });
 
+  it('groups accepted, pending and terminal requests without presenting completion', async () => {
+    list.mockResolvedValueOnce({
+      items: [
+        { ...request, requestId: 'pending', startDate: '2030-02-01', endDate: '2030-02-05', status: 'pending' },
+        { ...request, requestId: 'upcoming', startDate: '2030-03-01', endDate: '2030-03-05', status: 'accepted' },
+        { ...request, requestId: 'past', startDate: '2020-03-01', endDate: '2020-03-05', status: 'accepted' },
+        { ...request, requestId: 'cancelled', startDate: '2030-04-01', endDate: '2030-04-05', status: 'cancelled' },
+        { ...request, requestId: 'declined', startDate: '2030-05-01', endDate: '2030-05-05', status: 'declined' },
+      ],
+      nextCursor: null,
+    });
+    const fixture = TestBed.createComponent(RequestListPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const sections = fixture.componentInstance.sections();
+    expect(sections.find((section) => section.key === 'upcoming')?.items.map((item) => item.requestId)).toEqual(['upcoming']);
+    expect(sections.find((section) => section.key === 'past')?.items.map((item) => item.requestId)).toEqual(['past']);
+    expect(sections.find((section) => section.key === 'cancelled')?.items.map((item) => item.requestId)).toEqual(['cancelled']);
+    expect(fixture.nativeElement.textContent).toContain('Past-dated accepted stays');
+    expect(fixture.nativeElement.textContent).not.toContain('completed');
+    fixture.destroy();
+  });
+
   it('shows authorised details and the permitted traveller name', async () => {
     const fixture = TestBed.createComponent(RequestDetailPageComponent);
     fixture.detectChanges();
@@ -98,6 +133,22 @@ describe('hosting request pages', () => {
     expect(fixture.nativeElement.textContent).toContain('A lovely stay');
     expect(fixture.nativeElement.textContent).toContain('View your listing');
     expect(fixture.nativeElement.textContent).not.toContain('phoneNumber');
+  });
+
+  it('opens the deterministic conversation only for an accepted stay', async () => {
+    details.mockResolvedValueOnce({
+      ...request, status: 'accepted', viewerIsHost: true, listingTitle: listing.title,
+      listingLocation: 'Wellington, New Zealand', otherParticipantName: 'Traveller', traveller: null,
+    });
+    const fixture = TestBed.createComponent(RequestDetailPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    expect(fixture.nativeElement.textContent).toContain('Message Traveller');
+    await fixture.componentInstance.openConversation();
+    expect(openConversation).toHaveBeenCalledWith('listing-1');
+    expect(navigate).toHaveBeenCalledWith(`/messages/${'c'.repeat(64)}`);
   });
 
   it('confirms host decisions, refreshes the status and exposes errors', async () => {
