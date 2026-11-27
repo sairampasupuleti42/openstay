@@ -24,6 +24,13 @@ export class HostingRequestService {
     return (await sdk.httpsCallable<{ requestId: string }, HostingRequestDetails>(functions, 'getHostingRequest')({ requestId })).data;
   }
 
+  async decide(requestId: string, action: 'accept' | 'decline' | 'cancel'): Promise<void> {
+    const { sdk, functions } = await this.getFunctions();
+    await sdk.httpsCallable<{ requestId: string; action: typeof action }, { status: string }>(
+      functions, 'decideHostingRequest',
+    )({ requestId, action });
+  }
+
   errorMessage(error: unknown): string {
     return error instanceof Error && error.message.trim() ? error.message : 'Something went wrong. Please try again.';
   }

@@ -872,6 +872,7 @@ test('account administration helpers are not exported as public Functions', () =
     'acceptHostParticipation',
     'archiveListing',
     'createHostingRequest',
+    'decideHostingRequest',
     'getHostingRequest',
     'getPublicListingDetails',
     'listHostHostingRequests',
@@ -890,7 +891,7 @@ test('all lifecycle callable wrappers enforce App Check and the hosting Function
     delete process.env.FUNCTIONS_EMULATOR;
     const [{ default: express }, { initializeApp }, { getAuth }, { getAppCheck },
       { archiveListing, pauseListing, publishListing, resumeListing },
-      { createHostingRequest }] = await Promise.all([
+      { createHostingRequest, decideHostingRequest }] = await Promise.all([
         import('express'), import('firebase-admin/app'), import('firebase-admin/auth'),
         import('firebase-admin/app-check'), import('./lib/hosting/listing-lifecycle.js'),
         import('./lib/hosting/hosting-requests.js'),
@@ -910,6 +911,7 @@ test('all lifecycle callable wrappers enforce App Check and the hosting Function
       ['archive', archiveListing], ['pause', pauseListing],
       ['publish', publishListing], ['resume', resumeListing],
       ['create-request', createHostingRequest],
+      ['decide-request', decideHostingRequest],
     ];
     for (const [path, callable] of callables) app.post('/' + path, callable);
     const server = await new Promise((resolve) => {
@@ -948,11 +950,11 @@ test('all lifecycle callable wrappers enforce App Check and the hosting Function
     }
   }).at(-1);
   assert.deepEqual(result, [
-    Array.from({ length: 5 }, () => [
+    Array.from({ length: 6 }, () => [
       [401, 'UNAUTHENTICATED'],
       [401, 'UNAUTHENTICATED'],
       [400, 'INVALID_ARGUMENT'],
     ]),
-    Array.from({ length: 5 }, () => ['us-central1']),
+    Array.from({ length: 6 }, () => ['us-central1']),
   ]);
 });

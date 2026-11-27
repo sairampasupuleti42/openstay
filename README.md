@@ -11,9 +11,10 @@ The proposed product requirements, MVP scope, system architecture, data model,
 API inventory, security approach, milestones, and review checklist are in
 [docs/phase-0-architecture.md](docs/phase-0-architecture.md).
 
-Implementation includes host listing management, initial public discovery, and
-the M4.1 hosting request foundation. The roadmap remains a proposal; later
-request decisions and booking features are not implemented.
+Implementation includes host listing management, initial public discovery,
+and the M4.1 hosting request foundation and M4.2 host decisions. The roadmap
+remains a proposal; booking, messaging, availability calendars and completion
+remain unimplemented.
 
 ## Current implementation
 
@@ -26,18 +27,22 @@ includes Firebase Authentication with email/password and Google sign-in,
 Firestore-backed user profiles, Firebase modular SDK initialization for
 Storage and Functions, persistent Firebase Auth state, email-verification and
 account-status route guards, and App Check setup for configured non-emulator
-environments. Host participation includes opt-in private profiles and consent
+environments. Protected destinations are preserved through sign-in and email
+verification. Host participation includes opt-in private profiles and consent
 history managed by trusted callables. Hosts can create drafts and use trusted
 lifecycle actions; public discovery and detail use bounded, screened callable
 responses. Direct listing and host-profile document reads are owner-only.
-Travellers can submit a request for a published listing and view their requests;
-hosts can view incoming requests and their details. Requests are pending only:
-sending one does not confirm a stay.
+Travellers can submit a request for a published listing, view their request
+history, and cancel pending requests. Hosts can view incoming requests and
+accept or decline them; acceptance confirms the stay, and either participant
+can cancel a confirmed stay. Submitting a request alone does not confirm a
+stay. The request remains the stay record; separate bookings, completion,
+messaging, and availability calendars are not implemented.
 
 See [listing and request architecture](docs/listings-and-hosting-requests-architecture.md)
 for the implemented behavior, callable contracts, privacy boundaries, and
-limitations. Availability, request decisions, bookings, photos, messaging,
-and an independent moderation/reporting workflow remain unimplemented.
+limitations. Photo uploads and an independent moderation/reporting workflow
+also remain unimplemented.
 
 ### Prerequisites
 
@@ -95,11 +100,12 @@ and in the M3.3 implementation record.
   before public launch; sensitive or harmful text can still evade screening.
 - **Discovery and future features:** Initial discovery supports exact country
   and city, accommodation type, and minimum guest filters with bounded
-  pagination. Date availability needs an approved availability model; remaining
-  discovery acceptance, including privacy review and cost measurement, belongs
-  to M4. M4 feature development may proceed; this is not production deployment
-  approval. Photos, availability, request decisions, bookings, and messaging
-  require separate implementation and approval.
+  pagination. Acceptance prevents overlapping confirmed stays, but there is
+  no availability calendar or date-based discovery. Remaining discovery
+  acceptance, including privacy review and cost measurement, belongs to M4.
+  M4 feature development may proceed; this is not production deployment
+  approval. Photos, availability calendars, booking records, completion, and
+  messaging require separate implementation and approval.
 - **Development deployment (2026-11-27):** Hosting, Firestore rules, and index
   definitions were deployed to `open-stay`. Index build readiness was not
   confirmed. Functions deployment failed because required APIs could not be

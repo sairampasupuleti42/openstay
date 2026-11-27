@@ -8,7 +8,7 @@
       <button mat-button type="button" (click)="load()">Try again</button>
     } @else if (details(); as request) {
       <h1>Hosting request</h1>
-      <p>Status: {{ request.status }}</p>
+      <p>Status: {{ request.status === 'accepted' ? 'Confirmed stay' : request.status }}</p>
       <h2>{{ request.listingTitle || 'Listing' }}</h2>
       @if (request.viewerIsHost) {
         <a mat-stroked-button [routerLink]="['/hosting/listings', request.listingId]">View your listing</a>
@@ -18,6 +18,19 @@
       <p>Arrival: {{ request.startDate }} · Checkout: {{ request.endDate }}</p>
       <p>Guests: {{ request.guestCount }}</p>
       @if (request.traveller; as traveller) { <p>Traveller: {{ traveller.displayName }}</p> }
+      @if (success()) { <p role="status">{{ success() }}</p> }
+      @if (actionError()) { <p class="error" role="alert">{{ actionError() }}</p> }
+      @if (acting()) { <p role="status">Saving decision…</p> }
+      @if (request.status === 'pending' && request.viewerIsHost) {
+        <button mat-flat-button type="button" [disabled]="acting()" (click)="decide('accept')">Accept and confirm stay</button>
+        <button mat-button type="button" [disabled]="acting()" (click)="decide('decline')">Decline request</button>
+      }
+      @if ((request.status === 'pending' && !request.viewerIsHost) || request.status === 'accepted') {
+        @if (request.status === 'accepted') { <p>Either participant can cancel this stay, with no time cutoff.</p> }
+        <button mat-button type="button" [disabled]="acting()" (click)="decide('cancel')">
+          {{ request.status === 'accepted' ? 'Cancel stay' : 'Cancel request' }}
+        </button>
+      }
       <h2>Introduction</h2>
       <p class="message">{{ request.introductoryMessage }}</p>
       <a mat-button routerLink="/requests/mine">My requests</a>

@@ -5,8 +5,9 @@
 **Required stack:** Angular, TypeScript, Firebase Authentication, Cloud Firestore, Firebase Storage, Cloud Functions, Firebase Hosting, Firebase Cloud Messaging, App Check, and Firebase Emulator Suite.
 
 This document describes proposals, not the current API contract. For the
-implemented M4.1 request schema, callables, security rules, and deferred
-behavior, see [listing and request architecture](./listings-and-hosting-requests-architecture.md#m41-hosting-request-foundation).
+implemented request schema, callables, host decisions, security rules, and
+deferred behavior, see
+[listing and request architecture](./listings-and-hosting-requests-architecture.md#m41-hosting-request-foundation).
 
 ## 1. Executive recommendation
 

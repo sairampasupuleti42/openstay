@@ -15,6 +15,7 @@ describe('AuthPageComponent email verification and recovery', () => {
   const getErrorMessage = vi.fn();
   const navigateByUrl = vi.fn();
   let mode = 'verify-email';
+  let returnUrl: string | null;
 
   beforeEach(async () => {
     refreshCurrentUser.mockReset();
@@ -25,6 +26,7 @@ describe('AuthPageComponent email verification and recovery', () => {
     getErrorMessage.mockReset();
     navigateByUrl.mockReset();
     mode = 'verify-email';
+    returnUrl = null;
 
     await TestBed.configureTestingModule({
       imports: [AuthPageComponent],
@@ -35,10 +37,20 @@ describe('AuthPageComponent email verification and recovery', () => {
             get data() {
               return of({ mode });
             },
-            snapshot: { data: { mode: 'verify-email' } },
+            snapshot: {
+              data: { mode: 'verify-email' },
+              queryParamMap: { get: (name: string) => name === 'returnUrl' ? returnUrl : null },
+            },
           },
         },
-        { provide: Router, useValue: { navigateByUrl } },
+        {
+          provide: Router,
+          useValue: {
+            navigateByUrl,
+            parseUrl: (url: string) => ({ url }),
+            serializeUrl: (tree: { url: string }) => tree.url,
+          },
+        },
         {
           provide: AuthService,
           useValue: {
@@ -56,6 +68,7 @@ describe('AuthPageComponent email verification and recovery', () => {
 
   it('detects the verified state after refreshing the current user', async () => {
     const user = { uid: 'traveller-1', emailVerified: true } as User;
+    returnUrl = '/requests/new/listing-1';
     refreshCurrentUser.mockResolvedValue(user);
     destinationFor.mockResolvedValue('/dashboard');
     const component = TestBed.createComponent(AuthPageComponent).componentInstance;
@@ -64,7 +77,7 @@ describe('AuthPageComponent email verification and recovery', () => {
 
     expect(refreshCurrentUser).toHaveBeenCalledOnce();
     expect(destinationFor).toHaveBeenCalledWith(user);
-    expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
+    expect(navigateByUrl).toHaveBeenCalledWith('/requests/new/listing-1');
     expect(component.errorMessage()).toBe('');
   });
 

@@ -49,6 +49,14 @@ test('hosting requests are participant-readable but never client-writable', asyn
   await assertFails(setDoc(doc(traveller, 'hostingRequests/forged'), { hostUid: 'rule-host', travellerUid: 'rule-traveller', status: 'pending' }));
   await assertFails(updateDoc(doc(host, `hostingRequests/${id}`), { status: 'accepted' }));
   await assertFails(deleteDoc(doc(traveller, `hostingRequests/${id}`)));
+  for (const db of [host, traveller, other, anon]) {
+    await assertFails(getDoc(doc(db, 'listingSchedules/listing-1')));
+    await assertFails(setDoc(doc(db, 'listingSchedules/listing-1/confirmed/forged'), { startDate: '2030-01-01' }));
+    await assertFails(getDoc(doc(db, 'hostingRequestReservations/tuple-1')));
+    await assertFails(setDoc(doc(db, 'hostingRequestReservations/tuple-1'), { activeRequestId: 'forged' }));
+    await assertFails(getDoc(doc(db, `hostingRequests/${id}/events/event-1`)));
+    await assertFails(setDoc(doc(db, `hostingRequests/${id}/events/forged`), { action: 'accept' }));
+  }
 });
 
 before(async () => {

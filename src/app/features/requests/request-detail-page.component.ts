@@ -22,6 +22,9 @@ export class RequestDetailPageComponent implements OnInit {
   readonly details = signal<HostingRequestDetails | null>(null);
   readonly loading = signal(true);
   readonly error = signal('');
+  readonly actionError = signal('');
+  readonly success = signal('');
+  readonly acting = signal(false);
   private requestId = '';
 
   ngOnInit(): void {
@@ -38,6 +41,28 @@ export class RequestDetailPageComponent implements OnInit {
       this.error.set(this.service.errorMessage(error));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  async decide(action: 'accept' | 'decline' | 'cancel'): Promise<void> {
+    if (this.acting()) return;
+    const descriptions = {
+      accept: 'Accept this request and confirm the stay?',
+      decline: 'Decline this request?',
+      cancel: 'Cancel this request or confirmed stay?',
+    };
+    if (!window.confirm(descriptions[action])) return;
+    this.acting.set(true);
+    this.actionError.set('');
+    this.success.set('');
+    try {
+      await this.service.decide(this.requestId, action);
+      this.success.set(action === 'accept' ? 'Stay confirmed.' : action === 'decline' ? 'Request declined.' : 'Cancelled.');
+      await this.load();
+    } catch (error) {
+      this.actionError.set(this.service.errorMessage(error));
+    } finally {
+      this.acting.set(false);
     }
   }
 }

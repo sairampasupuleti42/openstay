@@ -11,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { User } from '@angular/fire/auth';
 import { map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -165,7 +166,7 @@ export class AuthPageComponent implements OnInit {
         this.successMessage.set('If an account exists for that email, a password reset link is on its way.');
       } else {
         const user = await this.auth.signIn(email.trim(), password);
-        await this.router.navigateByUrl(await this.auth.destinationFor(user));
+        await this.router.navigateByUrl(await this.destinationAfterSignIn(user));
       }
     } catch (error) {
       this.errorMessage.set(this.auth.getErrorMessage(error));
@@ -179,7 +180,7 @@ export class AuthPageComponent implements OnInit {
     this.isSubmitting.set(true);
     try {
       const user = await this.auth.signInWithGoogle();
-      await this.router.navigateByUrl(await this.auth.destinationFor(user));
+      await this.router.navigateByUrl(await this.destinationAfterSignIn(user));
     } catch (error) {
       this.errorMessage.set(this.auth.getErrorMessage(error));
     } finally {
@@ -212,9 +213,31 @@ export class AuthPageComponent implements OnInit {
         }
         return;
       }
-      await this.router.navigateByUrl(await this.auth.destinationFor(user));
+      await this.router.navigateByUrl(await this.destinationAfterSignIn(user));
     } catch (error) {
       this.errorMessage.set(this.auth.getErrorMessage(error));
+    }
+  }
+
+  private async destinationAfterSignIn(user: User): Promise<string> {
+    const destination = await this.auth.destinationFor(user);
+    const returnUrl = this.safeReturnUrl();
+    if (!returnUrl) return destination;
+    return destination === '/auth/verify-email'
+      ? `${destination}?returnUrl=${encodeURIComponent(returnUrl)}`
+      : returnUrl;
+  }
+
+  private safeReturnUrl(): string | null {
+    const candidate = this.route.snapshot.queryParamMap?.get('returnUrl');
+    if (!candidate?.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) {
+      return null;
+    }
+    try {
+      const serialized = this.router.serializeUrl(this.router.parseUrl(candidate));
+      return serialized.startsWith('/') && !serialized.startsWith('//') ? serialized : null;
+    } catch {
+      return null;
     }
   }
 }

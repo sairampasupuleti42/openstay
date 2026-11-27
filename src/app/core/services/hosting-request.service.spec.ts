@@ -21,6 +21,9 @@ describe('HostingRequestService', () => {
     await service.list('incoming', 'cursor');
     expect(mocks.httpsCallable).toHaveBeenLastCalledWith(expect.anything(), 'listHostHostingRequests');
     expect(call).toHaveBeenLastCalledWith({ cursor: 'cursor' });
+    await service.decide('id', 'accept');
+    expect(mocks.httpsCallable).toHaveBeenLastCalledWith(expect.anything(), 'decideHostingRequest');
+    expect(call).toHaveBeenLastCalledWith({ requestId: 'id', action: 'accept' });
     call.mockRejectedValueOnce(new Error('Unavailable'));
     await expect(service.details('id')).rejects.toThrow('Unavailable');
   });

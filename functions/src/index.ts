@@ -22,4 +22,5 @@ export {
   listTravellerHostingRequests,
   listHostHostingRequests,
   getHostingRequest,
+  decideHostingRequest,
 } from './hosting/hosting-requests.js';

@@ -184,11 +184,13 @@ describe('dashboardGuard', () => {
     const result = await TestBed.runInInjectionContext(() =>
       authenticatedGuard(
         {} as ActivatedRouteSnapshot,
-        { url: '/dashboard' } as RouterStateSnapshot,
+        { url: '/requests/new/listing-1' } as RouterStateSnapshot,
       ),
     );
 
     expect(result).toBe(verificationRoute);
-    expect(createUrlTree).toHaveBeenCalledWith(['/auth/verify-email']);
+    expect(createUrlTree).toHaveBeenCalledWith(['/auth/verify-email'], {
+      queryParams: { returnUrl: '/requests/new/listing-1' },
+    });
   });
 });

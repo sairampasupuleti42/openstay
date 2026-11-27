@@ -8,15 +8,19 @@ import { AuthPageComponent } from './auth-page.component';
 
 describe('AuthPageComponent login', () => {
   const signIn = vi.fn();
+  const signInWithGoogle = vi.fn();
   const destinationFor = vi.fn();
   const getErrorMessage = vi.fn();
   const navigateByUrl = vi.fn();
+  let returnUrl: string | null;
 
   beforeEach(async () => {
     signIn.mockReset();
+    signInWithGoogle.mockReset();
     destinationFor.mockReset();
     getErrorMessage.mockReset();
     navigateByUrl.mockReset();
+    returnUrl = null;
     await TestBed.configureTestingModule({
       imports: [AuthPageComponent],
       providers: [
@@ -24,13 +28,23 @@ describe('AuthPageComponent login', () => {
           provide: ActivatedRoute,
           useValue: {
             data: of({ mode: 'login' }),
-            snapshot: { data: { mode: 'login' } },
+            snapshot: {
+              data: { mode: 'login' },
+              queryParamMap: { get: (name: string) => name === 'returnUrl' ? returnUrl : null },
+            },
           },
         },
-        { provide: Router, useValue: { navigateByUrl } },
+        {
+          provide: Router,
+          useValue: {
+            navigateByUrl,
+            parseUrl: (url: string) => ({ url }),
+            serializeUrl: (tree: { url: string }) => tree.url,
+          },
+        },
         {
           provide: AuthService,
-          useValue: { signIn, destinationFor, getErrorMessage },
+          useValue: { signIn, signInWithGoogle, destinationFor, getErrorMessage },
         },
       ],
     }).compileComponents();
@@ -59,13 +73,52 @@ describe('AuthPageComponent login', () => {
 
   it('routes an unverified user to the verification screen', async () => {
     const user = { uid: 'traveller-1', emailVerified: false } as User;
+    returnUrl = '/requests/new/listing-1';
     signIn.mockResolvedValue(user);
     destinationFor.mockResolvedValue('/auth/verify-email');
     const component = createComponent();
 
     await component.submit();
 
-    expect(navigateByUrl).toHaveBeenCalledWith('/auth/verify-email');
+    expect(navigateByUrl).toHaveBeenCalledWith(
+      '/auth/verify-email?returnUrl=%2Frequests%2Fnew%2Flisting-1',
+    );
+  });
+
+  it('returns a verified user to the guarded destination after sign-in', async () => {
+    const user = { uid: 'traveller-1', emailVerified: true } as User;
+    returnUrl = '/requests/new/listing-1';
+    signIn.mockResolvedValue(user);
+    destinationFor.mockResolvedValue('/dashboard');
+    const component = createComponent();
+
+    await component.submit();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/requests/new/listing-1');
+  });
+
+  it('returns a Google-signed-in user to the guarded destination', async () => {
+    const user = { uid: 'traveller-1', emailVerified: true } as User;
+    returnUrl = '/requests/new/listing-1';
+    signInWithGoogle.mockResolvedValue(user);
+    destinationFor.mockResolvedValue('/dashboard');
+    const component = createComponent();
+
+    await component.signInWithGoogle();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/requests/new/listing-1');
+  });
+
+  it('ignores an external return URL and uses the normal destination', async () => {
+    const user = { uid: 'traveller-1', emailVerified: true } as User;
+    returnUrl = '//evil.example';
+    signIn.mockResolvedValue(user);
+    destinationFor.mockResolvedValue('/dashboard');
+    const component = createComponent();
+
+    await component.submit();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/dashboard');
   });
 
   it('displays Firebase credential errors without navigating', async () => {

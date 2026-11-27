@@ -15,7 +15,11 @@ export const authenticatedGuard: CanActivateFn = async (_route, state) => {
   if (await accountUnavailable(auth, user)) {
     return router.createUrlTree(['/auth/account-unavailable']);
   }
-  if (!user.emailVerified) return router.createUrlTree(['/auth/verify-email']);
+  if (!user.emailVerified) {
+    return router.createUrlTree(['/auth/verify-email'], {
+      queryParams: { returnUrl: state.url },
+    });
+  }
   return true;
 };
 

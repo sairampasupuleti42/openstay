@@ -13,7 +13,7 @@ export interface HostingRequest {
   endDate: string;
   guestCount: number;
   introductoryMessage: string;
-  status: 'pending';
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
   createdAt: string | null;
   updatedAt: string | null;
 }

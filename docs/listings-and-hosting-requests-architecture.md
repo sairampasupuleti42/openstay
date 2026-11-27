@@ -1,7 +1,8 @@
 # Listing Management, Discovery, and Hosting Requests
 
-**Status: M3.3 listing management and discovery and the M4.1 hosting request
-foundation are implemented.** This implementation record supplements
+**Status: M3.3 listing management and discovery and the M4.1 request
+foundation and M4.2 host decisions are implemented.** This implementation
+record supplements
 [M3.1 host management architecture](./m3.1-host-management-architecture.md).
 The M3.3.1 listing model and Firestore rules in the repository are
 authoritative; this document does not define a replacement listing schema.
@@ -23,18 +24,17 @@ The trusted server writes the following fields:
 
 | Field | Type and meaning |
 |---|---|
-| `requestId` | SHA-256 hex ID derived from the traveller UID, listing ID, and exact start and end dates |
+| Document ID | Per-attempt SHA-256 hex request ID; legacy M4.1 deterministic IDs remain supported. It is returned as `requestId`, not stored as a field. |
 | `listingId`, `hostUid`, `travellerUid` | Strings identifying the listing and participants; UIDs come from the stored listing and authentication |
 | `startDate`, `endDate` | Valid ISO `YYYY-MM-DD` calendar-date strings; arrival is inclusive and checkout is exclusive |
 | `guestCount` | Integer from 1 to 10, no greater than the listing capacity at creation |
 | `introductoryMessage` | Trimmed, non-empty string; input is at most 2,000 characters and screened for common contact and address patterns |
-| `status` | `pending` |
-| `createdAt`, `updatedAt` | Firestore server timestamps set at creation |
+| `status` | `pending`, `accepted`, `declined` or `cancelled` |
+| `createdAt`, `updatedAt` | Firestore server timestamps; `createdAt` is set at creation and `updatedAt` at creation and each successful transition |
+| `lastAction`, `lastActorUid` | Most recent successful transition action and actor UID; absent before the first transition |
 
 The end date must be after the start date. The current implementation does not
-require future dates or check a calendar or availability. M4.1 has one state:
-creation enters `pending`; no state transitions, acceptance, rejection,
-cancellation or stay confirmation are implemented.
+require future dates or offer a calendar or availability search.
 
 ### Authorization and privacy
 
@@ -72,6 +72,7 @@ emulator. Inputs are objects; unexpected fields are rejected.
 | `listTravellerHostingRequests` | optional `cursor` (null or a request ID) | `{ items, nextCursor }` for the caller as traveller |
 | `listHostHostingRequests` | optional `cursor` (null or a request ID) | `{ items, nextCursor }` for the caller as host |
 | `getHostingRequest` | `requestId` | projected request plus `viewerIsHost`, nullable `listingTitle`, and nullable `traveller: { displayName }` |
+| `decideHostingRequest` | `requestId`, `action` (`accept`, `decline` or `cancel`) | `{ status }` |
 
 Each projected request includes `requestId`, `listingId`, the dates, guest
 count, introduction, status, and ISO timestamp strings (`createdAt` and
@@ -85,24 +86,86 @@ Creation validates the same published listing shape and public-text safety
 used by discovery, capacity, an active traveller and host, current host
 consent, and the host withdrawal lock. It reads these documents in the same
 transaction as the request and a server-only `hostingRequestRateLimits/{uid}`
-counter. Concurrent submissions for the same traveller, listing and exact
-date range compete for one deterministic ID, so only one succeeds. Different
-or overlapping ranges are not deduplicated and are not availability
-reservations. A repeated tuple returns `already-exists`; after a lost response
-the traveller can check request history. The deterministic ID must be
-reconsidered when future terminal states allow a new request for the same
-tuple.
+counter. A server-only `hostingRequestReservations/{tupleHash}` document
+allows at most one active request for the same traveller, listing and exact
+date range. New attempts receive distinct request IDs; the reservation's
+`activeRequestId` is cleared atomically when a request is declined or cancelled,
+so the tuple can be requested again while all historical requests remain
+available. Concurrent duplicate submissions still yield one active request
+and `already-exists` for the others. Different or overlapping ranges are not
+deduplicated and are not availability reservations. For compatibility,
+creation also checks the legacy deterministic M4.1 request document and rejects
+an existing active request before permitting a new attempt after a terminal
+state.
 
 Creation permits ten successful requests per traveller in an hour-long window
 starting with the first successful request in that window. The counter is
 updated transactionally; rejected duplicates do not consume quota. Common
 callable errors include `unauthenticated`, `invalid-argument`,
-`failed-precondition`, `already-exists`, `resource-exhausted`, and `not-found`
-for missing or unauthorized details.
+`permission-denied`, `failed-precondition`, `already-exists`,
+`resource-exhausted`, and `not-found` for missing or unauthorized details.
 
-Host decisions, cancellation, stay confirmation, availability, messaging,
-notifications, reviews and payments are outside M4.1 and require separate
-implementation.
+## M4.2 decisions and stays
+
+The existing request is the authoritative stay record after acceptance; there
+is no second participant-facing stay document. Creation enters `pending`.
+Only the stored host can move `pending` to `accepted` (which confirms the
+stay) or `declined`. The traveller can cancel a pending request, and either
+participant can cancel an accepted stay. Both transitions produce `cancelled`.
+There is no time cutoff for cancellation: the existing product defines none,
+and inventing one could prevent participants from correcting a stay. This
+also means a stay can be cancelled after its dates. Completion is not exposed
+because there is no existing product rule establishing when completion is
+legitimate; `accepted → completed` requires a future, explicitly defined rule.
+There is no automatic transition based on the server clock.
+
+| Actor | Accept / decline pending | Cancel pending | Cancel accepted | Read |
+|---|---|---|---|---|
+| Stored host | Yes | No | Yes | Own requests and stays |
+| Stored traveller | No | Yes | Yes | Own requests and stays |
+| Other or unauthenticated | No | No | No | No |
+
+Operations require verified authentication and an active actor account.
+Acceptance additionally transactionally checks the active traveller and host,
+published valid listing and stored ownership, current consent and withdrawal
+lock, capacity, and valid ordered dates. Pause, archive, withdrawal, suspension,
+or capacity changes committed before acceptance force a retry or rejection.
+Decline and cancellation remain available to an active participant even when
+the listing or the other participant is no longer eligible. The callable
+`decideHostingRequest` accepts only `{ requestId, action }`, with action
+`accept`, `decline` or `cancel`; identities and state are never client inputs.
+A retry of the same most recent action by the same actor returns its result;
+different or stale transitions fail. All client lifecycle writes remain denied.
+
+For each listing, server-only `listingSchedules/{listingId}` is a shared
+serialization document, and its `confirmed/{requestId}` subcollection holds
+the dates of accepted stays. Acceptance reads and writes the shared document
+and reads every confirmed entry in the same transaction. On contention the
+transaction retries and rechecks all conflicts and eligibility. Cancellation
+of an accepted stay updates the same document and removes its entry in the
+same transaction as the request change. Invalid schedule entries or missing
+entries on cancellation fail closed. Every trusted writer must follow this
+protocol; direct Admin SDK writes bypass it and are unsupported. The query
+alone is not the concurrency guard.
+
+Dates are validated calendar strings `YYYY-MM-DD`, not local timestamps.
+Intervals are start-inclusive and end-exclusive; `[a,b)` conflicts with
+`[c,d)` exactly when `a < d && c < b`, so checkout and arrival on the same
+date are allowed. As in M4.1, dates need not be in the future. Reading the
+entire confirmed subcollection provides correctness but is unbounded: large
+schedules can hit Firestore transaction size, time or contention limits and
+fail rather than accept without checking. This is not an availability calendar.
+
+Each successful transition records its actor, action, previous and new state,
+and server timestamp in a server-only request event subcollection. Request
+records, including declined and cancelled records, are retained; no retention
+or deletion job is implemented. New request attempts use distinct IDs, while
+the per-tuple reservation prevents duplicate active requests and is released
+atomically at a terminal transition. Legacy deterministic M4.1 request IDs
+remain readable and active legacy requests continue to reserve their tuple.
+The existing participant request lists and details also show accepted stays
+and their actions. Messaging, notifications, calendar/availability, reviews
+and payments remain deferred.
 
 ## Listing workflow and routes
 
@@ -171,8 +234,9 @@ Only the following transitions are accepted:
 | Resume | `paused → published` |
 | Archive | `draft → archived`, `paused → archived`, or `published → archived` |
 
-`archived` is terminal. Archiving a published listing is allowed without
-booking-related checks; bookings are outside this milestone.
+`archived` is terminal. Pausing or archiving a listing does not cancel
+existing confirmed stays; it prevents new acceptance while the listing is
+unpublished.
 
 The `publishListing`, `pauseListing`, `resumeListing`, and `archiveListing`
 callables run in `us-central1` with App Check enforcement outside the
@@ -254,8 +318,8 @@ the asynchronous pause worker.
 - Angular coverage is in the host listing page, editor, detail, and
   `ListingService` specs, plus request-page and request-service specs. Firestore
   rule behavior remains covered by `firebase/firestore.rules.test.mjs`.
-- Photo uploads, photo readiness requirements, availability, request decisions,
-  bookings, messaging, and payments remain out of scope.
+- Photo uploads, photo readiness requirements, availability, completion,
+  messaging, and payments remain out of scope.
   The current M3.3.1 schema has no photo fields, so publication validates the
   existing listing fields and does not require photos.
 - Pausing is asynchronous; public reads are denied while the account is
