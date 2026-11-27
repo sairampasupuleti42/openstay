@@ -1,8 +1,9 @@
-import { Component, HostListener, signal } from '@angular/core';
-import { RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AsyncPipe } from '@angular/common';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AuthService } from './core/auth/auth.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -10,12 +11,20 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, MatButtonModule, MatToolbarModule],
+  imports: [
+    AsyncPipe,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MatButtonModule,
+    MatToolbarModule,
+  ],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
 export class App {
+  readonly auth = inject(AuthService);
   readonly isInstalled = signal(this.isRunningStandalone());
   readonly isMobileNavOpen = signal(false);
   installMessage = '';

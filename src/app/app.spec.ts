@@ -3,12 +3,21 @@ import { provideRouter } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
 import { vi } from 'vitest';
+import { BehaviorSubject } from 'rxjs';
+import { AuthService } from './core/auth/auth.service';
+import { User } from '@angular/fire/auth';
 
 describe('App', () => {
+  let user$: BehaviorSubject<User | null>;
+
   beforeEach(async () => {
+    user$ = new BehaviorSubject<User | null>(null);
     await TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter(routes)],
+      providers: [
+        provideRouter(routes),
+        { provide: AuthService, useValue: { user$ } },
+      ],
     })
       .compileComponents();
   });
@@ -65,6 +74,32 @@ describe('App', () => {
     fixture.detectChanges();
     expect(menuToggle.getAttribute('aria-expanded')).toBe('false');
     expect(fixture.nativeElement.querySelector('.nav-backdrop')).toBeNull();
+  });
+
+  it('hides Join and Sign in while authenticated and restores them after sign out', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.signin-link')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.join-link')).toBeTruthy();
+
+    user$.next({ uid: 'signed-in-user' } as User);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.signin-link')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.join-link')).toBeNull();
+
+    user$.next(null);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.signin-link')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.join-link')).toBeTruthy();
   });
 
   it('should prompt supported browsers to install the app', async () => {

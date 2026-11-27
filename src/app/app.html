@@ -46,24 +46,26 @@
     >
       Explore
     </a>
-    <a
-      mat-button
-      class="signin-link"
-      routerLink="/auth/login"
-      (click)="closeMobileNav()"
-    >
-      Sign in
-    </a>
-    <a
-      mat-flat-button
-      class="join-link"
-      routerLink="/auth/register"
-      aria-label="Join Openstay"
-      (click)="closeMobileNav()"
-    >
-      <span class="join-label-full">Join Openstay</span>
-      <span class="join-label-short" aria-hidden="true">Join</span>
-    </a>
+    @if (!(auth.user$ | async)) {
+      <a
+        mat-button
+        class="signin-link"
+        routerLink="/auth/login"
+        (click)="closeMobileNav()"
+      >
+        Sign in
+      </a>
+      <a
+        mat-flat-button
+        class="join-link"
+        routerLink="/auth/register"
+        aria-label="Join Openstay"
+        (click)="closeMobileNav()"
+      >
+        <span class="join-label-full">Join Openstay</span>
+        <span class="join-label-short" aria-hidden="true">Join</span>
+      </a>
+    }
     @if (!isInstalled()) {
       <button
         mat-stroked-button
