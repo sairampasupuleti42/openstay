@@ -22,6 +22,7 @@ import { UserProfile } from '../../core/models/user.model';
         }
         <div class="actions">
           <a mat-flat-button routerLink="/explore">Explore Openstay</a>
+          <a mat-stroked-button routerLink="/hosting">Start hosting</a>
           <button mat-stroked-button type="button" (click)="logOut()">Sign out</button>
         </div>
         @if (errorMessage()) {

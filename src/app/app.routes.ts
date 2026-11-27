@@ -29,6 +29,14 @@ export const routes: Routes = [
     children: onboardingRoutes,
   },
   {
+    path: 'hosting',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./features/hosting/onboarding/host-onboarding.component').then(
+        (module) => module.HostOnboardingComponent,
+      ),
+  },
+  {
     path: 'dashboard',
     canActivate: [authenticatedGuard, dashboardGuard],
     loadComponent: () =>

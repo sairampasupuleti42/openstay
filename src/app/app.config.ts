@@ -11,7 +11,6 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { FirebaseApp, provideFirebaseApp } from '@angular/fire/app';
 import { provideAuth, connectAuthEmulator, getAuth } from '@angular/fire/auth';
 import { provideFirestore, connectFirestoreEmulator, getFirestore } from '@angular/fire/firestore';
-import { provideFunctions, connectFunctionsEmulator, getFunctions } from '@angular/fire/functions';
 import { provideStorage, connectStorageEmulator, getStorage } from '@angular/fire/storage';
 import { AppCheck, provideAppCheck } from '@angular/fire/app-check';
 import { initializeApp } from 'firebase/app';
@@ -64,13 +63,6 @@ export const appConfig: ApplicationConfig = {
         connectStorageEmulator(storage, '127.0.0.1', 9199);
       }
       return storage;
-    }),
-    provideFunctions(() => {
-      const functions = getFunctions(inject(FirebaseApp));
-      if (environment.useEmulators) {
-        connectFunctionsEmulator(functions, '127.0.0.1', 5001);
-      }
-      return functions;
     }),
     ...(environment.useEmulators || !environment.appCheckSiteKey.trim()
       ? []
