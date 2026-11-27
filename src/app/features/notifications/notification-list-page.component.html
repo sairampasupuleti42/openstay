@@ -1,0 +1,58 @@
+<main class="page">
+  <header class="page-header">
+    <div>
+      <h1>Notifications</h1>
+      <p class="intro">{{ unreadCount() }} unread notification(s)</p>
+    </div>
+    <button mat-stroked-button type="button" [disabled]="markingAll() || unreadCount() === 0" (click)="markAllRead()">
+      {{ markingAll() ? 'Marking…' : 'Mark all as read' }}
+    </button>
+  </header>
+
+  @if (success()) { <p role="status">{{ success() }}</p> }
+  @if (actionError()) { <p class="error" role="alert">{{ actionError() }}</p> }
+  @if (loading() && items().length === 0) {
+    <p class="state" role="status">Loading notifications…</p>
+  }
+  @if (error()) {
+    <section class="state">
+      <p class="error" role="alert">{{ error() }}</p>
+      <button mat-button type="button" (click)="retry()">Try again</button>
+    </section>
+  }
+  @if (!loading() && !error() && items().length === 0) {
+    <p class="state">You’re all caught up. Notifications about requests, stays and messages will appear here.</p>
+  }
+  @if (items().length > 0) {
+    <div class="list" aria-label="Your notifications">
+      @for (notification of items(); track notification.notificationId) {
+        <article class="card" [class.unread]="!notification.read">
+          <h2>{{ notification.title }}</h2>
+          <p>{{ notification.message }}</p>
+          <time [attr.datetime]="notification.createdAt.toDate().toISOString()">
+            {{ notification.createdAt.toDate() | date: 'medium' }}
+          </time>
+          <div class="actions">
+            <button mat-stroked-button type="button" [disabled]="updatingId() === notification.notificationId" (click)="open(notification)">
+              {{ notification.type === 'new_message' ? 'Open conversation' : 'View request or stay' }}
+            </button>
+            @if (!notification.read) {
+              <button mat-button type="button" [disabled]="updatingId() === notification.notificationId" (click)="markOne(notification)">
+                Mark as read
+              </button>
+            } @else {
+              <span>Read</span>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+  @if (hasOlder() && !loading() && !error()) {
+    <div class="load-more">
+      <button mat-stroked-button type="button" [disabled]="loadingOlder()" (click)="loadOlder()">
+        {{ loadingOlder() ? 'Loading…' : 'Load older notifications' }}
+      </button>
+    </div>
+  }
+</main>

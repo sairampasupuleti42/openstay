@@ -1,0 +1,72 @@
+<main class="page">
+  <section class="panel">
+    @if (loading() && !conversationId()) {
+      <p class="state" role="status">Loading conversation…</p>
+    } @else if (error() && !conversationId()) {
+      <div class="state">
+        <p class="error" role="alert">{{ error() }}</p>
+        <button mat-button type="button" (click)="open()">Try again</button>
+      </div>
+    } @else {
+      <header class="header">
+        <h1>Conversation with {{ otherParticipantName() }}</h1>
+        <p>Private messages about your stay. Do not share contact details or exact addresses.</p>
+        <div class="header-actions">
+          <a mat-stroked-button [routerLink]="['/requests', requestId]">View stay details</a>
+          <a mat-button routerLink="/messages">All conversations</a>
+        </div>
+      </header>
+      @if (error()) {
+        <div class="state">
+          <p class="error" role="alert">{{ error() }}</p>
+          <button mat-button type="button" (click)="open()">Retry</button>
+        </div>
+      }
+      @if (hasOlder() && !loading()) {
+        <div class="state">
+          <button mat-button type="button" [disabled]="loadingOlder()" (click)="loadOlder()">
+            {{ loadingOlder() ? 'Loading…' : 'Load older messages' }}
+          </button>
+        </div>
+      }
+      @if (loading() && messages().length === 0) {
+        <p class="state" role="status">Loading messages…</p>
+      } @else if (!loading() && messages().length === 0) {
+        <p class="state muted">No messages yet. Send a message to coordinate your stay.</p>
+      }
+      <div class="messages" aria-label="Conversation messages" aria-live="polite">
+        @for (message of messages(); track message.id) {
+          <article class="bubble" [class.own]="isOwn(message)">
+            <p>{{ message.text }}</p>
+            <time class="timestamp" [attr.datetime]="message.createdAt.toDate().toISOString()">
+              {{ message.createdAt.toDate() | date: 'short' }}
+            </time>
+          </article>
+        }
+      </div>
+      @if (status() === 'accepted') {
+        <form class="composer" (submit)="$event.preventDefault(); send()">
+          <label for="message-text">Your message</label>
+          <textarea
+            #composer
+            id="message-text"
+            [value]="text()"
+            maxlength="2000"
+            rows="3"
+            (input)="updateText(composer.value)"
+          ></textarea>
+          <div class="composer-actions">
+            <span class="muted">{{ text().length }}/2,000</span>
+            <button class="send" mat-flat-button type="submit" [disabled]="sending() || !text().trim()">
+              {{ sending() ? 'Sending…' : 'Send message' }}
+            </button>
+          </div>
+          @if (sendError()) { <p class="error" role="alert">{{ sendError() }}</p> }
+          @if (success()) { <p role="status">{{ success() }}</p> }
+        </form>
+      } @else {
+        <p class="state muted">Messaging is unavailable because this stay is no longer accepted.</p>
+      }
+    }
+  </section>
+</main>

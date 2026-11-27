@@ -2,6 +2,47 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function activeConversationAccount(uid) {
+      let userPath = /databases/$(database)/documents/users/$(uid);
+      return exists(userPath) && get(userPath).data.accountStatus == 'active';
+    }
+
+    function currentConversationHostConsent(hostUid) {
+      let consentPath = /databases/$(database)/documents/hostPrivate/$(hostUid);
+      let consent = exists(consentPath) ? get(consentPath).data : null;
+      return consent != null
+        && consent.uid == hostUid
+        && consent.termsVersion == 'host-participation-v1'
+        && consent.termsDigest == '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b'
+        && consent.consentState == 'accepted'
+        && consent.eventId is string;
+    }
+
+    function canReadConversation(conversationId) {
+      let conversationPath = /databases/$(database)/documents/conversations/$(conversationId);
+      let conversation = exists(conversationPath) ? get(conversationPath).data : null;
+      let requestPath = /databases/$(database)/documents/hostingRequests/$(conversationId);
+      let hostingRequest = exists(requestPath) ? get(requestPath).data : null;
+      return request.auth != null
+        && conversation != null
+        && conversation.conversationId == conversationId
+        && conversation.requestId == conversationId
+        && conversation.hostUid is string
+        && conversation.travellerUid is string
+        && conversation.participantUids is list
+        && conversation.participantUids.size() == 2
+        && conversation.participantUids[0] == conversation.hostUid
+        && conversation.participantUids[1] == conversation.travellerUid
+        && request.auth.uid in conversation.participantUids
+        && hostingRequest != null
+        && hostingRequest.hostUid == conversation.hostUid
+        && hostingRequest.travellerUid == conversation.travellerUid
+        && hostingRequest.listingId == conversation.listingId
+        && activeConversationAccount(conversation.hostUid)
+        && activeConversationAccount(conversation.travellerUid)
+        && currentConversationHostConsent(conversation.hostUid);
+    }
+
     match /users/{userId} {
       function isOwner() {
         return request.auth != null && request.auth.uid == userId;
@@ -562,6 +603,28 @@ service cloud.firestore {
         && (resource.data.travellerUid == request.auth.uid
           || resource.data.hostUid == request.auth.uid);
       allow write: if false;
+    }
+
+    match /conversations/{conversationId} {
+      allow get: if canReadConversation(conversationId);
+      allow list: if false;
+      allow create, update, delete: if false;
+
+      match /messages/{messageId} {
+        allow get, list: if canReadConversation(conversationId);
+        allow create, update, delete: if false;
+      }
+    }
+
+    match /notifications/{notificationId} {
+      allow get, list: if request.auth != null
+        && resource.data.recipientUid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    match /notificationCounts/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
     }
 
     match /{document=**} {

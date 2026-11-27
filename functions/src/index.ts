@@ -24,3 +24,16 @@ export {
   getHostingRequest,
   decideHostingRequest,
 } from './hosting/hosting-requests.js';
+export {
+  openConversation,
+  sendConversationMessage,
+  listConversations,
+  markConversationRead,
+} from './hosting/conversations.js';
+export {
+  notifyHostingRequestCreated,
+  notifyHostingRequestTransition,
+  notifyNewConversationMessage,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from './hosting/notifications.js';

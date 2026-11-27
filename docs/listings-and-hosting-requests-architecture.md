@@ -1,7 +1,7 @@
 # Listing Management, Discovery, and Hosting Requests
 
-**Status: M3.3 listing management and discovery and the M4.1 request
-foundation and M4.2 host decisions are implemented.** This implementation
+**Status: M3.3 listing management and discovery and M4.1–M4.3 stay
+coordination are implemented locally.** This implementation
 record supplements
 [M3.1 host management architecture](./m3.1-host-management-architecture.md).
 The M3.3.1 listing model and Firestore rules in the repository are
@@ -57,9 +57,11 @@ Request messages are visible to both participants, not the public. Direct
 participant reads expose the stored request, including participant UIDs; the
 callable projections omit those UIDs and never return private profiles. Detail
 responses include only a screened traveller display name and listing title
-when available, not phone numbers or private profile fields. Message, name and
-title screening is heuristic and cannot guarantee that free text contains no
-contact information or other sensitive content.
+when available, not phone numbers or private profile fields. Request details
+also return only the other participant's screened public display name and
+screened city/country. Message, name and title screening is heuristic and
+cannot guarantee that free text contains no contact information or other
+sensitive content.
 
 ### Callable contracts and concurrency
 
@@ -77,10 +79,10 @@ emulator. Inputs are objects; unexpected fields are rejected.
 Each projected request includes `requestId`, `listingId`, the dates, guest
 count, introduction, status, and ISO timestamp strings (`createdAt` and
 `updatedAt`, nullable if unavailable). Lists return up to 20 items ordered by
-document ID, **not** by date or creation time. `nextCursor` is the last
-returned ID when another page exists, otherwise null. Queries constrain the
-relevant participant UID; automatic single-field indexes suffice, so no
-composite request index is defined.
+`startDate` ascending and document ID; the request-ID cursor is resolved to a
+participant-owned snapshot before continuing. Composite indexes cover
+`hostUid + startDate` and `travellerUid + startDate`. The client groups the
+loaded pages by lifecycle and date; it does not fetch all historical requests.
 
 Creation validates the same published listing shape and public-text safety
 used by discovery, capacity, an active traveller and host, current host
@@ -164,8 +166,128 @@ the per-tuple reservation prevents duplicate active requests and is released
 atomically at a terminal transition. Legacy deterministic M4.1 request IDs
 remain readable and active legacy requests continue to reserve their tuple.
 The existing participant request lists and details also show accepted stays
-and their actions. Messaging, notifications, calendar/availability, reviews
-and payments remain deferred.
+and their actions. M4.3 adds private messaging, in-app notifications and
+status-grouped stay sections without creating a second stay record.
+
+## M4.3 stay coordination
+
+### Conversations and messages
+
+There is one deterministic `conversations/{requestId}` document per accepted
+request; the hosting request ID is also the conversation ID. A new accepted
+request creates the conversation in the same transaction as the trusted
+`pending → accepted` transition. An older accepted request without a
+conversation gets one on its participant's first conversation open; this
+avoids a data migration. Concurrent opens converge on the same document.
+Declined and pending requests cannot create a conversation. A cancelled
+conversation is retained for participant history, but the callable refuses
+new messages unless the linked request remains `accepted`.
+
+The conversation document contains only `conversationId`, `requestId`,
+`listingId`, `hostUid`, `travellerUid`, the server-derived `participantUids`,
+per-participant unread message counts, timestamps and last-message sender/time
+metadata. It does not contain a message preview or copied profile/contact
+fields. Messages are stored at
+`conversations/{requestId}/messages/{messageId}` and contain only the linked
+conversation ID, authenticated sender UID, normalized text and server
+`createdAt`. The message ID is a SHA-256 digest of request ID, authenticated
+sender and a client-generated idempotency key; reusing a key with identical
+content returns the existing message, while a conflicting reuse is rejected.
+There is no edit or attachment support.
+
+`sendConversationMessage` accepts only `{ requestId, text, idempotencyKey }`.
+It derives the sender from verified callable authentication and transactionally
+checks the request status, deterministic conversation participants, both
+active accounts, current host participation consent and the withdrawal lock.
+The transaction creates the message, increments only the recipient's unread
+count, updates conversation metadata and a server-only per-sender/conversation
+rate counter together. A concurrent cancellation writes the request status in
+the same Firestore consistency boundary: whichever transaction commits first
+defines whether the message was sent before cancellation; a retry after
+cancellation is rejected. Messages are normalized with NFKC, trimmed, limited
+to 2,000 UTF-16 code units, screened for common contact/address patterns and
+rate-limited to 20 successful messages per sender per conversation per minute.
+The screening is heuristic, not a content moderation or privacy guarantee.
+
+The client listens to the latest 50 messages ordered by `createdAt` descending
+and displays them chronologically; older messages are fetched in 50-message
+pages using a Firestore document cursor. The live listener is bounded and
+continues to receive newer messages. Firestore Rules permit only linked
+participants with active accounts and current host consent to read the
+conversation or message subcollection. Conversation documents themselves
+cannot be listed directly; the `listConversations` callable returns the
+participant's bounded page and batch-loads only public display names. The
+callable uses a short-lived opaque cursor token backed by server-only state, so
+page boundaries do not disclose ineligible conversation IDs or timestamps.
+Cursor state is private to the authenticated user and expires after 15
+minutes. All conversation and message writes are denied to clients.
+
+### Notifications and delivery
+
+Notification documents are private top-level
+`notifications/{sha256(sourcePath)}` records with recipient UID, a fixed
+notification type, request ID, optional conversation ID, trusted generic
+title/message, server creation timestamp, `read` and optional `readAt`. No
+message body or personal display data is copied into notification text.
+`notificationCounts/{recipientUid}` stores the exact unread count for that
+recipient. Conversation message unread counts are separate from notification
+unread state.
+
+The retry-enabled Firestore create triggers handle (1) a new hosting request,
+(2) a trusted request transition event in
+`hostingRequests/{requestId}/events/{eventId}`, or (3) a new conversation
+message. They map only supported transitions to a recipient and fixed text.
+Each trigger derives a deterministic notification ID from the source document
+path. A Firestore transaction checks that notification ID and atomically
+creates the notification and increments its recipient counter only once.
+Duplicate delivery therefore does not duplicate notification rows or counts.
+Triggers are asynchronous: request transitions and message sends commit
+independently of notification delivery, so notification infrastructure cannot
+invalidate those successful operations. Failed trigger execution is retried
+by the Functions event retry policy; recipients may see notifications
+eventually rather than in the request/message transaction. There is no separate
+dead-letter or manual replay UI, so sustained trigger failure requires
+operational repair and replay.
+
+`markNotificationRead` atomically marks one recipient-owned notification and
+decrements the counter only if it was unread. `markAllNotificationsRead`
+queries that recipient's unread rows in pages of 400 and applies each page in
+a transaction with the counter. Concurrent and repeated read operations are
+idempotent. Rules permit notification reads only for `recipientUid`; client
+notification writes and counter writes are denied. The recipient can read
+their own counter document. No push, email, SMS or third-party notification
+delivery is configured.
+
+### Stay dashboards, indexes and lifecycle boundaries
+
+`/requests/mine` and `/requests/incoming` remain the traveller and host stay
+dashboards. Each displays pending, upcoming accepted, cancelled, declined and
+past-dated accepted records, with bounded 20-request pages ordered by start
+date. A past-dated request remains `accepted`; it is never described as
+completed. A stay whose exclusive `endDate` is on or before the current UTC
+date is grouped as past-dated; cancelled requests never appear in the
+upcoming-accepted section. Detail pages expose screened public participant
+names and city/country, existing listing links and the existing trusted
+cancellation action. Messaging is shown only for accepted stays and still
+requires backend authorization. Existing accept/decline/cancel logic is not
+duplicated.
+
+Composite indexes in `firebase/firestore.indexes.json` support the
+participant/date request queries, participant-array/updated-time conversation
+page, notification recipient/created-time pages and recipient/read unread
+queries. Message history uses the automatic single-field `createdAt` index.
+All new collections are deny-by-default except the explicit participant or
+recipient read paths described above. Notifications, counts, conversations,
+messages and message rate-limit state are never client-writable. Existing
+M4.1/M4.2 request lifecycle rules remain unchanged.
+
+This milestone does not add a completion transition, date availability,
+attachments, message editing, moderation/reporting, retention jobs, or
+payment features. Notification counters serialize updates per recipient and
+may become a write hotspot at high message volume. Accepted schedules still
+read the existing full confirmed subcollection; its scale limitation is
+unchanged. All verification for this milestone is emulator/local only; no
+production Firebase access or deployment was performed.
 
 ## Listing workflow and routes
 
@@ -307,19 +429,25 @@ the asynchronous pause worker.
   `functions/test/listing-lifecycle.test.mjs`,
   `functions/test/host-participation.test.mjs`,
   `functions/test/public-listings.test.mjs`, and
-  `functions/test/hosting-requests.test.mjs`. It covers lifecycle retries and
+  `functions/test/hosting-requests.test.mjs`,
+  `functions/test/conversations.test.mjs`, and
+  `functions/test/notifications.test.mjs`. It covers lifecycle retries and
   concurrency, authorization failures, malformed inputs, App Check, bounded
   withdrawal and suspension behavior, published-only search, filtering,
   pagination, public projection safety, stale lifecycle visibility, and
   private/unsafe host or listing text, request validation, participant
-  authorization, concurrent duplicates, rate limits, pagination and
-  projections. Firestore Rules tests also cover participant-only request reads
-  and denial of direct request writes.
+  authorization, concurrent conversation creation and message submission,
+  cancellation races, message rate limits, notification event recipients,
+  duplicate delivery, read-counter consistency, pagination and projections.
+  Firestore Rules tests cover participant-only request/conversation/message
+  reads, recipient-only notification reads and denial of direct writes.
 - Angular coverage is in the host listing page, editor, detail, and
-  `ListingService` specs, plus request-page and request-service specs. Firestore
-  rule behavior remains covered by `firebase/firestore.rules.test.mjs`.
-- Photo uploads, photo readiness requirements, availability, completion,
-  messaging, and payments remain out of scope.
+  `ListingService` specs, plus request, messaging and notification page specs.
+  Firestore rule behavior remains covered by
+  `firebase/firestore.rules.test.mjs`.
+- Photo uploads, photo readiness requirements, date availability, completion,
+  message edits/attachments, moderation, retention jobs and payments remain
+  deferred.
   The current M3.3.1 schema has no photo fields, so publication validates the
   existing listing fields and does not require photos.
 - Pausing is asynchronous; public reads are denied while the account is
@@ -333,8 +461,8 @@ the asynchronous pause worker.
   provide status filters or deletion. Archived listings remain visible to
   their owner and cannot be restored.
 - Initial discovery does not implement date-availability filtering. It requires
-  an approved availability model; remaining M4 acceptance includes privacy
-  review and query cost measurement.
+  an approved availability model. Query transaction cost and scale limits
+  described above remain known constraints.
 - On 2026-11-27, Hosting, Firestore rules, and index definitions were deployed
   to the `open-stay` development project. The listed composite indexes report
   `READY`. Functions deployment previously failed because enabling required

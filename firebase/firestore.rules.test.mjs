@@ -59,6 +59,119 @@ test('hosting requests are participant-readable but never client-writable', asyn
   }
 });
 
+test('conversation and notification data is participant- or recipient-only and never client-writable', async () => {
+  const requestId = 'c'.repeat(64);
+  const notificationId = 'd'.repeat(64);
+  const hostUid = 'private-chat-host';
+  const travellerUid = 'private-chat-traveller';
+  const outsiderUid = 'private-chat-outsider';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await Promise.all([
+      setDoc(doc(db, `users/${hostUid}`), { accountStatus: 'active' }),
+      setDoc(doc(db, `users/${travellerUid}`), { accountStatus: 'active' }),
+      setDoc(doc(db, `users/${outsiderUid}`), { accountStatus: 'active' }),
+      setDoc(doc(db, `hostPrivate/${hostUid}`), hostPrivateProfile(hostUid)),
+      setDoc(doc(db, `hostingRequests/${requestId}`), {
+        requestId, listingId: 'private-chat-listing', hostUid, travellerUid, status: 'accepted',
+      }),
+      setDoc(doc(db, `conversations/${requestId}`), {
+        conversationId: requestId,
+        requestId,
+        listingId: 'private-chat-listing',
+        hostUid,
+        travellerUid,
+        participantUids: [hostUid, travellerUid],
+        unreadByUid: { [hostUid]: 0, [travellerUid]: 1 },
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, `conversations/${requestId}/messages/message-1`), {
+        conversationId: requestId,
+        senderUid: hostUid,
+        text: 'A private stay message',
+        createdAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, `notifications/${notificationId}`), {
+        notificationId,
+        recipientUid: travellerUid,
+        type: 'new_message',
+        requestId,
+        conversationId: requestId,
+        title: 'New message',
+        message: 'You received a new message about your stay.',
+        createdAt: serverTimestamp(),
+        read: false,
+      }),
+      setDoc(doc(db, `notificationCounts/${travellerUid}`), {
+        recipientUid: travellerUid,
+        unreadCount: 1,
+        updatedAt: serverTimestamp(),
+      }),
+    ]);
+  });
+
+  const host = authenticatedDb(hostUid);
+  const traveller = authenticatedDb(travellerUid);
+  const outsider = authenticatedDb(outsiderUid);
+  const anon = testEnv.unauthenticatedContext().firestore();
+  for (const db of [host, traveller]) {
+    await assertSucceeds(getDoc(doc(db, `conversations/${requestId}`)));
+    await assertFails(getDocs(query(
+      collection(db, 'conversations'),
+      where('participantUids', 'array-contains', db === host ? hostUid : travellerUid),
+    )));
+    await assertSucceeds(getDocs(collection(db, `conversations/${requestId}/messages`)));
+  }
+  for (const db of [outsider, anon]) {
+    await assertFails(getDoc(doc(db, `conversations/${requestId}`)));
+    await assertFails(getDocs(collection(db, `conversations/${requestId}/messages`)));
+  }
+  await assertSucceeds(getDoc(doc(traveller, `notifications/${notificationId}`)));
+  await assertSucceeds(getDocs(query(
+    collection(traveller, 'notifications'),
+    where('recipientUid', '==', travellerUid),
+  )));
+  await assertFails(getDoc(doc(host, `notifications/${notificationId}`)));
+  await assertFails(getDoc(doc(outsider, `notifications/${notificationId}`)));
+  await assertFails(getDoc(doc(traveller, `notificationCounts/${hostUid}`)));
+  await assertSucceeds(getDoc(doc(traveller, `notificationCounts/${travellerUid}`)));
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), `users/${travellerUid}`), { accountStatus: 'suspended' });
+  });
+  await assertFails(getDoc(doc(host, `conversations/${requestId}`)));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), `users/${travellerUid}`), { accountStatus: 'active' });
+    await updateDoc(doc(context.firestore(), `hostPrivate/${hostUid}`), { consentState: 'withdrawn' });
+  });
+  await assertFails(getDocs(collection(traveller, `conversations/${requestId}/messages`)));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), `hostPrivate/${hostUid}`), { consentState: 'accepted' });
+  });
+
+  await assertFails(updateDoc(doc(host, `conversations/${requestId}`), {
+    participantUids: [hostUid, outsiderUid],
+  }));
+  await assertFails(setDoc(doc(traveller, `conversations/${requestId}/messages/forged`), {
+    conversationId: requestId, senderUid: travellerUid, text: 'Forged client message',
+  }));
+  await assertFails(updateDoc(doc(traveller, `conversations/${requestId}/messages/message-1`), {
+    senderUid: travellerUid,
+  }));
+  await assertFails(setDoc(doc(traveller, 'notifications/forged'), {
+    notificationId: 'forged', recipientUid: travellerUid, type: 'new_message',
+  }));
+  await assertFails(updateDoc(doc(traveller, `notifications/${notificationId}`), { read: true }));
+  await assertFails(setDoc(doc(traveller, `notificationCounts/${travellerUid}`), {
+    recipientUid: travellerUid, unreadCount: 0,
+  }));
+  await assertFails(getDoc(doc(traveller, 'conversationListCursors/private')));
+  await assertFails(setDoc(doc(traveller, 'conversationListCursors/private'), {
+    uid: travellerUid, conversationId: requestId,
+  }));
+});
+
 before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId,

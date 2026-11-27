@@ -46,6 +46,17 @@
     >
       Explore
     </a>
+    @if (auth.user$ | async) {
+      <a mat-button routerLink="/messages" routerLinkActive="active" (click)="closeMobileNav()">
+        Messages
+      </a>
+      <a mat-button routerLink="/notifications" routerLinkActive="active" (click)="closeMobileNav()">
+        Notifications
+      </a>
+      <a mat-button routerLink="/dashboard" routerLinkActive="active" (click)="closeMobileNav()">
+        Dashboard
+      </a>
+    }
     @if (!(auth.user$ | async)) {
       <a
         mat-button

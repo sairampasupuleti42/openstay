@@ -31,6 +31,30 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'messages',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./features/messages/conversation-list-page.component').then(
+        (module) => module.ConversationListPageComponent,
+      ),
+  },
+  {
+    path: 'messages/:conversationId',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./features/messages/conversation-detail-page.component').then(
+        (module) => module.ConversationDetailPageComponent,
+      ),
+  },
+  {
+    path: 'notifications',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./features/notifications/notification-list-page.component').then(
+        (module) => module.NotificationListPageComponent,
+      ),
+  },
+  {
     path: 'requests',
     canActivate: [authenticatedGuard],
     children: [

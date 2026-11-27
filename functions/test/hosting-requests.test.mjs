@@ -175,6 +175,22 @@ test('paginates only the caller’s requests and screens public profile data', a
   assert.equal('privateField' in detail, false);
 });
 
+test('orders participant request pages by stay start date and rejects foreign cursors', async () => {
+  const { host, traveller, listingId } = await seed('ordered-pages');
+  for (const startDate of ['2030-03-10', '2030-01-10', '2030-02-10']) {
+    await createRequest(call(traveller, input(listingId, {
+      startDate,
+      endDate: startDate.replace(/10$/, '15'),
+    })), db);
+  }
+  const first = await listRequests(call(traveller, { cursor: null }), 'travellerUid', db);
+  assert.deepEqual(first.items.map((item) => item.startDate), ['2030-01-10', '2030-02-10', '2030-03-10']);
+  assert.equal(first.nextCursor, null);
+  await assert.rejects(listRequests(call(host, {
+    cursor: 'f'.repeat(64),
+  }), 'hostUid', db), { code: 'invalid-argument' });
+});
+
 test('overlapping acceptances serialize, adjacent stays do not conflict, and cancellation frees the interval', async () => {
   const { host, traveller, listingId } = await seed('schedule');
   const first = await createRequest(call(traveller, input(listingId)), db);

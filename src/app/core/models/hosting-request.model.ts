@@ -21,6 +21,8 @@ export interface HostingRequest {
 export interface HostingRequestDetails extends HostingRequest {
   viewerIsHost: boolean;
   listingTitle: string | null;
+  listingLocation: string | null;
+  otherParticipantName: string | null;
   traveller: { displayName: string } | null;
 }
 

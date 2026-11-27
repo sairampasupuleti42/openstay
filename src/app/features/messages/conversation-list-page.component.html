@@ -1,0 +1,59 @@
+<main class="page">
+  <header class="page-header">
+    <div>
+      <h1>Messages</h1>
+      <p class="intro">Private conversations for your accepted stays.</p>
+    </div>
+  </header>
+
+  @if (loading() && items().length === 0) {
+    <p class="state" role="status">Loading conversations…</p>
+  }
+  @if (error()) {
+    <section class="state" aria-label="Conversation loading error">
+      <p class="error" role="alert">{{ error() }}</p>
+      <button mat-button type="button" (click)="load(items().length > 0)">Try again</button>
+    </section>
+  }
+  @if (!loading() && !error() && items().length === 0) {
+    @if (cursor()) {
+      <section class="state">
+        <p>No available conversations on this page. Load older conversations to continue browsing.</p>
+      </section>
+    } @else {
+      <p class="state">No conversations yet. Messaging becomes available when a host accepts a request.</p>
+    }
+  }
+  @if (items().length > 0) {
+    <div class="list" aria-label="Conversations">
+      @for (conversation of items(); track conversation.conversationId) {
+        <article class="card">
+          <div class="card-heading">
+            <h2>{{ conversation.otherParticipantName }}</h2>
+            @if (conversation.unreadCount > 0) {
+              <span class="unread" [attr.aria-label]="conversation.unreadCount + ' unread messages'">
+                {{ conversation.unreadCount }}
+              </span>
+            }
+          </div>
+          <p>Stay dates and details are available in the request.</p>
+          @if (conversation.lastMessageAt) {
+            <p class="updated">Latest message
+              <time [attr.datetime]="conversation.lastMessageAt">
+                {{ conversation.lastMessageAt | date: 'medium' }}
+              </time>
+            </p>
+          }
+          <a mat-stroked-button [routerLink]="['/messages', conversation.conversationId]">Open conversation</a>
+        </article>
+      }
+    </div>
+  }
+  @if (cursor() && !loading() && !error()) {
+    <div class="actions">
+      <button mat-stroked-button type="button" [disabled]="loadingMore()" (click)="load(true)">
+        {{ loadingMore() ? 'Loading…' : 'Load older conversations' }}
+      </button>
+    </div>
+  }
+</main>

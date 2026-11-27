@@ -284,11 +284,13 @@ export async function transitionRequest(request: CallableRequest<unknown>, db: F
     const scheduleRef = db.doc(`listingSchedules/${listingId}`);
     const entryRef = scheduleRef.collection('confirmed').doc(requestId);
     if (action === 'accept') {
-      const [listing, traveller, host, consent, lock, schedule, confirmed, reservation] = await Promise.all([
+      const conversationRef = db.doc(`conversations/${requestId}`);
+      const [listing, traveller, host, consent, lock, schedule, confirmed, reservation, conversation] = await Promise.all([
         tx.get(db.doc(`listings/${listingId}`)), tx.get(db.doc(`users/${travellerUid}`)),
         tx.get(db.doc(`users/${hostUid}`)), tx.get(db.doc(`hostPrivate/${hostUid}`)),
         tx.get(db.doc(`hostPrivate/${hostUid}/listingLifecycleState/current`)),
         tx.get(scheduleRef), tx.get(scheduleRef.collection('confirmed')), tx.get(reservationRef),
+        tx.get(conversationRef),
       ]);
       const listingData = listing.data();
       const { guestCount } = data;
@@ -307,6 +309,32 @@ export async function transitionRequest(request: CallableRequest<unknown>, db: F
       // The shared document makes concurrent decisions retry, including when the query was empty.
       bumpSchedule(tx, scheduleRef, schedule);
       tx.create(entryRef, { startDate, endDate });
+      if (conversation.exists) {
+        const existing = conversation.data();
+        if (existing?.['requestId'] !== requestId
+            || existing['listingId'] !== listingId
+            || existing['hostUid'] !== hostUid
+            || existing['travellerUid'] !== travellerUid
+            || !Array.isArray(existing['participantUids'])
+            || existing['participantUids'][0] !== hostUid
+            || existing['participantUids'][1] !== travellerUid) {
+          throw new HttpsError('failed-precondition', 'The conversation requires attention.');
+        }
+      } else {
+        tx.create(conversationRef, {
+          conversationId: requestId,
+          requestId,
+          listingId,
+          hostUid,
+          travellerUid,
+          participantUids: [hostUid, travellerUid],
+          unreadByUid: { [hostUid]: 0, [travellerUid]: 0 },
+          lastMessageAt: null,
+          lastMessageSenderUid: null,
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
     } else if (action === 'cancel' && data['status'] === 'accepted') {
       const [schedule, entry, reservation] = await Promise.all([
         tx.get(scheduleRef), tx.get(entryRef), tx.get(reservationRef),
@@ -368,8 +396,18 @@ export async function listRequests(
   if (cursor !== null && cursor !== undefined && (typeof cursor !== 'string' || !requestIdPattern.test(cursor))) {
     throw new HttpsError('invalid-argument', 'The request cursor is invalid.');
   }
-  let query = db.collection('hostingRequests').where(participant, '==', uid).orderBy(FieldPath.documentId()).limit(pageSize + 1);
-  if (typeof cursor === 'string') query = query.startAfter(cursor);
+  let query = db.collection('hostingRequests')
+    .where(participant, '==', uid)
+    .orderBy('startDate')
+    .orderBy(FieldPath.documentId())
+    .limit(pageSize + 1);
+  if (typeof cursor === 'string') {
+    const cursorDocument = await db.doc(`hostingRequests/${cursor}`).get();
+    if (!cursorDocument.exists || cursorDocument.data()?.[participant] !== uid) {
+      throw new HttpsError('invalid-argument', 'The request cursor is invalid.');
+    }
+    query = query.startAfter(cursorDocument);
+  }
   const snapshot = await query.get();
   const docs = snapshot.docs.slice(0, pageSize);
   return { items: docs.map(project), nextCursor: snapshot.size > pageSize ? docs[docs.length - 1].id : null };
@@ -387,16 +425,25 @@ export async function getRequest(request: CallableRequest<unknown>, db: Firebase
   if (!data || (data['hostUid'] !== uid && data['travellerUid'] !== uid)) {
     throw new HttpsError('not-found', 'This request could not be found.');
   }
-  const [listing, traveller] = await Promise.all([
+  const [listing, traveller, otherParticipant] = await Promise.all([
     db.doc(`listings/${data['listingId']}`).get(),
     db.doc(`users/${data['travellerUid']}`).get(),
+    db.doc(`users/${data[data['hostUid'] === uid ? 'travellerUid' : 'hostUid']}`).get(),
   ]);
-  const title = listing.data()?.['title'];
+  const listingData = listing.data();
+  const title = listingData?.['title'];
   const name = traveller.data()?.['displayName'];
+  const otherName = otherParticipant.data()?.['displayName'];
+  const city = listingData?.['city'];
+  const country = listingData?.['country'];
   return {
     ...project(snapshot),
     viewerIsHost: data['hostUid'] === uid,
     listingTitle: typeof title === 'string' && isSafePublicText(title) ? title : null,
+    listingLocation: typeof city === 'string' && isSafePublicText(city)
+      && typeof country === 'string' && isSafePublicText(country) ? `${city}, ${country}` : null,
+    otherParticipantName: typeof otherName === 'string' && otherName.trim().length > 0
+      && otherName.length <= 100 && isSafePublicText(otherName) ? otherName : null,
     traveller: typeof name === 'string' && name.trim().length > 0 && name.length <= 100 && isSafePublicText(name)
       ? { displayName: name } : null,
   };
