@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
+import { FirebaseApp } from '@angular/fire/app';
 import { Auth } from '@angular/fire/auth';
 import {
   Firestore,
-  Timestamp,
   collection,
   deleteField,
   doc,
+  documentId,
   getDoc,
   getDocs,
   query,
@@ -13,7 +14,6 @@ import {
   orderBy,
   limit,
   startAfter,
-  Query,
   QueryConstraint,
   serverTimestamp,
   setDoc,
@@ -26,6 +26,15 @@ import {
   validateListingInput,
   validateListingData,
 } from '../models/listing.model';
+import { environment } from '../../../environments/environment';
+
+let listingFunctions: ReturnType<typeof import('firebase/functions').getFunctions> | undefined;
+const FUNCTIONS_REGION = 'us-central1';
+type LifecycleCallableName =
+  | 'publishListing'
+  | 'pauseListing'
+  | 'resumeListing'
+  | 'archiveListing';
 
 const EDITABLE_FIELDS = [
   'title',
@@ -43,9 +52,16 @@ const EDITABLE_FIELDS = [
   'houseRules',
 ] as const;
 
+function validatePageSize(pageSize: number): void {
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 20) {
+    throw new Error('Listing page size must be an integer from 1 to 20.');
+  }
+}
+
 @Injectable()
 export class ListingService {
   private readonly auth = inject(Auth);
+  private readonly firebaseApp = inject(FirebaseApp);
   private readonly firestore = inject(Firestore);
 
   async createDraft(input: ListingInput): Promise<string> {
@@ -85,14 +101,16 @@ export class ListingService {
 
   async getOwnListings(pageSize: number = 20, lastListing?: Listing): Promise<Listing[]> {
     const uid = this.requireCurrentUid();
+    validatePageSize(pageSize);
     const constraints: QueryConstraint[] = [
       where('hostUid', '==', uid),
       orderBy('updatedAt', 'desc'),
-      limit(pageSize + 1),
+      orderBy(documentId(), 'desc'),
+      limit(pageSize),
     ];
 
     if (lastListing) {
-      constraints.push(startAfter(lastListing.updatedAt));
+      constraints.push(startAfter(lastListing.updatedAt, lastListing.listingId));
     }
 
     const q = query(collection(this.firestore, 'listings'), ...constraints);
@@ -284,6 +302,33 @@ export class ListingService {
     await updateDoc(doc(this.firestore, 'listings', listingId), safeUpdates);
   }
 
+  publishListing(listingId: string, idempotencyKey: string): Promise<void> {
+    return this.runLifecycleAction('publishListing', listingId, idempotencyKey);
+  }
+
+  pauseListing(listingId: string, idempotencyKey: string): Promise<void> {
+    return this.runLifecycleAction('pauseListing', listingId, idempotencyKey);
+  }
+
+  resumeListing(listingId: string, idempotencyKey: string): Promise<void> {
+    return this.runLifecycleAction('resumeListing', listingId, idempotencyKey);
+  }
+
+  archiveListing(listingId: string, idempotencyKey: string): Promise<void> {
+    return this.runLifecycleAction('archiveListing', listingId, idempotencyKey);
+  }
+
+  getErrorMessage(error: unknown): string {
+    if (error instanceof Error && error.message === 'NO_ACCESS') {
+      return 'This listing is unavailable or you do not have permission to view it.';
+    }
+    if (error instanceof Error && error.message === 'NO_SUCH_LISTING') {
+      return 'This listing could not be found.';
+    }
+    if (error instanceof Error && error.message.trim()) return error.message;
+    return 'Something went wrong. Please try again.';
+  }
+
   async getPublishedListing(listingId: string): Promise<Listing | null> {
     const snapshot = await getDoc(doc(this.firestore, 'listings', listingId));
 
@@ -299,14 +344,19 @@ export class ListingService {
   }
 
   async getPublishedListings(pageSize: number = 20, lastListing?: Listing): Promise<Listing[]> {
+    validatePageSize(pageSize);
     const constraints: QueryConstraint[] = [
       where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
-      limit(pageSize + 1),
+      orderBy(documentId(), 'desc'),
+      limit(pageSize),
     ];
 
     if (lastListing) {
-      constraints.push(startAfter(lastListing.publishedAt));
+      if (lastListing.publishedAt === undefined) {
+        throw new Error('The listing cursor must include a publication timestamp.');
+      }
+      constraints.push(startAfter(lastListing.publishedAt, lastListing.listingId));
     }
 
     const q = query(collection(this.firestore, 'listings'), ...constraints);
@@ -321,5 +371,28 @@ export class ListingService {
     const uid = this.auth.currentUser?.uid;
     if (!uid) throw new Error('NO_SIGNED_IN_USER');
     return uid;
+  }
+
+  private async runLifecycleAction(
+    callableName: LifecycleCallableName,
+    listingId: string,
+    idempotencyKey: string,
+  ): Promise<void> {
+    if (!listingId || !/^[A-Za-z0-9-]{16,128}$/.test(idempotencyKey)) {
+      throw new Error('The listing action request is invalid.');
+    }
+
+    const sdk = await import('firebase/functions');
+    if (!listingFunctions) {
+      listingFunctions = sdk.getFunctions(this.firebaseApp, FUNCTIONS_REGION);
+      if (environment.useEmulators) {
+        sdk.connectFunctionsEmulator(listingFunctions, '127.0.0.1', 5001);
+      }
+    }
+    const call = sdk.httpsCallable<
+      { listingId: string; idempotencyKey: string },
+      { listingId: string; status: string }
+    >(listingFunctions, callableName);
+    await call({ listingId, idempotencyKey });
   }
 }

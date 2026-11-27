@@ -1,0 +1,143 @@
+<main class="page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Host workspace</p>
+      <h1>Your listings</h1>
+      <p class="intro">
+        Create and manage your hosting offers. You control when each listing is published.
+      </p>
+    </div>
+    <a class="primary-action" mat-flat-button routerLink="/hosting/listings/new">
+      Create a listing
+    </a>
+  </header>
+
+  @if (successMessage()) {
+    <p class="success" role="status">{{ successMessage() }}</p>
+  }
+  @if (errorMessage()) {
+    <section class="state-panel" aria-labelledby="listing-error-heading">
+      <h2 id="listing-error-heading">We couldn’t load your listings</h2>
+      <p class="error" role="alert">{{ errorMessage() }}</p>
+      <button class="secondary-action" mat-stroked-button type="button" (click)="loadListings()">
+        Try again
+      </button>
+    </section>
+  }
+
+  @if (isLoading() && listings().length === 0) {
+    <p class="state-panel" role="status">Loading your listings…</p>
+  } @else if (!errorMessage() && listings().length === 0) {
+    <section class="state-panel empty-state" aria-labelledby="empty-listings-heading">
+      <h2 id="empty-listings-heading">Your hosting story starts here</h2>
+      <p>Create a draft when you’re ready. You can review it before publishing.</p>
+      <a class="secondary-action" mat-stroked-button routerLink="/hosting/listings/new">
+        Create your first listing
+      </a>
+    </section>
+  } @else if (listings().length > 0) {
+    <div class="listing-list" aria-label="Your listings">
+      @for (listing of listings(); track listing.listingId) {
+        <article class="listing-card" [attr.aria-labelledby]="'listing-title-' + listing.listingId">
+          <div class="listing-heading">
+            <div>
+              <h2 [id]="'listing-title-' + listing.listingId">{{ listing.title }}</h2>
+              <p class="location">
+                {{ listing.city }}, {{ listing.country }}
+                @if (listing.region) { · {{ listing.region }} }
+              </p>
+            </div>
+            <span class="status" [class]="'status status--' + listing.status">
+              {{ statusLabel(listing.status) }}
+            </span>
+          </div>
+          <p class="updated">
+            Updated <time [attr.datetime]="listing.updatedAt.toDate().toISOString()">
+              {{ listing.updatedAt.toDate() | date: 'mediumDate' }}
+            </time>
+          </p>
+          <div class="card-actions">
+            <a class="text-action" mat-button [routerLink]="['/hosting/listings', listing.listingId]">
+              Preview
+            </a>
+            @if (listing.status === 'draft') {
+              <a class="text-action" mat-button [routerLink]="['/hosting/listings', listing.listingId, 'edit']">
+                Edit draft
+              </a>
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                [disabled]="isActionPendingFor(listing.listingId)"
+                (click)="performAction(listing, 'publish')"
+              >
+                {{ actionLabel(listing, 'publish') }}
+              </button>
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                [disabled]="isActionPendingFor(listing.listingId)"
+                (click)="performAction(listing, 'archive')"
+              >
+                {{ actionLabel(listing, 'archive') }}
+              </button>
+            } @else if (listing.status === 'published') {
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                [disabled]="isActionPendingFor(listing.listingId)"
+                (click)="performAction(listing, 'pause')"
+              >
+                {{ actionLabel(listing, 'pause') }}
+              </button>
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                [disabled]="isActionPendingFor(listing.listingId)"
+                (click)="performAction(listing, 'archive')"
+              >
+                {{ actionLabel(listing, 'archive') }}
+              </button>
+            } @else if (listing.status === 'paused') {
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                [disabled]="isActionPendingFor(listing.listingId)"
+                (click)="performAction(listing, 'resume')"
+              >
+                {{ actionLabel(listing, 'resume') }}
+              </button>
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                [disabled]="isActionPendingFor(listing.listingId)"
+                (click)="performAction(listing, 'archive')"
+              >
+                {{ actionLabel(listing, 'archive') }}
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @if (hasMore()) {
+    <div class="load-more">
+      <button
+        class="secondary-action"
+        mat-stroked-button
+        type="button"
+        [disabled]="isLoadingMore()"
+        (click)="loadListings(true)"
+      >
+        {{ isLoadingMore() ? 'Loading…' : 'Load more listings' }}
+      </button>
+    </div>
+  }
+</main>

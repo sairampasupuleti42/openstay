@@ -1,0 +1,82 @@
+<main class="page">
+  @if (isLoading()) {
+    <p class="state-panel" role="status">Loading your listing preview…</p>
+  } @else if (errorMessage()) {
+    <section class="state-panel" aria-labelledby="preview-error-heading">
+      <h1 id="preview-error-heading">Listing preview unavailable</h1>
+      <p class="muted" role="alert">{{ errorMessage() }}</p>
+      <a mat-stroked-button routerLink="/hosting/listings">Back to your listings</a>
+    </section>
+  } @else if (listing(); as savedListing) {
+    <article class="preview" aria-labelledby="listing-title">
+      <p class="eyebrow">Host preview</p>
+      <span class="status" aria-label="Listing status">{{ statusLabel(savedListing.status) }}</span>
+      <h1 id="listing-title">{{ savedListing.title }}</h1>
+      <p class="location">
+        {{ savedListing.city }}, {{ savedListing.country }}
+        @if (savedListing.region) { · {{ savedListing.region }} }
+        @if (savedListing.areaDescription) { · {{ savedListing.areaDescription }} }
+      </p>
+      <p class="description">{{ savedListing.description }}</p>
+
+      <dl class="facts">
+        <div class="fact">
+          <dt>Accommodation</dt>
+          <dd>{{ accommodationLabel(savedListing.accommodationType) }}</dd>
+        </div>
+        <div class="fact">
+          <dt>Guests</dt>
+          <dd>{{ savedListing.guestCapacity }}</dd>
+        </div>
+        <div class="fact">
+          <dt>Bedrooms</dt>
+          <dd>{{ savedListing.bedrooms }}</dd>
+        </div>
+        <div class="fact">
+          <dt>Beds · bathrooms</dt>
+          <dd>{{ savedListing.beds }} · {{ savedListing.bathrooms }}</dd>
+        </div>
+      </dl>
+
+      @if (savedListing.amenities.length > 0) {
+        <section aria-labelledby="amenities-heading">
+          <h2 id="amenities-heading">Amenities</h2>
+          <ul class="tag-list">
+            @for (amenity of savedListing.amenities; track amenity) {
+              <li>{{ accommodationLabel(amenity) }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (savedListing.houseRules.length > 0) {
+        <section aria-labelledby="house-rules-heading">
+          <h2 id="house-rules-heading">House rules</h2>
+          <ul class="house-rules">
+            @for (rule of savedListing.houseRules; track $index) {
+              <li>{{ rule }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      <p class="muted">
+        Updated <time [attr.datetime]="savedListing.updatedAt.toDate().toISOString()">
+          {{ savedListing.updatedAt.toDate() | date: 'medium' }}
+        </time>
+      </p>
+      <div class="actions">
+        @if (savedListing.status === 'draft') {
+          <a
+            class="primary-action"
+            mat-flat-button
+            [routerLink]="['/hosting/listings', savedListing.listingId, 'edit']"
+          >
+            Edit draft
+          </a>
+        }
+        <a mat-stroked-button routerLink="/hosting/listings">Back to your listings</a>
+      </div>
+    </article>
+  }
+</main>

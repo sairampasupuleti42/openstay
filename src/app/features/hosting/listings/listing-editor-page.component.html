@@ -1,0 +1,198 @@
+<main class="page">
+  @if (isLoading()) {
+    <p class="state-panel" role="status">Loading your draft…</p>
+  } @else if (createdListingId(); as newListingId) {
+    <section class="state-panel" aria-labelledby="created-heading">
+      <p class="eyebrow">Draft saved</p>
+      <h1 id="created-heading">Your listing draft is ready to preview.</h1>
+      <p class="intro">It isn’t public until you choose to publish it.</p>
+      <div class="actions">
+        <a
+          class="primary-action"
+          mat-flat-button
+          [routerLink]="['/hosting/listings', newListingId]"
+        >
+          Preview your listing
+        </a>
+        <a class="secondary-action" mat-stroked-button routerLink="/hosting/listings">
+          Back to your listings
+        </a>
+      </div>
+    </section>
+  } @else if (errorMessage() && isEditRoute()) {
+    <section class="state-panel" aria-labelledby="edit-error-heading">
+      <h1 id="edit-error-heading">This draft can’t be edited</h1>
+      <p class="error" role="alert">{{ errorMessage() }}</p>
+      <a class="secondary-action" mat-stroked-button routerLink="/hosting/listings">
+        Back to your listings
+      </a>
+    </section>
+  } @else {
+    <section class="panel" aria-labelledby="editor-heading">
+      <p class="eyebrow">Host workspace</p>
+      <h1 id="editor-heading">{{ isEditRoute() ? 'Edit your draft' : 'Create a listing' }}</h1>
+      <p class="intro">
+        Share the essentials about your place. You can review your draft before publishing.
+      </p>
+      <p class="privacy-note">
+        Listing details are public when published. Do not include an exact residential address,
+        coordinates, access instructions, phone number, or email in any field.
+      </p>
+
+      <form [formGroup]="form" (ngSubmit)="saveDraft()" novalidate>
+        <mat-form-field appearance="outline">
+          <mat-label>Listing title</mat-label>
+          <input
+            matInput
+            formControlName="title"
+            maxlength="100"
+            required
+            aria-describedby="title-error"
+          />
+          @if (form.controls.title.touched && form.controls.title.invalid) {
+            <mat-error id="title-error">Enter a title of 10–100 characters.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea
+            matInput
+            formControlName="description"
+            rows="6"
+            maxlength="2000"
+            required
+            aria-describedby="description-error"
+          ></textarea>
+          @if (form.controls.description.touched && form.controls.description.invalid) {
+            <mat-error id="description-error">Enter a description of 50–2,000 characters.</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="field-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Accommodation type</mat-label>
+            <mat-select formControlName="accommodationType" required>
+              @for (option of accommodationOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+            @if (form.controls.accommodationType.touched && form.controls.accommodationType.invalid) {
+              <mat-error>Select an accommodation type.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Country</mat-label>
+            <input matInput formControlName="country" maxlength="100" required />
+            @if (form.controls.country.touched && form.controls.country.invalid) {
+              <mat-error>Enter a country of 2–100 characters.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>City</mat-label>
+            <input matInput formControlName="city" maxlength="100" required />
+            @if (form.controls.city.touched && form.controls.city.invalid) {
+              <mat-error>Enter a city of 2–100 characters.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Region (optional)</mat-label>
+            <input matInput formControlName="region" maxlength="100" />
+            @if (form.controls.region.touched && form.controls.region.invalid) {
+              <mat-error>Keep the region to 100 characters or fewer.</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Nearby area description (optional)</mat-label>
+          <input
+            matInput
+            formControlName="areaDescription"
+            maxlength="200"
+            aria-describedby="area-description-hint area-description-error"
+          />
+          <mat-hint id="area-description-hint">Use a broad neighbourhood or landmark, not an address.</mat-hint>
+          @if (form.controls.areaDescription.touched && form.controls.areaDescription.invalid) {
+            <mat-error id="area-description-error">Keep this description to 200 characters or fewer.</mat-error>
+          }
+        </mat-form-field>
+
+        <div class="field-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Guest capacity</mat-label>
+            <input matInput type="number" min="1" max="10" step="1" formControlName="guestCapacity" required />
+            @if (form.controls.guestCapacity.touched && form.controls.guestCapacity.invalid) {
+              <mat-error>Enter a whole number from 1 to 10.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Bedrooms</mat-label>
+            <input matInput type="number" min="0" max="10" step="1" formControlName="bedrooms" required />
+            @if (form.controls.bedrooms.touched && form.controls.bedrooms.invalid) {
+              <mat-error>Enter a whole number from 0 to 10.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Beds</mat-label>
+            <input matInput type="number" min="1" max="15" step="1" formControlName="beds" required />
+            @if (form.controls.beds.touched && form.controls.beds.invalid) {
+              <mat-error>Enter a whole number from 1 to 15.</mat-error>
+            }
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Bathrooms</mat-label>
+            <input matInput type="number" min="1" max="10" step="0.5" formControlName="bathrooms" required />
+            @if (form.controls.bathrooms.touched && form.controls.bathrooms.invalid) {
+              <mat-error>Enter a number from 1 to 10.</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Amenities</mat-label>
+          <mat-select formControlName="amenities" multiple>
+            @for (amenity of amenityOptions; track amenity) {
+              <mat-option [value]="amenity">{{ amenity.replaceAll('_', ' ') }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint>Select any that apply.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>House rules (one per line)</mat-label>
+          <textarea
+            matInput
+            formControlName="houseRulesText"
+            rows="4"
+            aria-describedby="house-rules-hint house-rules-error"
+          ></textarea>
+          <mat-hint id="house-rules-hint">Add up to 15 rules, each between 5 and 200 characters.</mat-hint>
+          @if (form.controls.houseRulesText.touched && form.controls.houseRulesText.invalid) {
+            <mat-error id="house-rules-error">Check the number of rules and each rule’s length.</mat-error>
+          }
+        </mat-form-field>
+
+        @if (errorMessage()) {
+          <p class="error" role="alert">{{ errorMessage() }}</p>
+        }
+        @if (successMessage()) {
+          <p class="success" role="status">{{ successMessage() }}</p>
+        }
+        <div class="actions">
+          <button
+            class="primary-action"
+            mat-flat-button
+            type="submit"
+            [disabled]="isSaving()"
+          >
+            {{ isSaving() ? 'Saving…' : 'Save draft' }}
+          </button>
+          <a class="secondary-action" mat-stroked-button routerLink="/hosting/listings">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </section>
+  }
+</main>

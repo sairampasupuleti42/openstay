@@ -31,9 +31,9 @@ export const routes: Routes = [
   {
     path: 'hosting',
     canActivate: [authenticatedGuard],
-    loadComponent: () =>
-      import('./features/hosting/onboarding/host-onboarding.component').then(
-        (module) => module.HostOnboardingComponent,
+    loadChildren: () =>
+      import('./features/hosting/hosting.routes').then(
+        (module) => module.hostingRoutes,
       ),
   },
   {
