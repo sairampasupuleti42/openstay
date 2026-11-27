@@ -107,12 +107,14 @@ and in the M3.3 implementation record.
   approval. Photos, availability calendars, booking records, completion, and
   messaging require separate implementation and approval.
 - **Development deployment (2026-11-27):** Hosting, Firestore rules, and index
-  definitions were deployed to `open-stay`. Index build readiness was not
-  confirmed. Functions deployment failed because required APIs could not be
-  enabled without the Blaze billing plan; the deployed app must not be assumed
-  to have the current callable backend. After authorized billing approval,
-  deploy the Functions and verify their availability and compatibility with
-  the deployed client and rules.
+  definitions were deployed to `open-stay`; the listed composite indexes
+  report `READY`. Functions deployment previously failed because required APIs
+  could not be enabled without the Blaze billing plan, and Functions were not
+  included in the latest deployment. The hosting-request decision UI depends
+  on the `decideHostingRequest` callable; verify that the deployed backend
+  provides it before using request decisions. After authorized billing
+  approval, deploy Functions and verify their availability and compatibility
+  with the deployed client and rules.
 - **External controls:** Verify App Check and production deployment protections,
   restrict deployment credentials, and complete operational safety and abuse
   readiness before production release. The development deployments above are

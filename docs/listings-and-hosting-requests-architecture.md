@@ -336,12 +336,14 @@ the asynchronous pause worker.
   an approved availability model; remaining M4 acceptance includes privacy
   review and query cost measurement.
 - On 2026-11-27, Hosting, Firestore rules, and index definitions were deployed
-  to the `open-stay` development project; index build readiness was not
-  confirmed. Functions deployment failed because enabling required APIs
-  required the Blaze billing plan. The currently deployed callable versions
-  were not verified and may not match the client and rules. Following
-  authorized billing approval, deploy Functions separately and verify
-  callable availability and compatibility before using this environment.
+  to the `open-stay` development project. The listed composite indexes report
+  `READY`. Functions deployment previously failed because enabling required
+  APIs required the Blaze billing plan, and Functions were not included in the
+  latest deployment. The hosting-request decision UI depends on
+  `decideHostingRequest`; verify that the deployed backend provides it before
+  using request decisions. Following authorized billing approval, deploy
+  Functions separately and verify callable availability and compatibility
+  before using this environment.
 - The Firestore rules deployment compiled with four nullable-map type warnings
   at lines 227, 238, 497, and 508 of
   [`firebase/firestore.rules`](../firebase/firestore.rules). Review these
