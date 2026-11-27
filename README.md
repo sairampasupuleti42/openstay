@@ -27,7 +27,10 @@ Firestore-backed user profiles, Firebase modular SDK initialization for
 Storage and Functions, persistent Firebase Auth state, email-verification and
 account-status route guards, App Check setup for configured non-emulator
 environments, default-deny Firestore and Storage rules, and a compiled Cloud
-Functions skeleton.
+Functions skeleton. Host participation includes opt-in private host profiles,
+consent history managed by App Check-protected callables, and public visibility
+gated on current consent and an active account. Listings and booking behavior
+remain out of scope.
 AngularFire is intentionally not installed: the Phase 0 architecture selected
 one consistent integration pattern using the Firebase modular Web SDK, and the
 latest AngularFire release does not declare compatibility with Angular 22 and
@@ -72,7 +75,12 @@ service-account private keys or other secrets.
 
 Before using Firebase outside the emulator, set the App Check reCAPTCHA site
 key in `appCheckSiteKey`; the Firebase Web App configuration does not include
-that key. Analytics is not initialized until an appropriate consent flow is in
+that key. The host consent callables enforce App Check; verify the provider and
+authorized domains before deployment. Consent changes, including withdrawals,
+are limited to ten events per account in any rolling hour; idempotent retries
+do not consume quota. Withdrawal can be delayed until a slot opens.
+Monitor abuse and establish additional controls before public launch. Analytics
+is not initialized until an appropriate consent flow is in
 place. Do not deploy yet.
 
 Google sign-in is implemented in the app and uses the configured Firebase
