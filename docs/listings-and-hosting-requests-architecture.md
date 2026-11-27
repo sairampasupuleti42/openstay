@@ -220,7 +220,10 @@ participant's bounded page and batch-loads only public display names. The
 callable uses a short-lived opaque cursor token backed by server-only state, so
 page boundaries do not disclose ineligible conversation IDs or timestamps.
 Cursor state is private to the authenticated user and expires after 15
-minutes. All conversation and message writes are denied to clients.
+minutes. Multiple tabs can use their cursors independently; at most 100
+unexpired cursors per user are retained, and new cursors are rejected until
+one expires when the limit is reached. All conversation and message writes
+are denied to clients.
 
 ### Notifications and delivery
 

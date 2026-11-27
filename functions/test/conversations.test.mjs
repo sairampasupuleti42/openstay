@@ -189,9 +189,14 @@ test('message read counters and participant conversation pagination stay bounded
     const request = index === 0 ? first : await seed(`pages-${index}`, 'accepted', first.travellerUid);
     await getOrCreateConversation(call(request.travellerUid, { requestId: request.requestId }), db);
   }
-  const firstPage = await listParticipantConversations(call(first.travellerUid, { cursor: null }), db);
+  const [firstPage, otherTabPage] = await Promise.all([
+    listParticipantConversations(call(first.travellerUid, { cursor: null }), db),
+    listParticipantConversations(call(first.travellerUid, { cursor: null }), db),
+  ]);
   assert.equal(firstPage.items.length, 20);
   assert.ok(firstPage.nextCursor);
+  assert.ok(otherTabPage.nextCursor);
+  assert.notEqual(firstPage.nextCursor, otherTabPage.nextCursor);
   assert.match(firstPage.nextCursor, /^[A-Za-z0-9_-]{43}$/);
   assert.equal(firstPage.nextCursor.includes(first.requestId), false);
   await db.doc('users/chat-cursor-outsider').set({ accountStatus: 'active' });
@@ -206,6 +211,45 @@ test('message read counters and participant conversation pagination stay bounded
   }), db);
   assert.equal(secondPage.items.length, 1);
   assert.equal(secondPage.nextCursor, null);
+  const otherTabSecondPage = await listParticipantConversations(call(first.travellerUid, {
+    cursor: otherTabPage.nextCursor,
+  }), db);
+  assert.deepEqual(otherTabSecondPage, secondPage);
+  const cursorRef = db.doc(`conversationListCursors/${id(first.travellerUid)}`);
+  await cursorRef.update(`cursors.${firstPage.nextCursor}.expiresAt`, Timestamp.fromMillis(0));
+  await assert.rejects(listParticipantConversations(call(first.travellerUid, {
+    cursor: firstPage.nextCursor,
+  }), db), { code: 'invalid-argument' });
+  assert.deepEqual(await listParticipantConversations(call(first.travellerUid, {
+    cursor: otherTabPage.nextCursor,
+  }), db), secondPage);
+  const state = (await cursorRef.get()).data();
+  const boundary = state.cursors[otherTabPage.nextCursor];
+  const tokens = Array.from({ length: 100 }, (_, index) =>
+    createHash('sha256').update(`cursor-limit-${index}`).digest('base64url'));
+  await cursorRef.set({
+    uid: first.travellerUid,
+    cursors: Object.fromEntries(tokens.map((token) => [token, boundary])),
+  });
+  await assert.rejects(listParticipantConversations(call(first.travellerUid, {
+    cursor: null,
+  }), db), { code: 'resource-exhausted' });
+  await cursorRef.update(`cursors.${tokens[0]}.expiresAt`, Timestamp.fromMillis(0));
+  const refreshedPage = await listParticipantConversations(call(first.travellerUid, { cursor: null }), db);
+  assert.ok(refreshedPage.nextCursor);
+  assert.equal(Object.keys((await cursorRef.get()).data().cursors).length, 100);
+  await cursorRef.set({
+    uid: first.travellerUid,
+    token: otherTabPage.nextCursor,
+    ...boundary,
+  });
+  assert.deepEqual(await listParticipantConversations(call(first.travellerUid, {
+    cursor: otherTabPage.nextCursor,
+  }), db), secondPage);
+  await listParticipantConversations(call(first.travellerUid, { cursor: null }), db);
+  assert.deepEqual(await listParticipantConversations(call(first.travellerUid, {
+    cursor: otherTabPage.nextCursor,
+  }), db), secondPage);
   assert.ok(firstPage.items.every((item) => item.otherParticipantName === 'Host'));
 
   const requestId = first.requestId;

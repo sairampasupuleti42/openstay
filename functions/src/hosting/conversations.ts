@@ -15,6 +15,7 @@ const minTimestampSeconds = -62_135_596_800;
 const maxTimestampSeconds = 253_402_300_799;
 const cursorTokenPattern = /^[A-Za-z0-9_-]{43}$/;
 const cursorLifetimeMs = 15 * 60 * 1000;
+const maxActiveConversationCursors = 100;
 
 export const openConversation = onCall(options, (request) => getOrCreateConversation(request, getFirestore()));
 export const sendConversationMessage = onCall(options, (request) => sendMessage(request, getFirestore()));
@@ -121,14 +122,17 @@ async function resolveConversationCursor(
   const stateRef = conversationCursorRef(db, uid);
   const snapshot = await stateRef.get();
   const state = snapshot.data();
-  const updatedAt = state?.['updatedAt'];
-  const conversationId = state?.['conversationId'];
-  const expiresAt = state?.['expiresAt'];
+  const cursors = state?.['cursors'];
+  const found = state?.['token'] === value ? state : isRecord(cursors)
+    ? cursors[value]
+    : undefined;
+  const cursor = isRecord(found) ? found : undefined;
+  const updatedAt = cursor?.['updatedAt'];
+  const conversationId = cursor?.['conversationId'];
+  const expiresAt = cursor?.['expiresAt'];
   if (!snapshot.exists || !state
-      || Object.keys(state ?? {}).some((key) =>
-        !['uid', 'token', 'updatedAt', 'conversationId', 'expiresAt'].includes(key))
       || state['uid'] !== uid
-      || state['token'] !== value
+      || !cursor
       || !(updatedAt instanceof Timestamp)
       || typeof conversationId !== 'string'
       || !idPattern.test(conversationId)
@@ -153,6 +157,10 @@ function conversationCursorRef(db: FirebaseFirestore.Firestore, uid: string) {
   return db.doc(`conversationListCursors/${ownerId}`);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
 async function storeConversationCursor(
   db: FirebaseFirestore.Firestore,
   uid: string,
@@ -160,12 +168,43 @@ async function storeConversationCursor(
   conversationId: string,
 ): Promise<string> {
   const token = randomBytes(32).toString('base64url');
-  await conversationCursorRef(db, uid).set({
-    uid,
-    token,
-    updatedAt,
-    conversationId,
-    expiresAt: Timestamp.fromMillis(Date.now() + cursorLifetimeMs),
+  const ref = conversationCursorRef(db, uid);
+  await db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(ref);
+    const state = snapshot.data();
+    const existing = isRecord(state?.['cursors'])
+      ? state['cursors']
+      : typeof state?.['token'] === 'string'
+        ? { [state['token']]: state }
+        : undefined;
+    if (snapshot.exists && (state?.['uid'] !== uid || !isRecord(existing))) {
+      throw new HttpsError('failed-precondition', 'Conversation cursor state requires attention.');
+    }
+    const now = Date.now();
+    const active: Record<string, { updatedAt: Timestamp; conversationId: string; expiresAt: Timestamp }> = {};
+    for (const [key, value] of Object.entries(existing ?? {})) {
+      if (!cursorTokenPattern.test(key) || !isRecord(value) || !(value['expiresAt'] instanceof Timestamp)
+          || !(value['updatedAt'] instanceof Timestamp)
+          || typeof value['conversationId'] !== 'string' || !idPattern.test(value['conversationId'])) {
+        throw new HttpsError('failed-precondition', 'Conversation cursor state requires attention.');
+      }
+      if (value['expiresAt'].toMillis() > now) {
+        active[key] = {
+          updatedAt: value['updatedAt'],
+          conversationId: value['conversationId'],
+          expiresAt: value['expiresAt'],
+        };
+      }
+    }
+    if (Object.keys(active).length >= maxActiveConversationCursors) {
+      throw new HttpsError('resource-exhausted', 'Too many active conversation cursors. Please try again later.');
+    }
+    active[token] = {
+      updatedAt,
+      conversationId,
+      expiresAt: Timestamp.fromMillis(now + cursorLifetimeMs),
+    };
+    tx.set(ref, { uid, cursors: active });
   });
   return token;
 }
