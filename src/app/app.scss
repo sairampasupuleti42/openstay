@@ -35,7 +35,8 @@
 .nav-backdrop {
   display: none;
 }
-.main-nav a {
+.main-nav a,
+.main-nav .signout-link {
   height: 42px;
   border-radius: 999px;
   color: var(--openstay-charcoal);
@@ -77,6 +78,12 @@
   background: var(--openstay-cream);
   color: var(--openstay-forest-dark);
   font-size: 14px;
+  text-align: center;
+}
+.auth-error {
+  margin: 0;
+  padding: 10px clamp(20px, 5vw, 72px);
+  color: #a4262c;
   text-align: center;
 }
 .app-main { min-height: calc(100vh - 76px); }
@@ -145,6 +152,7 @@
     background: rgba(17, 29, 22, 0.42);
   }
   .main-nav a,
+  .main-nav .signout-link,
   .main-nav .install-link {
     display: inline-flex;
     justify-content: flex-start;

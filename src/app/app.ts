@@ -2,7 +2,8 @@ import { AsyncPipe } from '@angular/common';
 import { Component, HostListener, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { map } from 'rxjs';
 import { AuthService } from './core/auth/auth.service';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -25,8 +26,12 @@ interface BeforeInstallPromptEvent extends Event {
 })
 export class App {
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  readonly session$ = this.auth.user$.pipe(map((user) => ({ user })));
   readonly isInstalled = signal(this.isRunningStandalone());
   readonly isMobileNavOpen = signal(false);
+  readonly isSigningOut = signal(false);
+  readonly signOutError = signal('');
   installMessage = '';
   private installPrompt: BeforeInstallPromptEvent | null = null;
 
@@ -36,6 +41,21 @@ export class App {
 
   closeMobileNav(): void {
     this.isMobileNavOpen.set(false);
+  }
+
+  async signOut(): Promise<void> {
+    if (this.isSigningOut()) return;
+    this.isSigningOut.set(true);
+    this.signOutError.set('');
+    try {
+      await this.auth.logOut();
+      this.closeMobileNav();
+      await this.router.navigateByUrl('/');
+    } catch (error) {
+      this.signOutError.set(this.auth.getErrorMessage(error));
+    } finally {
+      this.isSigningOut.set(false);
+    }
   }
 
   @HostListener('document:keydown', ['$event'])

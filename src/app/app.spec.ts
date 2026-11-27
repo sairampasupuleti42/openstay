@@ -1,25 +1,31 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { App } from './app';
 import { routes } from './app.routes';
 import { vi } from 'vitest';
-import { BehaviorSubject } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 import { AuthService } from './core/auth/auth.service';
 import { User } from '@angular/fire/auth';
 
 describe('App', () => {
-  let user$: BehaviorSubject<User | null>;
+  let user$: ReplaySubject<User | null>;
+  let logOut: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    user$ = new BehaviorSubject<User | null>(null);
+    user$ = new ReplaySubject<User | null>(1);
+    logOut = vi.fn().mockImplementation(async () => user$.next(null));
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
         provideRouter(routes),
-        { provide: AuthService, useValue: { user$ } },
+        {
+          provide: AuthService,
+          useValue: { user$, logOut, getErrorMessage: () => 'Could not sign out.' },
+        },
       ],
     })
       .compileComponents();
+    user$.next(null);
   });
 
   it('should create the app', () => {
@@ -84,6 +90,7 @@ describe('App', () => {
 
     expect(fixture.nativeElement.querySelector('.signin-link')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.join-link')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.signout-link')).toBeNull();
 
     user$.next({ uid: 'signed-in-user' } as User);
     fixture.detectChanges();
@@ -92,6 +99,7 @@ describe('App', () => {
 
     expect(fixture.nativeElement.querySelector('.signin-link')).toBeNull();
     expect(fixture.nativeElement.querySelector('.join-link')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.signout-link')).toBeTruthy();
 
     user$.next(null);
     fixture.detectChanges();
@@ -100,6 +108,54 @@ describe('App', () => {
 
     expect(fixture.nativeElement.querySelector('.signin-link')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.join-link')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.signout-link')).toBeNull();
+  });
+
+  it('waits for the initial session state before showing authentication actions', () => {
+    const pendingUser$ = new ReplaySubject<User | null>(1);
+    TestBed.overrideProvider(AuthService, { useValue: { user$: pendingUser$ } });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.signin-link')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.signout-link')).toBeNull();
+
+    pendingUser$.next({ uid: 'restored-user' } as User);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.signout-link')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.signin-link')).toBeNull();
+  });
+
+  it('signs out from the shared navigation and leaves the protected page', async () => {
+    user$.next({ uid: 'signed-in-user' } as User);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    fixture.componentInstance.toggleMobileNav();
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.signout-link') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(logOut).toHaveBeenCalledOnce();
+    expect(navigate).toHaveBeenCalledWith('/');
+    expect(fixture.componentInstance.isMobileNavOpen()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.signin-link')).toBeTruthy();
+  });
+
+  it('shows a sign-out error and keeps the session when sign-out fails', async () => {
+    user$.next({ uid: 'signed-in-user' } as User);
+    logOut.mockRejectedValue(new Error('Sign-out failed'));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('.signout-link') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[role="alert"]')?.textContent)
+      .toContain('Could not sign out.');
+    expect(fixture.nativeElement.querySelector('.signout-link')).toBeTruthy();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('should prompt supported browsers to install the app', async () => {
