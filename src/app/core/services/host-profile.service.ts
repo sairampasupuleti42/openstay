@@ -103,7 +103,7 @@ export class HostProfileService {
     const withdraw = sdk.httpsCallable<
       { idempotencyKey: string; expectedEventId: string | null },
       { eventId: string }
-    >(functions, 'withdrawHostParticipation');
+    >(functions, 'withdrawHostParticipation', { timeout: 330_000 });
     const result = await withdraw({ idempotencyKey, expectedEventId });
     return result.data.eventId;
   }

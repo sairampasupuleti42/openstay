@@ -9,7 +9,9 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
+  documentId,
   getDoc,
   getDocs,
   limit,
@@ -17,6 +19,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  startAfter,
   Timestamp,
   updateDoc,
   query,
@@ -796,23 +799,49 @@ async function createListing(db, hostUid, listingId, overrides = {}) {
   return setDoc(doc(db, `listings/${listingId}`), data);
 }
 
+async function seedListingHost(uid) {
+  await seedHostConsent(uid);
+  const db = authenticatedDb(uid, true);
+  await assertSucceeds(setDoc(doc(db, `hostProfiles/${uid}`), hostProfile(uid)));
+}
+
 test('listing writes enforce owner, eligibility, and lifecycle access', async (t) => {
   const hostUid = 'listing-host-1';
   const otherHostUid = 'listing-host-2';
-  await seedHostConsent(hostUid);
-  await seedHostConsent(otherHostUid);
+  await seedListingHost(hostUid);
+  await seedListingHost(otherHostUid);
 
   const hostDb = authenticatedDb(hostUid);
   const otherHostDb = authenticatedDb(otherHostUid);
   const anonymousDb = testEnv.unauthenticatedContext().firestore();
 
-  await t.test('an active host with current consent can create a draft', async () => {
+  await t.test('an active host with current consent and a private host profile can create a draft', async () => {
     await assertSucceeds(createListing(hostDb, hostUid, 'listing-1'));
+  });
+
+  await t.test('an eligible user cannot create a draft until their host profile exists', async () => {
+    const uid = 'listing-no-profile';
+    const db = authenticatedDb(uid, true);
+    await seedHostConsent(uid);
+    await assertFails(createListing(db, uid, 'listing-no-profile'));
+    await assertSucceeds(setDoc(doc(db, `hostProfiles/${uid}`), hostProfile(uid)));
+    await assertSucceeds(createListing(db, uid, 'listing-no-profile'));
+  });
+
+  await t.test('another user’s host profile cannot satisfy the prerequisite', async () => {
+    const uid = 'listing-wrong-profile';
+    const db = authenticatedDb(uid, true);
+    await seedHostConsent(uid);
+    const otherProfile = await assertSucceeds(getDoc(doc(otherHostDb, `hostProfiles/${otherHostUid}`)));
+    assert.equal(otherProfile.data().uid, otherHostUid);
+    await assertFails(createListing(db, uid, 'listing-wrong-profile'));
+    await assertSucceeds(setDoc(doc(db, `hostProfiles/${uid}`), hostProfile(uid)));
+    await assertSucceeds(createListing(db, uid, 'listing-wrong-profile'));
   });
 
   await t.test('an unverified auth token does not add a separate listing gate', async () => {
     const uid = 'listing-unverified-token';
-    await seedHostConsent(uid);
+    await seedListingHost(uid);
     await assertSucceeds(createListing(authenticatedDb(uid, false), uid, 'listing-unverified'));
   });
 
@@ -824,13 +853,43 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
       await setDoc(doc(context.firestore(), `users/${noConsentUid}`), {
         accountStatus: 'active',
       });
+      await setDoc(doc(context.firestore(), `hostProfiles/${noConsentUid}`), hostProfile(noConsentUid));
     });
     await assertFails(createListing(
       authenticatedDb(noConsentUid),
       noConsentUid,
       'listing-no-consent',
     ));
+    await seedHostConsent(noConsentUid);
+    await assertSucceeds(createListing(
+      authenticatedDb(noConsentUid),
+      noConsentUid,
+      'listing-no-consent',
+    ));
   });
+
+  for (const [label, overrides, omitted] of [
+    ['wrong consent UID', { uid: 'another-owner' }],
+    ['outdated consent version', { termsVersion: 'old-version' }],
+    ['wrong consent digest', { termsDigest: 'wrong-digest' }],
+    ['withdrawn consent', { consentState: 'withdrawn' }],
+    ['non-string consent event ID', { eventId: 5 }],
+    ['missing consent event ID', {}, 'eventId'],
+  ]) {
+    await t.test(`draft creation requires current consent: ${label}`, async () => {
+      const uid = `listing-consent-${label.replaceAll(' ', '-')}`;
+      await seedListingHost(uid);
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const consent = hostPrivateProfile(uid, overrides);
+        if (omitted) delete consent[omitted];
+        await setDoc(doc(context.firestore(), `hostPrivate/${uid}`), consent);
+      });
+      const db = authenticatedDb(uid);
+      await assertFails(createListing(db, uid, uid));
+      await seedHostConsent(uid);
+      await assertSucceeds(createListing(db, uid, uid));
+    });
+  }
 
   await t.test('suspended hosts and forged owner IDs cannot create', async () => {
     const suspendedUid = 'listing-suspended-host';
@@ -841,8 +900,17 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
         doc(adminDb, `hostPrivate/${suspendedUid}`),
         hostPrivateProfile(suspendedUid),
       );
+      await setDoc(doc(adminDb, `hostProfiles/${suspendedUid}`), hostProfile(suspendedUid));
     });
     await assertFails(createListing(
+      authenticatedDb(suspendedUid),
+      suspendedUid,
+      'listing-suspended',
+    ));
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await updateDoc(doc(context.firestore(), `users/${suspendedUid}`), { accountStatus: 'active' });
+    });
+    await assertSucceeds(createListing(
       authenticatedDb(suspendedUid),
       suspendedUid,
       'listing-suspended',
@@ -850,9 +918,11 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
     await assertFails(createListing(hostDb, hostUid, 'listing-forged-owner', {
       hostUid: otherHostUid,
     }));
+    await assertSucceeds(createListing(hostDb, hostUid, 'listing-forged-owner'));
     await assertFails(createListing(hostDb, hostUid, 'listing-publish-on-create', {
       status: 'published',
     }));
+    await assertSucceeds(createListing(hostDb, hostUid, 'listing-publish-on-create'));
   });
 
   await t.test('owners can read their own drafts; other users cannot', async () => {
@@ -877,7 +947,7 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
     assert.ok(result.docs.every((snapshot) => snapshot.data().hostUid === hostUid));
   });
 
-  await t.test('a published query succeeds while an unfiltered query is denied', async () => {
+  await t.test('eligible published listings are readable by ID, but public queries are denied', async () => {
     const publishedId = 'listing-published-1';
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(
@@ -890,15 +960,15 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
       );
     });
 
+    await assertSucceeds(getDoc(doc(anonymousDb, `listings/${publishedId}`)));
+
     const publishedQuery = query(
       collection(anonymousDb, 'listings'),
       where('status', '==', 'published'),
       orderBy('publishedAt', 'desc'),
       limit(21),
     );
-    const publishedResults = await assertSucceeds(getDocs(publishedQuery));
-    assert.ok(publishedResults.docs.some((snapshot) => snapshot.id === publishedId));
-    assert.ok(publishedResults.docs.every((snapshot) => snapshot.data().status === 'published'));
+    await assertFails(getDocs(publishedQuery));
     await assertFails(getDocs(collection(anonymousDb, 'listings')));
   });
 
@@ -923,9 +993,87 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
   });
 });
 
+test('listing query cursors preserve documents with matching timestamps', async () => {
+  const uid = 'listing-pagination-host';
+  const firstTime = Timestamp.fromDate(new Date('2100-01-02T00:00:00Z'));
+  const olderTime = Timestamp.fromDate(new Date('2100-01-01T00:00:00Z'));
+  const ids = ['pagination-c', 'pagination-b', 'pagination-a', 'pagination-old'];
+
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    for (const [index, id] of ids.entries()) {
+      const time = index === 3 ? olderTime : firstTime;
+      await setDoc(doc(db, `listings/${id}`), listing(uid, {
+        listingId: id,
+        status: 'published',
+        updatedAt: time,
+        publishedAt: time,
+      }));
+    }
+  });
+
+  const db = authenticatedDb(uid);
+  const constraints = [
+    where('hostUid', '==', uid),
+    orderBy('updatedAt', 'desc'),
+    orderBy(documentId(), 'desc'),
+  ];
+  const listings = collection(db, 'listings');
+  const first = await assertSucceeds(getDocs(query(listings, ...constraints, limit(2))));
+  assert.deepEqual(first.docs.map((snapshot) => snapshot.id), ids.slice(0, 2));
+  const last = first.docs[first.docs.length - 1];
+  const second = await assertSucceeds(getDocs(query(
+    listings, ...constraints, startAfter(last.data()['updatedAt'], last.id), limit(2),
+  )));
+  assert.deepEqual(second.docs.map((snapshot) => snapshot.id), ids.slice(2));
+});
+
+test('public listing reads require an active host with current consent', async (t) => {
+  const anonymousDb = testEnv.unauthenticatedContext().firestore();
+  const cases = [
+    ['suspended host', 'accountStatus', 'suspended'],
+    ['withdrawn consent', 'consentState', 'withdrawn'],
+  ];
+
+  for (const [label, field, value] of cases) {
+    await t.test(label, async () => {
+      const uid = `listing-public-${label.replaceAll(' ', '-')}`;
+      const listingId = `${uid}-published`;
+      await seedListingHost(uid);
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+          doc(context.firestore(), `listings/${listingId}`),
+          listing(uid, {
+            listingId,
+            status: 'published',
+            publishedAt: Timestamp.fromDate(new Date('2026-01-01T00:00:00Z')),
+          }),
+        );
+      });
+
+      const listingRef = doc(anonymousDb, `listings/${listingId}`);
+      await assertSucceeds(getDoc(listingRef));
+
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const collectionName = field === 'accountStatus' ? 'users' : 'hostPrivate';
+        await updateDoc(doc(context.firestore(), `${collectionName}/${uid}`), {
+          [field]: value,
+        });
+      });
+
+      await assertFails(getDoc(listingRef));
+      await assertSucceeds(getDoc(doc(authenticatedDb(uid), `listings/${listingId}`)));
+      await assertFails(getDocs(query(
+        collection(anonymousDb, 'listings'),
+        where('status', '==', 'published'),
+      )));
+    });
+  }
+});
+
 test('listing creation validates the complete schema and every field boundary', async (t) => {
   const hostUid = 'listing-validation-host';
-  await seedHostConsent(hostUid);
+  await seedListingHost(hostUid);
   const hostDb = authenticatedDb(hostUid);
   const wrongTimestamp = Timestamp.fromDate(new Date('2000-01-01T00:00:00Z'));
   const invalidCases = [
@@ -989,6 +1137,8 @@ test('listing creation validates the complete schema and every field boundary', 
     ['house rule has wrong type', { houseRules: [5] }],
     ['house rule below minimum', { houseRules: ['x'.repeat(4)] }],
     ['house rule above maximum', { houseRules: ['x'.repeat(201)] }],
+    ['last house rule has wrong type', { houseRules: [...Array(14).fill('Valid house rule'), 5] }],
+    ['last house rule is too short', { houseRules: [...Array(14).fill('Valid house rule'), 'bad'] }],
     ['invalid status enum', { status: 'live' }],
     ['createdAt is not request time', { createdAt: wrongTimestamp }],
     ['updatedAt is not request time', { updatedAt: wrongTimestamp }],
@@ -1025,6 +1175,16 @@ test('listing creation validates the complete schema and every field boundary', 
     }));
   });
 
+  await t.test('validates every house-rule position', async () => {
+    for (let index = 0; index < 15; index += 1) {
+      const houseRules = Array(15).fill('Valid house rule');
+      houseRules[index] = 'bad';
+      await assertFails(createListing(hostDb, hostUid, `listing-invalid-rule-${index}`, { houseRules }));
+      houseRules[index] = 'Valid house rule';
+      await assertSucceeds(createListing(hostDb, hostUid, `listing-invalid-rule-${index}`, { houseRules }));
+    }
+  });
+
   await t.test('allows inclusive scalar field limits', async () => {
     await assertSucceeds(createListing(hostDb, hostUid, 'listing-max-scalar-limits', {
       title: 'x'.repeat(100),
@@ -1059,7 +1219,7 @@ test('listing creation validates the complete schema and every field boundary', 
 
 test('listing updates validate content and preserve owner, status, and timestamps', async (t) => {
   const hostUid = 'listing-update-host';
-  await seedHostConsent(hostUid);
+  await seedListingHost(hostUid);
   const hostDb = authenticatedDb(hostUid);
   const listingRef = doc(hostDb, 'listings/listing-update');
   await assertSucceeds(createListing(hostDb, hostUid, 'listing-update'));
@@ -1073,14 +1233,54 @@ test('listing updates validate content and preserve owner, status, and timestamp
     }));
   });
 
+  await t.test('a draft update accepts all maximum-sized valid fields together', async () => {
+    await assertSucceeds(updateDoc(listingRef, {
+      title: 'x'.repeat(100),
+      description: 'x'.repeat(2000),
+      country: 'x'.repeat(100),
+      city: 'x'.repeat(100),
+      region: 'x'.repeat(100),
+      areaDescription: 'x'.repeat(200),
+      guestCapacity: 10,
+      bedrooms: 10,
+      beds: 15,
+      bathrooms: 10,
+      amenities: Array(30).fill('wifi'),
+      houseRules: Array(15).fill('x'.repeat(200)),
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  await t.test('lifecycle timestamps cannot be added when initially absent', async () => {
+    const id = 'listing-without-lifecycle-timestamps';
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const data = listing(hostUid, { listingId: id });
+      delete data.publishedAt;
+      delete data.pausedAt;
+      delete data.archivedAt;
+      await setDoc(doc(context.firestore(), `listings/${id}`), data);
+    });
+    const ref = doc(hostDb, `listings/${id}`);
+    for (const field of ['publishedAt', 'pausedAt', 'archivedAt']) {
+      await assertFails(updateDoc(ref, { [field]: null, updatedAt: serverTimestamp() }));
+    }
+    await assertSucceeds(updateDoc(ref, {
+      title: 'Updated listing title',
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
   for (const [label, updates] of [
     ['listing ID', { listingId: 'different-id' }],
     ['owner UID', { hostUid: 'different-owner' }],
     ['status', { status: 'published' }],
     ['createdAt', { createdAt: serverTimestamp() }],
     ['publishedAt', { publishedAt: serverTimestamp() }],
+    ['publishedAt removal', { publishedAt: deleteField() }],
     ['pausedAt', { pausedAt: serverTimestamp() }],
+    ['pausedAt removal', { pausedAt: deleteField() }],
     ['archivedAt', { archivedAt: serverTimestamp() }],
+    ['archivedAt removal', { archivedAt: deleteField() }],
     ['unexpected field', { privateNotes: 'private' }],
     ['invalid title', { title: 'Short' }],
     ['invalid optional region type', { region: 5 }],

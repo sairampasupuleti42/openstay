@@ -363,12 +363,7 @@ service cloud.firestore {
           || listing[field] is timestamp;
       }
 
-      function preserveOptionalField(before, after, field) {
-        return (field in before) == (field in after)
-          && (!(field in before) || before[field] == after[field]);
-      }
-
-      function validListing(listing) {
+      function validListingFields(listing) {
         return listing.keys().hasOnly([
             'listingId',
             'hostUid',
@@ -414,8 +409,11 @@ service cloud.firestore {
           && listing.listingId is string
           && listing.hostUid is string
           && listing.hostUid.size() >= 1
-          && listing.hostUid.size() <= 128
-          && listing.title is string
+          && listing.hostUid.size() <= 128;
+      }
+
+      function validListingDescription(listing) {
+        return listing.title is string
           && listing.title.size() >= 10
           && listing.title.size() <= 100
           && listing.description is string
@@ -435,8 +433,11 @@ service cloud.firestore {
           && (!('areaDescription' in listing) ||
             (listing.areaDescription is string
               && listing.areaDescription.size() >= 1
-              && listing.areaDescription.size() <= 200))
-          && listing.guestCapacity is number
+              && listing.areaDescription.size() <= 200));
+      }
+
+      function validListingCapacity(listing) {
+        return listing.guestCapacity is number
           && listing.guestCapacity % 1 == 0
           && listing.guestCapacity >= 1
           && listing.guestCapacity <= 10
@@ -450,28 +451,38 @@ service cloud.firestore {
           && listing.beds <= 15
           && listing.bathrooms is number
           && listing.bathrooms >= 1
-          && listing.bathrooms <= 10
-          && listing.amenities is list
+          && listing.bathrooms <= 10;
+      }
+
+      function validListingAmenities(listing) {
+        return listing.amenities is list
           && listing.amenities.size() <= 30
-          && listing.amenities.toSet().hasOnly(['wifi', 'kitchen', 'ac', 'heating', 'tv', 'laundry', 'parking', 'pool', 'gym', 'pet_friendly', 'hot_water', 'elevator', 'bathtub', 'shower', 'dishwasher', 'microwave', 'oven', 'refrigerator', 'freezer', 'balcony', 'garden', 'workspace', 'iron', 'games', 'bbq', 'outdoor_furniture', 'fireplace', 'safe', 'crib', 'high_chair'])
-          && listing.houseRules is list
-          && listing.houseRules.size() <= 15
-          && validHouseRuleAt(listing.houseRules, 0)
-          && validHouseRuleAt(listing.houseRules, 1)
-          && validHouseRuleAt(listing.houseRules, 2)
-          && validHouseRuleAt(listing.houseRules, 3)
-          && validHouseRuleAt(listing.houseRules, 4)
-          && validHouseRuleAt(listing.houseRules, 5)
-          && validHouseRuleAt(listing.houseRules, 6)
-          && validHouseRuleAt(listing.houseRules, 7)
-          && validHouseRuleAt(listing.houseRules, 8)
-          && validHouseRuleAt(listing.houseRules, 9)
-          && validHouseRuleAt(listing.houseRules, 10)
-          && validHouseRuleAt(listing.houseRules, 11)
-          && validHouseRuleAt(listing.houseRules, 12)
-          && validHouseRuleAt(listing.houseRules, 13)
-          && validHouseRuleAt(listing.houseRules, 14)
-          && listing.status in ['draft', 'published', 'paused', 'archived']
+          && listing.amenities.toSet().hasOnly(['wifi', 'kitchen', 'ac', 'heating', 'tv', 'laundry', 'parking', 'pool', 'gym', 'pet_friendly', 'hot_water', 'elevator', 'bathtub', 'shower', 'dishwasher', 'microwave', 'oven', 'refrigerator', 'freezer', 'balcony', 'garden', 'workspace', 'iron', 'games', 'bbq', 'outdoor_furniture', 'fireplace', 'safe', 'crib', 'high_chair']);
+      }
+
+      function validListingHouseRules(listing) {
+        let houseRules = listing.houseRules;
+        return houseRules is list
+          && houseRules.size() <= 15
+          && validHouseRuleAt(houseRules, 0)
+          && validHouseRuleAt(houseRules, 1)
+          && validHouseRuleAt(houseRules, 2)
+          && validHouseRuleAt(houseRules, 3)
+          && validHouseRuleAt(houseRules, 4)
+          && validHouseRuleAt(houseRules, 5)
+          && validHouseRuleAt(houseRules, 6)
+          && validHouseRuleAt(houseRules, 7)
+          && validHouseRuleAt(houseRules, 8)
+          && validHouseRuleAt(houseRules, 9)
+          && validHouseRuleAt(houseRules, 10)
+          && validHouseRuleAt(houseRules, 11)
+          && validHouseRuleAt(houseRules, 12)
+          && validHouseRuleAt(houseRules, 13)
+          && validHouseRuleAt(houseRules, 14);
+      }
+
+      function validListingTimestamps(listing) {
+        return listing.status in ['draft', 'published', 'paused', 'archived']
           && listing.createdAt is timestamp
           && listing.updatedAt is timestamp
           && validOptionalTimestamp(listing, 'publishedAt')
@@ -479,49 +490,56 @@ service cloud.firestore {
           && validOptionalTimestamp(listing, 'archivedAt');
       }
 
-      function hasCurrentHostConsent() {
-        let consentPath = /databases/$(database)/documents/hostPrivate/$(request.auth.uid);
-        return exists(consentPath) && (get(consentPath).data.uid == request.auth.uid
-          && get(consentPath).data.termsVersion == 'host-participation-v1'
-          && get(consentPath).data.termsDigest == '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b'
-          && get(consentPath).data.consentState == 'accepted'
-          && get(consentPath).data.eventId is string);
+      function validListing(listing) {
+        return validListingFields(listing)
+          && validListingDescription(listing)
+          && validListingCapacity(listing)
+          && validListingAmenities(listing)
+          && validListingHouseRules(listing)
+          && validListingTimestamps(listing);
       }
 
-      function hasActiveAccount() {
-        let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-        return exists(userPath) && get(userPath).data.accountStatus == 'active';
+      function hasCurrentHostConsent(hostUid) {
+        let consentPath = /databases/$(database)/documents/hostPrivate/$(hostUid);
+        let consent = exists(consentPath) ? get(consentPath).data : null;
+        return consent != null
+          && consent.uid == hostUid
+          && consent.termsVersion == 'host-participation-v1'
+          && consent.termsDigest == '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b'
+          && consent.consentState == 'accepted'
+          && consent.eventId is string;
+      }
+
+      function hasActiveAccount(hostUid) {
+        let userPath = /databases/$(database)/documents/users/$(hostUid);
+        let user = exists(userPath) ? get(userPath).data : null;
+        return user != null && user.accountStatus == 'active';
       }
 
       function isPublishedListing() {
-        return resource.data.status == 'published';
+        let hostUid = resource.data.get('hostUid', null);
+        return resource.data.status == 'published'
+          && hostUid is string
+          && hasActiveAccount(hostUid)
+          && hasCurrentHostConsent(hostUid);
       }
 
       function validNewDraft() {
-        return validListing(request.resource.data)
-          && request.resource.data.hostUid == request.auth.uid
-          && request.resource.data.status == 'draft'
-          && request.resource.data.createdAt == request.time
-          && request.resource.data.updatedAt == request.time
-          && (!('publishedAt' in request.resource.data)
-            || request.resource.data.publishedAt == null)
-          && (!('pausedAt' in request.resource.data)
-            || request.resource.data.pausedAt == null)
-          && (!('archivedAt' in request.resource.data)
-            || request.resource.data.archivedAt == null);
+        let listing = request.resource.data;
+        return listing.hostUid == request.auth.uid
+          && listing.status == 'draft'
+          && listing.createdAt == request.time
+          && listing.updatedAt == request.time
+          && (!('publishedAt' in listing) || listing.publishedAt == null)
+          && (!('pausedAt' in listing) || listing.pausedAt == null)
+          && (!('archivedAt' in listing) || listing.archivedAt == null)
+          && validListing(listing);
       }
 
       function validDraftUpdate() {
-        return validListing(request.resource.data)
-          && request.resource.data.listingId == resource.data.listingId
-          && request.resource.data.hostUid == resource.data.hostUid
-          && request.resource.data.status == resource.data.status
-          && request.resource.data.createdAt == resource.data.createdAt
-          && request.resource.data.updatedAt == request.time
-          && preserveOptionalField(resource.data, request.resource.data, 'publishedAt')
-          && preserveOptionalField(resource.data, request.resource.data, 'pausedAt')
-          && preserveOptionalField(resource.data, request.resource.data, 'archivedAt')
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        let listing = request.resource.data;
+        return listing.updatedAt == request.time
+          && listing.diff(resource.data).affectedKeys().hasOnly([
             'title',
             'description',
             'accommodationType',
@@ -536,14 +554,16 @@ service cloud.firestore {
             'amenities',
             'houseRules',
             'updatedAt'
-          ]);
+          ])
+          && validListing(listing);
       }
 
       allow get: if (request.auth != null && isOwner()) || isPublishedListing();
-      allow list: if isOwner() || isPublishedListing();
+      allow list: if isOwner();
       allow create: if request.auth != null
-        && hasActiveAccount()
-        && hasCurrentHostConsent()
+        && hasActiveAccount(request.auth.uid)
+        && hasCurrentHostConsent(request.auth.uid)
+        && exists(/databases/$(database)/documents/hostProfiles/$(request.auth.uid))
         && validNewDraft();
       allow update: if request.auth != null
         && isOwner()

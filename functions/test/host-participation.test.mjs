@@ -124,6 +124,7 @@ test('both callable wrappers enforce App Check and declare the same region', asy
       results,
       acceptHostParticipation.__endpoint.region,
       withdrawHostParticipation.__endpoint.region,
+      withdrawHostParticipation.__endpoint.timeoutSeconds,
     ]));
   `;
   const output = execFileSync(process.execPath, ['--input-type=module', '-e', script], {
@@ -145,6 +146,7 @@ test('both callable wrappers enforce App Check and declare the same region', asy
     ],
     ['us-central1'],
     ['us-central1'],
+    300,
   ]);
 });
 
@@ -221,6 +223,12 @@ test('current retries succeed; recorded and unrecorded stale actions cannot chan
   const third = await recordParticipationEvent(
     request(uid, 'accept-request-00002', 'accepted', second.eventId), 'accepted',
   );
+  const listingRef = db.doc(`listings/${uid}-stale-withdrawal`);
+  await listingRef.set({
+    listingId: `${uid}-stale-withdrawal`,
+    hostUid: uid,
+    status: 'published',
+  });
   const stale = { code: 'failed-precondition', details: { reason: 'stale-consent-request' } };
   await assert.rejects(recordParticipationEvent(withdraw, 'withdrawn'), stale);
   await assert.rejects(recordParticipationEvent(
@@ -229,6 +237,7 @@ test('current retries succeed; recorded and unrecorded stale actions cannot chan
   await assert.rejects(recordParticipationEvent(
     request(uid, 'delayed-accept-00001', 'accepted', second.eventId), 'accepted',
   ), stale);
+  assert.equal((await listingRef.get()).data().status, 'published');
   const final = await recordParticipationEvent(
     request(uid, 'withdraw-request-002', 'withdrawn', third.eventId), 'withdrawn',
   );
@@ -236,6 +245,59 @@ test('current retries succeed; recorded and unrecorded stale actions cannot chan
   assert.equal(state.consentState, 'withdrawn');
   assert.equal(state.eventId, final.eventId);
   assert.equal((await db.collection(`hostPrivate/${uid}/consentEvents`).get()).size, 4);
+});
+
+test('withdrawal pauses all owned published listings in bounded batches before completion', async () => {
+  const uid = 'callable-pause-listings';
+  const otherUid = 'callable-pause-other';
+  await seedActiveUser(uid);
+  await seedActiveUser(otherUid);
+  const accepted = await recordParticipationEvent(
+    request(uid, 'pause-listings-accept-001'), 'accepted',
+  );
+
+  const batch = db.batch();
+  const publishedIds = Array.from({ length: 205 }, (_, index) =>
+    `pause-listing-${String(index).padStart(3, '0')}`,
+  );
+  for (const id of publishedIds) {
+    batch.set(db.doc(`listings/${id}`), {
+      listingId: id,
+      hostUid: uid,
+      status: 'published',
+      updatedAt: Timestamp.now(),
+    });
+  }
+  batch.set(db.doc('listings/pause-listing-draft'), {
+    listingId: 'pause-listing-draft',
+    hostUid: uid,
+    status: 'draft',
+  });
+  batch.set(db.doc('listings/pause-listing-other-owner'), {
+    listingId: 'pause-listing-other-owner',
+    hostUid: otherUid,
+    status: 'published',
+  });
+  await batch.commit();
+
+  const withdrawal = await recordParticipationEvent(
+    request(uid, 'pause-listings-withdraw-01', 'withdrawn', accepted.eventId),
+    'withdrawn',
+  );
+  const ownedListings = await db.collection('listings').where('hostUid', '==', uid).get();
+  const paused = ownedListings.docs.filter((listing) => listing.data().status === 'paused');
+  assert.equal(paused.length, publishedIds.length);
+  assert.ok(paused.every((listing) =>
+    listing.data().pausedAt instanceof Timestamp
+    && listing.data().updatedAt instanceof Timestamp,
+  ));
+  assert.equal((await db.doc('listings/pause-listing-draft').get()).data().status, 'draft');
+  assert.equal((await db.doc('listings/pause-listing-other-owner').get()).data().status, 'published');
+  assert.equal((await db.doc(`hostPrivate/${uid}`).get()).data().consentState, 'withdrawn');
+  assert.equal(
+    (await db.doc(`hostPrivate/${uid}/consentEvents/${withdrawal.eventId}`).get()).exists,
+    true,
+  );
 });
 
 test('old terms can be withdrawn and reaccepted; suspended accounts can only withdraw', async () => {
