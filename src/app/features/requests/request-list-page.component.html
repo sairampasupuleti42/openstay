@@ -1,0 +1,22 @@
+<main class="page">
+  <h1>{{ kind === 'incoming' ? 'Incoming hosting requests' : 'My hosting requests' }}</h1>
+  @if (loading()) { <p role="status">Loading requests…</p> }
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+    <button mat-button type="button" (click)="load(items().length > 0)">Try again</button>
+  }
+  @if (!loading() && !error() && items().length === 0) {
+    <p class="card">No hosting requests yet.</p>
+  }
+  @for (request of items(); track request.requestId) {
+    <article class="card">
+      <h2>Request for {{ request.startDate }} to {{ request.endDate }}</h2>
+      <p>{{ request.guestCount }} guest(s) · {{ request.status }}</p>
+      <a mat-stroked-button [routerLink]="['/requests', request.requestId]">View details</a>
+      <a mat-button [routerLink]="['/listings', request.listingId]">View listing</a>
+    </article>
+  }
+  @if (cursor() && !loading() && !error()) {
+    <button mat-button type="button" (click)="load(true)">Load more</button>
+  }
+</main>

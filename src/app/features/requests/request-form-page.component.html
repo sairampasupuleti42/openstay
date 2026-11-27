@@ -1,0 +1,45 @@
+<main class="page">
+  <section class="panel">
+    @if (loading()) {
+      <p role="status">Loading stay details…</p>
+    } @else if (requestId()) {
+      <h1>Request sent</h1>
+      <p role="status">Your hosting request is pending.</p>
+      <a mat-flat-button [routerLink]="['/requests', requestId()]">View request</a>
+      <a mat-button routerLink="/requests/mine">My hosting requests</a>
+    } @else if (listing(); as stay) {
+      <h1>Request a stay</h1>
+      <p>{{ stay.title }} · {{ stay.city }}, {{ stay.country }} · Up to {{ stay.guestCapacity }} guests</p>
+      <p>Introduce yourself and your travel plans. Please do not include private contact information.</p>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <mat-form-field>
+          <mat-label>Arrival</mat-label>
+          <input matInput type="date" formControlName="startDate" required />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Checkout</mat-label>
+          <input matInput type="date" formControlName="endDate" required />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Guests</mat-label>
+          <input matInput type="number" formControlName="guestCount" min="1" [max]="stay.guestCapacity" step="1" required />
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Introduction</mat-label>
+          <textarea matInput formControlName="introductoryMessage" maxlength="2000" rows="5" required></textarea>
+          <mat-hint>Up to 2,000 characters</mat-hint>
+        </mat-form-field>
+        @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+        <div class="actions">
+          <button mat-flat-button type="submit" [disabled]="submitting()">{{ submitting() ? 'Sending…' : 'Send request' }}</button>
+          <a mat-button [routerLink]="['/listings', stay.listingId]">Back to listing</a>
+        </div>
+      </form>
+    } @else {
+      <h1>Stay unavailable</h1>
+      <p class="error" role="alert">{{ error() }}</p>
+      <button mat-button type="button" (click)="load()">Try again</button>
+      <a mat-button routerLink="/explore">Explore stays</a>
+    }
+  </section>
+</main>

@@ -30,6 +30,30 @@ export const routes: Routes = [
         (module) => module.PublicListingDetailPageComponent,
       ),
   },
+  {
+    path: 'requests',
+    canActivate: [authenticatedGuard],
+    children: [
+      {
+        path: 'new/:listingId',
+        loadComponent: () => import('./features/requests/request-form-page.component').then((m) => m.RequestFormPageComponent),
+      },
+      {
+        path: 'mine',
+        data: { kind: 'mine' },
+        loadComponent: () => import('./features/requests/request-list-page.component').then((m) => m.RequestListPageComponent),
+      },
+      {
+        path: 'incoming',
+        data: { kind: 'incoming' },
+        loadComponent: () => import('./features/requests/request-list-page.component').then((m) => m.RequestListPageComponent),
+      },
+      {
+        path: ':requestId',
+        loadComponent: () => import('./features/requests/request-detail-page.component').then((m) => m.RequestDetailPageComponent),
+      },
+    ],
+  },
   { path: 'auth', children: authenticationRoutes },
   {
     path: 'onboarding',
