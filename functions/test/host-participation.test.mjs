@@ -300,6 +300,141 @@ test('withdrawal pauses all owned published listings in bounded batches before c
   );
 });
 
+test('a failed withdrawal batch releases the lock and can be retried', async () => {
+  const uid = 'callable-pause-failure';
+  await seedActiveUser(uid);
+  const accepted = await recordParticipationEvent(request(uid, 'pause-failure-accept-01'), 'accepted');
+  const batch = db.batch();
+  for (let index = 0; index < 201; index++) {
+    const id = `failure-listing-${String(index).padStart(3, '0')}`;
+    batch.set(db.doc(`listings/${id}`), { listingId: id, hostUid: uid, status: 'published' });
+  }
+  await batch.commit();
+  const withdrawal = request(uid, 'pause-failure-withdraw-1', 'withdrawn', accepted.eventId);
+  const original = db.runTransaction;
+  let calls = 0;
+  db.runTransaction = function (...args) {
+    calls++;
+    if (calls === 3) return Promise.reject(new Error('Injected page failure'));
+    return original.apply(this, args);
+  };
+  try {
+    await assert.rejects(recordParticipationEvent(withdrawal, 'withdrawn'), /Injected page failure/);
+  } finally {
+    db.runTransaction = original;
+  }
+  assert.equal((await db.doc(`hostPrivate/${uid}/listingLifecycleState/current`).get()).exists, false);
+  assert.equal((await db.doc(`hostPrivate/${uid}`).get()).data().consentState, 'accepted');
+  assert.equal((await db.doc('listings/failure-listing-000').get()).data().status, 'paused');
+  assert.equal((await db.doc('listings/failure-listing-200').get()).data().status, 'published');
+  await recordParticipationEvent(withdrawal, 'withdrawn');
+  assert.equal((await db.doc('listings/failure-listing-200').get()).data().status, 'paused');
+  assert.equal((await db.doc(`hostPrivate/${uid}`).get()).data().consentState, 'withdrawn');
+});
+
+test('a stale withdrawal worker cannot release a replacement lock for the same request', async () => {
+  const uid = 'callable-replaced-withdrawal';
+  await seedActiveUser(uid);
+  const accepted = await recordParticipationEvent(request(uid, 'replaced-accept-key-001'), 'accepted');
+  const withdrawal = request(uid, 'replaced-withdraw-key-1', 'withdrawn', accepted.eventId);
+  const lockRef = db.doc(`hostPrivate/${uid}/listingLifecycleState/current`);
+  const original = db.runTransaction;
+  let calls = 0;
+  db.runTransaction = function (...args) {
+    calls++;
+    if (calls === 2) {
+      return lockRef.update({
+        workerId: 'replacement-worker',
+        leaseExpiresAt: Timestamp.fromMillis(Date.now() + 60_000),
+      }).then(() => { throw new Error('Old worker failed'); });
+    }
+    return original.apply(this, args);
+  };
+  try {
+    await assert.rejects(recordParticipationEvent(withdrawal, 'withdrawn'), /Old worker failed/);
+  } finally {
+    db.runTransaction = original;
+  }
+  assert.equal((await lockRef.get()).data().workerId, 'replacement-worker');
+  await assert.rejects(recordParticipationEvent(withdrawal, 'withdrawn'), {
+    code: 'failed-precondition', details: { reason: 'withdrawal-in-progress' },
+  });
+});
+
+test('an expired worker cannot release a real replacement worker lease', async () => {
+  const uid = 'callable-real-lease-takeover';
+  await seedActiveUser(uid);
+  const accepted = await recordParticipationEvent(request(uid, 'real-takeover-accept-01'), 'accepted');
+  const withdrawal = request(uid, 'real-takeover-withdraw-1', 'withdrawn', accepted.eventId);
+  const lockRef = db.doc(`hostPrivate/${uid}/listingLifecycleState/current`);
+  const listingRef = db.doc('listings/real-takeover-listing');
+  await listingRef.set({ listingId: listingRef.id, hostUid: uid, status: 'published' });
+  let releaseA;
+  let releaseB;
+  let signalA;
+  let signalB;
+  const blockedA = new Promise((resolve) => { signalA = resolve; });
+  const blockedB = new Promise((resolve) => { signalB = resolve; });
+  const gateA = new Promise((resolve) => { releaseA = resolve; });
+  const gateB = new Promise((resolve) => { releaseB = resolve; });
+  const original = db.runTransaction;
+  let calls = 0;
+  db.runTransaction = function (...args) {
+    calls++;
+    if (calls === 2) {
+      signalA();
+      return gateA.then(() => original.apply(this, args));
+    }
+    if (calls === 4) {
+      signalB();
+      return gateB.then(() => original.apply(this, args));
+    }
+    return original.apply(this, args);
+  };
+  const workerA = recordParticipationEvent(withdrawal, 'withdrawn');
+  let workerB;
+  try {
+    await blockedA;
+    const oldWorkerId = (await lockRef.get()).data().workerId;
+    await lockRef.update({ leaseExpiresAt: Timestamp.fromMillis(Date.now() - 1_000) });
+    workerB = recordParticipationEvent(withdrawal, 'withdrawn');
+    await blockedB;
+    const replacement = (await lockRef.get()).data();
+    assert.notEqual(replacement.workerId, oldWorkerId);
+    releaseA();
+    await assert.rejects(workerA, {
+      code: 'failed-precondition', details: { reason: 'stale-withdrawal-lock' },
+    });
+    assert.deepEqual((await lockRef.get()).data(), replacement);
+    assert.equal((await listingRef.get()).data().status, 'published');
+    assert.equal((await db.doc(`hostPrivate/${uid}`).get()).data().consentState, 'accepted');
+    releaseB();
+    const completed = await workerB;
+    assert.equal((await lockRef.get()).exists, false);
+    assert.equal((await listingRef.get()).data().status, 'paused');
+    assert.equal((await db.doc(`hostPrivate/${uid}`).get()).data().eventId, completed.eventId);
+  } finally {
+    releaseA();
+    releaseB();
+    db.runTransaction = original;
+    await workerA.catch(() => {});
+    if (workerB) await workerB.catch(() => {});
+  }
+});
+
+test('accepting consent fences an expired withdrawal worker', async () => {
+  const uid = 'callable-expired-withdrawal';
+  await seedActiveUser(uid);
+  const lockRef = db.doc(`hostPrivate/${uid}/listingLifecycleState/current`);
+  await lockRef.set({
+    requestId: 'old-request',
+    workerId: 'old-worker',
+    leaseExpiresAt: Timestamp.fromMillis(Date.now() - 1_000),
+  });
+  await recordParticipationEvent(request(uid, 'expired-accept-key-001'), 'accepted');
+  assert.equal((await lockRef.get()).exists, false);
+});
+
 test('old terms can be withdrawn and reaccepted; suspended accounts can only withdraw', async () => {
   const uid = 'callable-old-terms';
   await seedActiveUser(uid);

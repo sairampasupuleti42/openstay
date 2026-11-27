@@ -161,4 +161,24 @@ describe('ListingEditorPageComponent', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]')?.textContent)
       .toContain('Your host consent is no longer current.');
   });
+
+  it('keeps unsaved edits visible and allows retry after an edit save failure', async () => {
+    listingId = 'listing-1';
+    const fixture = TestBed.createComponent(ListingEditorPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    component.form.controls.title.setValue('An updated listing title');
+    updateOwnDraft.mockRejectedValueOnce(new Error('Network unavailable'));
+
+    await component.saveDraft();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('form')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')?.textContent).toContain('Network unavailable');
+    expect(component.form.controls.title.value).toBe('An updated listing title');
+
+    await component.saveDraft();
+    expect(component.successMessage()).toBe('Your draft has been saved.');
+    expect(updateOwnDraft).toHaveBeenCalledTimes(2);
+  });
 });

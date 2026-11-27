@@ -119,6 +119,7 @@ export async function transitionListing(
   const consentRef = db.doc(`hostPrivate/${uid}`);
   const lockRef = db.doc(`hostPrivate/${uid}/listingLifecycleState/current`);
   const listingRef = db.doc(`listings/${input.listingId}`);
+  const versionRef = db.doc(`hostPrivate/${uid}/listingLifecycleVersions/${input.listingId}`);
   const requestId = createHash('sha256')
     .update(`${uid}\0${input.idempotencyKey}`)
     .digest('hex');
@@ -132,6 +133,7 @@ export async function transitionListing(
       lockSnapshot,
       listingSnapshot,
       requestSnapshot,
+      versionSnapshot,
     ] = await Promise.all([
       transaction.get(userRef),
       transaction.get(hostProfileRef),
@@ -139,6 +141,7 @@ export async function transitionListing(
       transaction.get(lockRef),
       transaction.get(listingRef),
       transaction.get(requestRef),
+      transaction.get(versionRef),
     ]);
 
     if (!userSnapshot.exists || userSnapshot.data()?.['accountStatus'] !== 'active') {
@@ -179,6 +182,15 @@ export async function transitionListing(
           { reason: 'idempotency-key-reused' },
         );
       }
+      if (
+        listing.status !== previousRequest['status']
+        || versionSnapshot.data()?.['requestId'] !== requestId
+      ) {
+        throw failedPrecondition(
+          'stale-listing-request',
+          'This listing has changed since the request completed. Refresh and try again.',
+        );
+      }
       return { listingId: input.listingId, status: previousRequest['status'] };
     }
 
@@ -209,7 +221,9 @@ export async function transitionListing(
       lifecycleFields['archivedAt'] = FieldValue.serverTimestamp();
     }
 
+    if (lockSnapshot.exists) transaction.delete(lockRef);
     transaction.update(listingRef, lifecycleFields);
+    transaction.set(versionRef, { requestId });
     transaction.create(requestRef, {
       keyHash: requestId,
       listingId: input.listingId,

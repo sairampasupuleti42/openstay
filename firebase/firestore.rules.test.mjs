@@ -766,6 +766,70 @@ test('host private state and consent history are owner-readable and client-immut
       hostConsentEvent('host-private-outsider', { eventId: 'outsider-event' }),
     ));
   });
+
+  await t.test('clients cannot read or modify lifecycle and suspension state', async () => {
+    for (const id of ['current', 'suspension']) {
+      const path = `hostPrivate/${uid}/listingLifecycleState/${id}`;
+      await assertFails(getDoc(doc(ownerDb, path)));
+      await assertFails(setDoc(doc(ownerDb, path), { status: 'complete' }));
+      await assertFails(setDoc(doc(otherDb, path), { status: 'complete' }));
+    }
+    await assertFails(setDoc(
+      doc(ownerDb, `hostPrivate/${uid}/listingLifecycleRequests/request`),
+      { status: 'published' },
+    ));
+  });
+
+  await t.test('all clients are denied lifecycle request, version, and state access', async () => {
+    const requestPath = `hostPrivate/${uid}/listingLifecycleRequests/request`;
+    const versionPath = `hostPrivate/${uid}/listingLifecycleVersions/listing`;
+    const statePath = `hostPrivate/${uid}/listingLifecycleState/suspension`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      for (const path of [requestPath, versionPath, statePath]) {
+        await setDoc(doc(context.firestore(), path), { status: 'pending' });
+      }
+    });
+    const anonymousDb = testEnv.unauthenticatedContext().firestore();
+    for (const db of [ownerDb, otherDb, anonymousDb]) {
+      for (const name of ['listingLifecycleRequests', 'listingLifecycleVersions', 'listingLifecycleState']) {
+        await assertFails(getDocs(collection(db, `hostPrivate/${uid}/${name}`)));
+      }
+      for (const path of [requestPath, versionPath, statePath]) {
+        await assertFails(getDoc(doc(db, path)));
+        await assertFails(updateDoc(doc(db, path), { status: 'complete' }));
+        await assertFails(setDoc(doc(db, `${path}-new`), { status: 'complete' }));
+        await assertFails(deleteDoc(doc(db, path)));
+      }
+    }
+  });
+});
+
+test('no client can change trusted account status', async () => {
+  const uid = 'trusted-status-owner';
+  const owner = authenticatedDb(uid, true);
+  const other = authenticatedDb('trusted-status-other', true);
+  const anonymous = testEnv.unauthenticatedContext().firestore();
+  await assertSucceeds(createAccount(owner, uid, 'trusted_status'));
+  for (const db of [owner, other, anonymous]) {
+    await assertFails(updateDoc(doc(db, `users/${uid}`), {
+      accountStatus: 'suspended', updatedAt: serverTimestamp(),
+    }));
+    for (const field of ['suspensionId', 'suspendedAt', 'suspensionReason']) {
+      await assertFails(updateDoc(doc(db, `users/${uid}`), {
+        [field]: 'forged', updatedAt: serverTimestamp(),
+      }));
+    }
+  }
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), `users/${uid}`), {
+      accountStatus: 'suspended', updatedAt: serverTimestamp(),
+    });
+  });
+  for (const db of [owner, other, anonymous]) {
+    await assertFails(updateDoc(doc(db, `users/${uid}`), {
+      accountStatus: 'active', updatedAt: serverTimestamp(),
+    }));
+  }
 });
 
 // Listing tests

@@ -93,8 +93,13 @@ Local development continues to use the Auth and Firestore emulators.
 
 ### GitHub Actions deployment
 
-The `Deploy to Firebase` workflow runs on pushes to `main` and can also be
-started manually. Before it can deploy, add a repository Actions secret named
+The `Deploy to Firebase` workflow runs only when manually dispatched from
+`main`. Before enabling deployment, create the GitHub `production`
+environment with required reviewers, prevent self-review and administrator
+bypass, restrict its deployment branches to `main`, and restrict who can
+dispatch workflows. GitHub can automatically create a missing environment
+without protection; the environment name alone does not enforce approval. Add
+an Actions secret named
 `FIREBASE_SERVICE_ACCOUNT_OPENSTAY` containing the Firebase service-account
 JSON for the `open-stay` project. The legacy name `FIREBASE_SERVICE_ACCOUNT`
 is also accepted. Do not commit the JSON key or expose it in logs. Without

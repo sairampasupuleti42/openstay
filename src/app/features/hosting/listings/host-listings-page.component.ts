@@ -130,9 +130,27 @@ export class HostListingsPageComponent implements OnInit {
       this.successMessage.set(`Listing ${completed}.`);
       await this.loadListings();
     } catch (error) {
+      if (this.isStaleListingRequest(error)) {
+        this.requestKeys.delete(operationId);
+        await this.loadListings();
+        if (!this.errorMessage()) {
+          this.errorMessage.set('This listing changed. Review its current status before trying again.');
+        }
+        return;
+      }
       this.errorMessage.set(this.listingsService.getErrorMessage(error));
     } finally {
       this.pendingAction.set(null);
     }
+  }
+
+  private isStaleListingRequest(error: unknown): boolean {
+    return typeof error === 'object'
+      && error !== null
+      && 'details' in error
+      && typeof error.details === 'object'
+      && error.details !== null
+      && 'reason' in error.details
+      && error.details.reason === 'stale-listing-request';
   }
 }

@@ -73,6 +73,7 @@ export class ListingEditorPageComponent implements OnInit {
   readonly amenityOptions = APPROVED_AMENITIES_LIST;
   readonly listingId = signal<string | null>(null);
   readonly isEditRoute = signal(false);
+  readonly editUnavailable = signal(false);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly createdListingId = signal<string | null>(null);
@@ -103,13 +104,16 @@ export class ListingEditorPageComponent implements OnInit {
     try {
       const listing = await this.listingsService.getOwnListing(listingId);
       if (!listing) {
+        this.editUnavailable.set(true);
         this.errorMessage.set('This listing could not be found.');
       } else if (listing.status !== 'draft') {
+        this.editUnavailable.set(true);
         this.errorMessage.set('Only draft listings can be edited. You can preview the current listing instead.');
       } else {
         this.populateForm(listing);
       }
     } catch (error) {
+      this.editUnavailable.set(true);
       this.errorMessage.set(this.listingsService.getErrorMessage(error));
     } finally {
       this.isLoading.set(false);

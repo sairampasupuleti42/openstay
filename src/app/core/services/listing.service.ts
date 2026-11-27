@@ -343,30 +343,6 @@ export class ListingService {
     return listing;
   }
 
-  async getPublishedListings(pageSize: number = 20, lastListing?: Listing): Promise<Listing[]> {
-    validatePageSize(pageSize);
-    const constraints: QueryConstraint[] = [
-      where('status', '==', 'published'),
-      orderBy('publishedAt', 'desc'),
-      orderBy(documentId(), 'desc'),
-      limit(pageSize),
-    ];
-
-    if (lastListing) {
-      if (lastListing.publishedAt === undefined) {
-        throw new Error('The listing cursor must include a publication timestamp.');
-      }
-      constraints.push(startAfter(lastListing.publishedAt, lastListing.listingId));
-    }
-
-    const q = query(collection(this.firestore, 'listings'), ...constraints);
-    const snapshot = await getDocs(q);
-
-    return snapshot.docs
-      .slice(0, pageSize)
-      .map((doc) => validateListingData(doc.data(), doc.id));
-  }
-
   private requireCurrentUid(): string {
     const uid = this.auth.currentUser?.uid;
     if (!uid) throw new Error('NO_SIGNED_IN_USER');

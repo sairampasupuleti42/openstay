@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   getFirestore,
   FieldValue,
@@ -74,30 +74,24 @@ export async function recordParticipationEvent(
     .digest('hex');
   const privateRef = db.doc(`hostPrivate/${uid}`);
   const lockRef = db.doc(`hostPrivate/${uid}/listingLifecycleState/current`);
+  const workerId = randomUUID();
   const eventRef = privateRef.collection('consentEvents').doc(eventId);
   const legacyEventRefs = (['accepted', 'withdrawn'] as const).map((type) =>
     privateRef.collection('consentEvents').doc(
       createHash('sha256').update(`${uid}\0${type}\0${idempotencyKey}`).digest('hex'),
     ),
   );
-  if (eventType === 'withdrawn') {
-    const existingEventId = await beginWithdrawal(
-      db,
-      uid,
-      idempotencyKey,
-      data['expectedEventId'],
-      eventId,
-      eventRef,
-      legacyEventRefs,
-      privateRef,
-      userRef,
-      lockRef,
-    );
-    if (existingEventId) return { eventId: existingEventId };
-    await pausePublishedListings(db, uid, { ref: lockRef, requestId: eventId });
-  }
-
+  let withdrawalStarted = false;
   try {
+    if (eventType === 'withdrawn') {
+      const existingEventId = await beginWithdrawal(
+        db, uid, idempotencyKey, data['expectedEventId'], eventId,
+        eventRef, legacyEventRefs, privateRef, userRef, lockRef, workerId,
+      );
+      if (existingEventId) return { eventId: existingEventId };
+      withdrawalStarted = true;
+      await pausePublishedListings(db, uid, { ref: lockRef, requestId: eventId, workerId });
+    }
     return await db.runTransaction(async (transaction) => {
     const [userSnapshot, eventSnapshot, privateSnapshot, ...legacySnapshots] = await Promise.all([
       transaction.get(userRef),
@@ -165,7 +159,7 @@ export async function recordParticipationEvent(
     ) {
       throw new HttpsError('failed-precondition', 'There is no current hosting consent to withdraw.');
     }
-    if (eventType === 'withdrawn' && !ownsActiveWithdrawalLock(lockSnapshot.data(), eventId)) {
+    if (eventType === 'withdrawn' && !ownsActiveWithdrawalLock(lockSnapshot.data(), eventId, workerId)) {
       throw new HttpsError(
         'failed-precondition',
         'The host participation change is no longer current. Retry the request.',
@@ -188,6 +182,7 @@ export async function recordParticipationEvent(
     const termsDigest = eventType === 'accepted'
       ? HOST_PARTICIPATION_TERMS_DIGEST
       : privateData?.['termsDigest'];
+    if (eventType === 'accepted' && lockSnapshot.exists) transaction.delete(lockRef);
     transaction.create(eventRef, {
       eventId,
       uid,
@@ -210,8 +205,8 @@ export async function recordParticipationEvent(
     return { eventId };
     });
   } catch (error) {
-    if (eventType === 'withdrawn') {
-      await releaseWithdrawalLock(db, lockRef, eventId);
+    if (withdrawalStarted) {
+      await releaseWithdrawalLock(db, lockRef, eventId, workerId);
     }
     throw error;
   }
@@ -228,6 +223,7 @@ async function beginWithdrawal(
   privateRef: FirebaseFirestore.DocumentReference,
   userRef: FirebaseFirestore.DocumentReference,
   lockRef: FirebaseFirestore.DocumentReference,
+  workerId: string,
 ): Promise<string | null> {
   return db.runTransaction(async (transaction) => {
     const [userSnapshot, eventSnapshot, privateSnapshot, lockSnapshot, ...legacySnapshots] = await Promise.all([
@@ -297,10 +293,7 @@ async function beginWithdrawal(
       throw new HttpsError('resource-exhausted', 'Too many consent changes. Please try again later.');
     }
 
-    if (
-      hasActiveWithdrawalLock(lockSnapshot.data())
-      && !ownsActiveWithdrawalLock(lockSnapshot.data(), eventId)
-    ) {
+    if (hasActiveWithdrawalLock(lockSnapshot.data())) {
       throw new HttpsError(
         'failed-precondition',
         'Another host participation change is being completed. Retry shortly.',
@@ -309,6 +302,7 @@ async function beginWithdrawal(
     }
     transaction.set(lockRef, {
       requestId: eventId,
+      workerId,
       leaseExpiresAt: Timestamp.fromMillis(Timestamp.now().toMillis() + WITHDRAWAL_LEASE_MS),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -320,10 +314,11 @@ async function releaseWithdrawalLock(
   db: FirebaseFirestore.Firestore,
   lockRef: FirebaseFirestore.DocumentReference,
   requestId: string,
+  workerId: string,
 ): Promise<void> {
   await db.runTransaction(async (transaction) => {
     const lockSnapshot = await transaction.get(lockRef);
-    if (ownsActiveWithdrawalLock(lockSnapshot.data(), requestId)) {
+    if (ownsActiveWithdrawalLock(lockSnapshot.data(), requestId, workerId)) {
       transaction.delete(lockRef);
     }
   });
@@ -338,6 +333,9 @@ function hasActiveWithdrawalLock(data: Record<string, unknown> | undefined): boo
 function ownsActiveWithdrawalLock(
   data: Record<string, unknown> | undefined,
   requestId: string,
+  workerId: string,
 ): boolean {
-  return data?.['requestId'] === requestId && hasActiveWithdrawalLock(data);
+  return data?.['requestId'] === requestId
+    && data['workerId'] === workerId
+    && hasActiveWithdrawalLock(data);
 }

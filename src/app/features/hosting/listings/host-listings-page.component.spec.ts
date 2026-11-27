@@ -142,6 +142,24 @@ describe('HostListingsPageComponent', () => {
     expect(component.errorMessage()).toBe('Only published listings can be paused.');
   });
 
+  it('discards a stale request key and refreshes before a new action', async () => {
+    const published = listing({ status: 'published' });
+    getOwnListings.mockResolvedValue([published]);
+    pauseListing
+      .mockRejectedValueOnce(new Error('Response lost'))
+      .mockRejectedValueOnce({ details: { reason: 'stale-listing-request' } })
+      .mockResolvedValueOnce(undefined);
+    const component = TestBed.createComponent(HostListingsPageComponent).componentInstance;
+
+    await component.performAction(published, 'pause');
+    await component.performAction(published, 'pause');
+    expect(pauseListing.mock.calls[0][1]).toBe(pauseListing.mock.calls[1][1]);
+    expect(component.errorMessage()).toContain('listing changed');
+    expect(component.successMessage()).toBe('');
+    await component.performAction(published, 'pause');
+    expect(pauseListing.mock.calls[2][1]).not.toBe(pauseListing.mock.calls[1][1]);
+  });
+
   it('reports dashboard loading failures and offers a retry', async () => {
     getOwnListings.mockRejectedValueOnce(new Error('Firestore unavailable'));
     const fixture = TestBed.createComponent(HostListingsPageComponent);

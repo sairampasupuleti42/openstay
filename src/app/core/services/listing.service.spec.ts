@@ -255,29 +255,9 @@ describe('ListingService', () => {
     expect(firestoreMocks.startAfter).toHaveBeenCalledWith(timestamp, 'cursor-id');
   });
 
-  it('queries published listings only, ordered and paginated by publication time', async () => {
-    firestoreMocks.getDocs.mockResolvedValue({
-      docs: [listingDoc(listingData({
-        status: 'published',
-        publishedAt: timestamp,
-      }))],
-    });
-    const cursor = { ...listingData({ listingId: 'cursor-id' }), publishedAt: timestamp } as Listing;
-
-    const results = await service.getPublishedListings(5, cursor);
-
-    expect(results).toHaveLength(1);
-    expect(firestoreMocks.where).toHaveBeenCalledWith('status', '==', 'published');
-    expect(firestoreMocks.orderBy).toHaveBeenCalledWith('publishedAt', 'desc');
-    expect(firestoreMocks.orderBy).toHaveBeenCalledWith('document-id', 'desc');
-    expect(firestoreMocks.limit).toHaveBeenCalledWith(5);
-    expect(firestoreMocks.startAfter).toHaveBeenCalledWith(timestamp, 'cursor-id');
-  });
-
-  it('rejects invalid page sizes before making either listing query', async () => {
+  it('rejects invalid page sizes before querying owner listings', async () => {
     for (const pageSize of [0, -1, 21, 1.5, NaN, Infinity]) {
       await expect(service.getOwnListings(pageSize)).rejects.toThrow('page size');
-      await expect(service.getPublishedListings(pageSize)).rejects.toThrow('page size');
     }
     expect(firestoreMocks.getDocs).not.toHaveBeenCalled();
   });
@@ -285,16 +265,8 @@ describe('ListingService', () => {
   it('accepts page sizes from 1 to 20 and defaults to 20 without fetching an extra record', async () => {
     firestoreMocks.getDocs.mockResolvedValue({ docs: [] });
     await service.getOwnListings(1);
-    await service.getPublishedListings(20);
     await service.getOwnListings();
-    await service.getPublishedListings();
-    expect(firestoreMocks.limit.mock.calls).toEqual([[1], [20], [20], [20]]);
-  });
-
-  it('rejects a published cursor without the ordered timestamp', async () => {
-    const cursor = { ...listingData({ listingId: 'cursor-id' }), publishedAt: undefined } as Listing;
-    await expect(service.getPublishedListings(5, cursor)).rejects.toThrow('publication timestamp');
-    expect(firestoreMocks.getDocs).not.toHaveBeenCalled();
+    expect(firestoreMocks.limit.mock.calls).toEqual([[1], [20]]);
   });
 
   it('does not expose non-published listings through the public listing lookup', async () => {
@@ -346,7 +318,7 @@ describe('ListingService', () => {
     })).rejects.toBe(firestoreError);
 
     firestoreMocks.getDocs.mockRejectedValueOnce(firestoreError);
-    await expect(service.getPublishedListings()).rejects.toBe(firestoreError);
+    await expect(service.getOwnListings()).rejects.toBe(firestoreError);
   });
 
   it('uses trusted lifecycle callables and preserves the idempotency key', async () => {

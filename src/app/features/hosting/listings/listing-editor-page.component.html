@@ -19,7 +19,7 @@
         </a>
       </div>
     </section>
-  } @else if (errorMessage() && isEditRoute()) {
+  } @else if (editUnavailable()) {
     <section class="state-panel" aria-labelledby="edit-error-heading">
       <h1 id="edit-error-heading">This draft can’t be edited</h1>
       <p class="error" role="alert">{{ errorMessage() }}</p>
