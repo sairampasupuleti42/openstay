@@ -11,9 +11,9 @@ The proposed product requirements, MVP scope, system architecture, data model,
 API inventory, security approach, milestones, and review checklist are in
 [docs/phase-0-architecture.md](docs/phase-0-architecture.md).
 
-Implementation has progressed through host listing management and an initial
-public discovery experience. The roadmap remains a proposal; implementation
-and deployment of a feature do not by themselves establish launch readiness.
+Implementation includes host listing management, initial public discovery, and
+the M4.1 hosting request foundation. The roadmap remains a proposal; later
+request decisions and booking features are not implemented.
 
 ## Current implementation
 
@@ -30,11 +30,14 @@ environments. Host participation includes opt-in private profiles and consent
 history managed by trusted callables. Hosts can create drafts and use trusted
 lifecycle actions; public discovery and detail use bounded, screened callable
 responses. Direct listing and host-profile document reads are owner-only.
+Travellers can submit a request for a published listing and view their requests;
+hosts can view incoming requests and their details. Requests are pending only:
+sending one does not confirm a stay.
 
-See [M3.3 host listings](docs/m3.3-host-listings-architecture.md) for the
-implemented behavior, limitations, and outstanding work. In particular,
-availability, hosting requests, bookings, photos, and an independent
-moderation/reporting workflow are not implemented by M3.3.
+See [listing and request architecture](docs/listings-and-hosting-requests-architecture.md)
+for the implemented behavior, callable contracts, privacy boundaries, and
+limitations. Availability, request decisions, bookings, photos, messaging,
+and an independent moderation/reporting workflow remain unimplemented.
 
 ### Prerequisites
 
@@ -95,8 +98,8 @@ and in the M3.3 implementation record.
   pagination. Date availability needs an approved availability model; remaining
   discovery acceptance, including privacy review and cost measurement, belongs
   to M4. M4 feature development may proceed; this is not production deployment
-  approval. Photos, availability, requests, bookings, and messaging require
-  separate implementation and approval.
+  approval. Photos, availability, request decisions, bookings, and messaging
+  require separate implementation and approval.
 - **Development deployment (2026-11-27):** Hosting, Firestore rules, and index
   definitions were deployed to `open-stay`. Index build readiness was not
   confirmed. Functions deployment failed because required APIs could not be
@@ -137,11 +140,14 @@ either secret, the workflow stops at its credential check and does not deploy.
 npm run build
 npm test -- --watch=false
 npm run test:rules
+npm run test:hosting
 npm --prefix functions run build
 ```
 
 `npm run test:rules` runs the Firestore security-rule tests against the local
-Firestore Emulator and uses the `demo-openstay` project ID.
+Firestore Emulator. `npm run test:hosting` builds Functions and runs the host
+participation, listing lifecycle, discovery, and hosting request suites against
+the same emulator. Both use the `demo-openstay` project ID.
 
 ### Legacy profile migration utility
 
