@@ -557,6 +557,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /hostingRequests/{requestId} {
+      allow read: if request.auth != null
+        && (resource.data.travellerUid == request.auth.uid
+          || resource.data.hostUid == request.auth.uid);
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

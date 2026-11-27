@@ -17,3 +17,9 @@ export {
   searchPublishedListings,
 } from './hosting/public-listings.js';
 export { pauseListingsOnAccountSuspension } from './hosting/account-suspension.js';
+export {
+  createHostingRequest,
+  listTravellerHostingRequests,
+  listHostHostingRequests,
+  getHostingRequest,
+} from './hosting/hosting-requests.js';

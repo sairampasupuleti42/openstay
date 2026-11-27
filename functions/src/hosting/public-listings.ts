@@ -538,7 +538,7 @@ function hasCurrentConsent(
     && /^[a-f0-9]{64}$/.test(consent['eventId']);
 }
 
-function isValidPublicListing(
+export function isValidPublicListing(
   data: Record<string, unknown>,
   listingId: string,
 ): data is ValidPublicListingData {

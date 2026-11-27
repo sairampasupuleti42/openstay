@@ -29,6 +29,28 @@ import {
 const projectId = 'demo-openstay';
 let testEnv;
 
+test('hosting requests are participant-readable but never client-writable', async () => {
+  const id = 'request-rule-1';
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), `hostingRequests/${id}`), {
+      requestId: id, hostUid: 'rule-host', travellerUid: 'rule-traveller', status: 'pending',
+    });
+  });
+  const host = authenticatedDb('rule-host');
+  const traveller = authenticatedDb('rule-traveller');
+  const other = authenticatedDb('rule-other');
+  const anon = testEnv.unauthenticatedContext().firestore();
+  for (const db of [host, traveller]) await assertSucceeds(getDoc(doc(db, `hostingRequests/${id}`)));
+  for (const db of [other, anon]) await assertFails(getDoc(doc(db, `hostingRequests/${id}`)));
+  await assertSucceeds(getDocs(query(collection(host, 'hostingRequests'), where('hostUid', '==', 'rule-host'))));
+  await assertSucceeds(getDocs(query(collection(traveller, 'hostingRequests'), where('travellerUid', '==', 'rule-traveller'))));
+  await assertFails(getDocs(collection(host, 'hostingRequests')));
+  await assertFails(getDocs(query(collection(other, 'hostingRequests'), where('hostUid', '==', 'rule-host'))));
+  await assertFails(setDoc(doc(traveller, 'hostingRequests/forged'), { hostUid: 'rule-host', travellerUid: 'rule-traveller', status: 'pending' }));
+  await assertFails(updateDoc(doc(host, `hostingRequests/${id}`), { status: 'accepted' }));
+  await assertFails(deleteDoc(doc(traveller, `hostingRequests/${id}`)));
+});
+
 before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId,
