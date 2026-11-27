@@ -224,17 +224,19 @@ service cloud.firestore {
 
       function hasCurrentHostConsent() {
         let consentPath = /databases/$(database)/documents/hostPrivate/$(hostUid);
-        return exists(consentPath)
-          && get(consentPath).data.uid == hostUid
-          && get(consentPath).data.termsVersion == 'host-participation-v1'
-          && get(consentPath).data.termsDigest == '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b'
-          && get(consentPath).data.consentState == 'accepted'
-          && get(consentPath).data.eventId is string;
+        let consent = exists(consentPath) ? get(consentPath).data : null;
+        return consent != null
+          && consent.uid == hostUid
+          && consent.termsVersion == 'host-participation-v1'
+          && consent.termsDigest == '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b'
+          && consent.consentState == 'accepted'
+          && consent.eventId is string;
       }
 
       function hasActiveAccount() {
         let userPath = /databases/$(database)/documents/users/$(hostUid);
-        return exists(userPath) && get(userPath).data.accountStatus == 'active';
+        let user = exists(userPath) ? get(userPath).data : null;
+        return user != null && user.accountStatus == 'active';
       }
 
       function isPublicHostProfile() {
@@ -341,6 +343,213 @@ service cloud.firestore {
         && resource.data.keys().hasOnly(['uid', 'createdAt', 'updatedAt'])
         && profileMatchesReservationAfter();
       allow delete: if deletingOldReservation();
+    }
+
+    match /listings/{listingId} {
+      function isOwner() {
+        return request.auth != null
+          && request.auth.uid == resource.data.get('hostUid', null);
+      }
+
+      function validHouseRuleAt(houseRules, index) {
+        return houseRules.size() <= index
+          || (houseRules[index] is string
+            && houseRules[index].matches('(?s)^.{5,200}$'));
+      }
+
+      function validOptionalTimestamp(listing, field) {
+        return !(field in listing)
+          || listing[field] == null
+          || listing[field] is timestamp;
+      }
+
+      function preserveOptionalField(before, after, field) {
+        return (field in before) == (field in after)
+          && (!(field in before) || before[field] == after[field]);
+      }
+
+      function validListing(listing) {
+        return listing.keys().hasOnly([
+            'listingId',
+            'hostUid',
+            'title',
+            'description',
+            'accommodationType',
+            'country',
+            'city',
+            'region',
+            'areaDescription',
+            'guestCapacity',
+            'bedrooms',
+            'beds',
+            'bathrooms',
+            'amenities',
+            'houseRules',
+            'status',
+            'createdAt',
+            'updatedAt',
+            'publishedAt',
+            'pausedAt',
+            'archivedAt'
+          ])
+          && listing.keys().hasAll([
+            'listingId',
+            'hostUid',
+            'title',
+            'description',
+            'accommodationType',
+            'country',
+            'city',
+            'guestCapacity',
+            'bedrooms',
+            'beds',
+            'bathrooms',
+            'amenities',
+            'houseRules',
+            'status',
+            'createdAt',
+            'updatedAt'
+          ])
+          && listing.listingId == listingId
+          && listing.listingId is string
+          && listing.hostUid is string
+          && listing.hostUid.size() >= 1
+          && listing.hostUid.size() <= 128
+          && listing.title is string
+          && listing.title.size() >= 10
+          && listing.title.size() <= 100
+          && listing.description is string
+          && listing.description.size() >= 50
+          && listing.description.size() <= 2000
+          && listing.accommodationType in ['private_room', 'shared_room', 'entire_home', 'guest_house', 'farm_stay', 'other']
+          && listing.country is string
+          && listing.country.size() >= 2
+          && listing.country.size() <= 100
+          && listing.city is string
+          && listing.city.size() >= 2
+          && listing.city.size() <= 100
+          && (!('region' in listing) ||
+            (listing.region is string
+              && listing.region.size() >= 1
+              && listing.region.size() <= 100))
+          && (!('areaDescription' in listing) ||
+            (listing.areaDescription is string
+              && listing.areaDescription.size() >= 1
+              && listing.areaDescription.size() <= 200))
+          && listing.guestCapacity is number
+          && listing.guestCapacity % 1 == 0
+          && listing.guestCapacity >= 1
+          && listing.guestCapacity <= 10
+          && listing.bedrooms is number
+          && listing.bedrooms % 1 == 0
+          && listing.bedrooms >= 0
+          && listing.bedrooms <= 10
+          && listing.beds is number
+          && listing.beds % 1 == 0
+          && listing.beds >= 1
+          && listing.beds <= 15
+          && listing.bathrooms is number
+          && listing.bathrooms >= 1
+          && listing.bathrooms <= 10
+          && listing.amenities is list
+          && listing.amenities.size() <= 30
+          && listing.amenities.toSet().hasOnly(['wifi', 'kitchen', 'ac', 'heating', 'tv', 'laundry', 'parking', 'pool', 'gym', 'pet_friendly', 'hot_water', 'elevator', 'bathtub', 'shower', 'dishwasher', 'microwave', 'oven', 'refrigerator', 'freezer', 'balcony', 'garden', 'workspace', 'iron', 'games', 'bbq', 'outdoor_furniture', 'fireplace', 'safe', 'crib', 'high_chair'])
+          && listing.houseRules is list
+          && listing.houseRules.size() <= 15
+          && validHouseRuleAt(listing.houseRules, 0)
+          && validHouseRuleAt(listing.houseRules, 1)
+          && validHouseRuleAt(listing.houseRules, 2)
+          && validHouseRuleAt(listing.houseRules, 3)
+          && validHouseRuleAt(listing.houseRules, 4)
+          && validHouseRuleAt(listing.houseRules, 5)
+          && validHouseRuleAt(listing.houseRules, 6)
+          && validHouseRuleAt(listing.houseRules, 7)
+          && validHouseRuleAt(listing.houseRules, 8)
+          && validHouseRuleAt(listing.houseRules, 9)
+          && validHouseRuleAt(listing.houseRules, 10)
+          && validHouseRuleAt(listing.houseRules, 11)
+          && validHouseRuleAt(listing.houseRules, 12)
+          && validHouseRuleAt(listing.houseRules, 13)
+          && validHouseRuleAt(listing.houseRules, 14)
+          && listing.status in ['draft', 'published', 'paused', 'archived']
+          && listing.createdAt is timestamp
+          && listing.updatedAt is timestamp
+          && validOptionalTimestamp(listing, 'publishedAt')
+          && validOptionalTimestamp(listing, 'pausedAt')
+          && validOptionalTimestamp(listing, 'archivedAt');
+      }
+
+      function hasCurrentHostConsent() {
+        let consentPath = /databases/$(database)/documents/hostPrivate/$(request.auth.uid);
+        return exists(consentPath) && (get(consentPath).data.uid == request.auth.uid
+          && get(consentPath).data.termsVersion == 'host-participation-v1'
+          && get(consentPath).data.termsDigest == '0cbe5ba16e71fe24803c9080c62e7f3eb413c8d3ae079289d51538d2a325a96b'
+          && get(consentPath).data.consentState == 'accepted'
+          && get(consentPath).data.eventId is string);
+      }
+
+      function hasActiveAccount() {
+        let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
+        return exists(userPath) && get(userPath).data.accountStatus == 'active';
+      }
+
+      function isPublishedListing() {
+        return resource.data.status == 'published';
+      }
+
+      function validNewDraft() {
+        return validListing(request.resource.data)
+          && request.resource.data.hostUid == request.auth.uid
+          && request.resource.data.status == 'draft'
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time
+          && (!('publishedAt' in request.resource.data)
+            || request.resource.data.publishedAt == null)
+          && (!('pausedAt' in request.resource.data)
+            || request.resource.data.pausedAt == null)
+          && (!('archivedAt' in request.resource.data)
+            || request.resource.data.archivedAt == null);
+      }
+
+      function validDraftUpdate() {
+        return validListing(request.resource.data)
+          && request.resource.data.listingId == resource.data.listingId
+          && request.resource.data.hostUid == resource.data.hostUid
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.updatedAt == request.time
+          && preserveOptionalField(resource.data, request.resource.data, 'publishedAt')
+          && preserveOptionalField(resource.data, request.resource.data, 'pausedAt')
+          && preserveOptionalField(resource.data, request.resource.data, 'archivedAt')
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'title',
+            'description',
+            'accommodationType',
+            'country',
+            'city',
+            'region',
+            'areaDescription',
+            'guestCapacity',
+            'bedrooms',
+            'beds',
+            'bathrooms',
+            'amenities',
+            'houseRules',
+            'updatedAt'
+          ]);
+      }
+
+      allow get: if (request.auth != null && isOwner()) || isPublishedListing();
+      allow list: if isOwner() || isPublishedListing();
+      allow create: if request.auth != null
+        && hasActiveAccount()
+        && hasCurrentHostConsent()
+        && validNewDraft();
+      allow update: if request.auth != null
+        && isOwner()
+        && resource.data.status == 'draft'
+        && validDraftUpdate();
+      allow delete: if false;
     }
 
     match /{document=**} {

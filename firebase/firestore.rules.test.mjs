@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import {
   assertFails,
@@ -11,10 +12,15 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   runTransaction,
   serverTimestamp,
   setDoc,
+  Timestamp,
   updateDoc,
+  query,
+  where,
 } from 'firebase/firestore';
 
 const projectId = 'demo-openstay';
@@ -757,4 +763,341 @@ test('host private state and consent history are owner-readable and client-immut
       hostConsentEvent('host-private-outsider', { eventId: 'outsider-event' }),
     ));
   });
+});
+
+// Listing tests
+function listing(hostUid, overrides = {}) {
+  return {
+    listingId: 'listing-1',
+    hostUid,
+    title: 'Cozy room in Paris',
+    description: 'A lovely space with natural light and access to shared kitchen facilities.',
+    accommodationType: 'private_room',
+    country: 'France',
+    city: 'Paris',
+    guestCapacity: 1,
+    bedrooms: 1,
+    beds: 1,
+    bathrooms: 1,
+    amenities: ['wifi', 'kitchen'],
+    houseRules: ['No smoking', 'Quiet hours after 10 PM'],
+    status: 'draft',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    publishedAt: null,
+    pausedAt: null,
+    archivedAt: null,
+    ...overrides,
+  };
+}
+
+async function createListing(db, hostUid, listingId, overrides = {}) {
+  const data = listing(hostUid, { listingId, ...overrides });
+  return setDoc(doc(db, `listings/${listingId}`), data);
+}
+
+test('listing writes enforce owner, eligibility, and lifecycle access', async (t) => {
+  const hostUid = 'listing-host-1';
+  const otherHostUid = 'listing-host-2';
+  await seedHostConsent(hostUid);
+  await seedHostConsent(otherHostUid);
+
+  const hostDb = authenticatedDb(hostUid);
+  const otherHostDb = authenticatedDb(otherHostUid);
+  const anonymousDb = testEnv.unauthenticatedContext().firestore();
+
+  await t.test('an active host with current consent can create a draft', async () => {
+    await assertSucceeds(createListing(hostDb, hostUid, 'listing-1'));
+  });
+
+  await t.test('an unverified auth token does not add a separate listing gate', async () => {
+    const uid = 'listing-unverified-token';
+    await seedHostConsent(uid);
+    await assertSucceeds(createListing(authenticatedDb(uid, false), uid, 'listing-unverified'));
+  });
+
+  await t.test('unauthenticated users and hosts without consent cannot create', async () => {
+    await assertFails(createListing(anonymousDb, hostUid, 'listing-anonymous'));
+
+    const noConsentUid = 'listing-host-no-consent';
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `users/${noConsentUid}`), {
+        accountStatus: 'active',
+      });
+    });
+    await assertFails(createListing(
+      authenticatedDb(noConsentUid),
+      noConsentUid,
+      'listing-no-consent',
+    ));
+  });
+
+  await t.test('suspended hosts and forged owner IDs cannot create', async () => {
+    const suspendedUid = 'listing-suspended-host';
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const adminDb = context.firestore();
+      await setDoc(doc(adminDb, `users/${suspendedUid}`), { accountStatus: 'suspended' });
+      await setDoc(
+        doc(adminDb, `hostPrivate/${suspendedUid}`),
+        hostPrivateProfile(suspendedUid),
+      );
+    });
+    await assertFails(createListing(
+      authenticatedDb(suspendedUid),
+      suspendedUid,
+      'listing-suspended',
+    ));
+    await assertFails(createListing(hostDb, hostUid, 'listing-forged-owner', {
+      hostUid: otherHostUid,
+    }));
+    await assertFails(createListing(hostDb, hostUid, 'listing-publish-on-create', {
+      status: 'published',
+    }));
+  });
+
+  await t.test('owners can read their own drafts; other users cannot', async () => {
+    await assertSucceeds(getDoc(doc(hostDb, 'listings/listing-1')));
+    await assertFails(getDoc(doc(anonymousDb, 'listings/listing-1')));
+    await assertFails(getDoc(doc(otherHostDb, 'listings/listing-1')));
+    await assertFails(updateDoc(doc(otherHostDb, 'listings/listing-1'), {
+      title: 'Modified listing title',
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  await t.test('owners can query their listings, including drafts', async () => {
+    const ownerQuery = query(
+      collection(hostDb, 'listings'),
+      where('hostUid', '==', hostUid),
+      orderBy('updatedAt', 'desc'),
+      limit(21),
+    );
+    const result = await assertSucceeds(getDocs(ownerQuery));
+    assert.ok(result.docs.some((snapshot) => snapshot.id === 'listing-1'));
+    assert.ok(result.docs.every((snapshot) => snapshot.data().hostUid === hostUid));
+  });
+
+  await t.test('a published query succeeds while an unfiltered query is denied', async () => {
+    const publishedId = 'listing-published-1';
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), `listings/${publishedId}`),
+        listing(hostUid, {
+          listingId: publishedId,
+          status: 'published',
+          publishedAt: Timestamp.fromDate(new Date('2026-01-01T00:00:00Z')),
+        }),
+      );
+    });
+
+    const publishedQuery = query(
+      collection(anonymousDb, 'listings'),
+      where('status', '==', 'published'),
+      orderBy('publishedAt', 'desc'),
+      limit(21),
+    );
+    const publishedResults = await assertSucceeds(getDocs(publishedQuery));
+    assert.ok(publishedResults.docs.some((snapshot) => snapshot.id === publishedId));
+    assert.ok(publishedResults.docs.every((snapshot) => snapshot.data().status === 'published'));
+    await assertFails(getDocs(collection(anonymousDb, 'listings')));
+  });
+
+  await t.test('anonymous users cannot directly read paused or archived listings', async () => {
+    for (const [status, timestampField] of [
+      ['paused', 'pausedAt'],
+      ['archived', 'archivedAt'],
+    ]) {
+      const listingId = `listing-${status}`;
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+          doc(context.firestore(), `listings/${listingId}`),
+          listing(hostUid, {
+            listingId,
+            status,
+            [timestampField]: Timestamp.fromDate(new Date('2026-01-01T00:00:00Z')),
+          }),
+        );
+      });
+      await assertFails(getDoc(doc(anonymousDb, `listings/${listingId}`)));
+    }
+  });
+});
+
+test('listing creation validates the complete schema and every field boundary', async (t) => {
+  const hostUid = 'listing-validation-host';
+  await seedHostConsent(hostUid);
+  const hostDb = authenticatedDb(hostUid);
+  const wrongTimestamp = Timestamp.fromDate(new Date('2000-01-01T00:00:00Z'));
+  const invalidCases = [
+    ['missing listingId', {}, ['listingId']],
+    ['missing hostUid', {}, ['hostUid']],
+    ['missing title', {}, ['title']],
+    ['missing description', {}, ['description']],
+    ['missing accommodationType', {}, ['accommodationType']],
+    ['missing country', {}, ['country']],
+    ['missing city', {}, ['city']],
+    ['missing guestCapacity', {}, ['guestCapacity']],
+    ['missing bedrooms', {}, ['bedrooms']],
+    ['missing beds', {}, ['beds']],
+    ['missing bathrooms', {}, ['bathrooms']],
+    ['missing amenities', {}, ['amenities']],
+    ['missing houseRules', {}, ['houseRules']],
+    ['missing status', {}, ['status']],
+    ['missing createdAt', {}, ['createdAt']],
+    ['missing updatedAt', {}, ['updatedAt']],
+    ['unexpected field', { internalNotes: 'private' }],
+    ['listing ID differs from document ID', { listingId: 'different-id' }],
+    ['host UID has wrong type', { hostUid: 5 }],
+    ['title below minimum', { title: 'x'.repeat(9) }],
+    ['title above maximum', { title: 'x'.repeat(101) }],
+    ['description below minimum', { description: 'x'.repeat(49) }],
+    ['description above maximum', { description: 'x'.repeat(2001) }],
+    ['invalid accommodation enum', { accommodationType: 'invalid_type' }],
+    ['country has wrong type', { country: 5 }],
+    ['country below minimum', { country: 'x' }],
+    ['country above maximum', { country: 'x'.repeat(101) }],
+    ['city has wrong type', { city: 5 }],
+    ['city below minimum', { city: 'x' }],
+    ['city above maximum', { city: 'x'.repeat(101) }],
+    ['region has wrong type', { region: 5 }],
+    ['region is empty', { region: '' }],
+    ['region above maximum', { region: 'x'.repeat(101) }],
+    ['area description has wrong type', { areaDescription: 5 }],
+    ['area description is empty', { areaDescription: '' }],
+    ['area description above maximum', { areaDescription: 'x'.repeat(201) }],
+    ['guest capacity below minimum', { guestCapacity: 0 }],
+    ['guest capacity above maximum', { guestCapacity: 11 }],
+    ['guest capacity is not an integer', { guestCapacity: 1.5 }],
+    ['guest capacity has wrong type', { guestCapacity: '1' }],
+    ['bedrooms below minimum', { bedrooms: -1 }],
+    ['bedrooms above maximum', { bedrooms: 11 }],
+    ['bedrooms is not an integer', { bedrooms: 1.5 }],
+    ['bedrooms has wrong type', { bedrooms: '1' }],
+    ['beds below minimum', { beds: 0 }],
+    ['beds above maximum', { beds: 16 }],
+    ['beds is not an integer', { beds: 1.5 }],
+    ['beds has wrong type', { beds: '1' }],
+    ['bathrooms below minimum', { bathrooms: 0 }],
+    ['bathrooms above maximum', { bathrooms: 11 }],
+    ['bathrooms has wrong type', { bathrooms: '1' }],
+    ['amenities has wrong type', { amenities: 'wifi' }],
+    ['amenities above maximum', { amenities: Array(31).fill('wifi') }],
+    ['amenity has wrong type', { amenities: [5] }],
+    ['amenity is not approved', { amenities: ['not-approved'] }],
+    ['house rules has wrong type', { houseRules: 'quiet' }],
+    ['house rules above maximum', { houseRules: Array(16).fill('Valid house rule') }],
+    ['house rule has wrong type', { houseRules: [5] }],
+    ['house rule below minimum', { houseRules: ['x'.repeat(4)] }],
+    ['house rule above maximum', { houseRules: ['x'.repeat(201)] }],
+    ['invalid status enum', { status: 'live' }],
+    ['createdAt is not request time', { createdAt: wrongTimestamp }],
+    ['updatedAt is not request time', { updatedAt: wrongTimestamp }],
+    ['publication timestamp cannot be client-set', {
+      publishedAt: wrongTimestamp,
+      status: 'draft',
+    }],
+    ['publication timestamp has wrong type', { publishedAt: 'not-a-timestamp' }],
+    ['pause timestamp cannot be client-set', { pausedAt: wrongTimestamp }],
+    ['pause timestamp has wrong type', { pausedAt: 'not-a-timestamp' }],
+    ['archive timestamp cannot be client-set', { archivedAt: wrongTimestamp }],
+    ['archive timestamp has wrong type', { archivedAt: 'not-a-timestamp' }],
+  ];
+
+  for (const [index, [label, overrides, omittedFields = []]] of invalidCases.entries()) {
+    await t.test(label, async () => {
+      const listingId = `listing-invalid-${index}`;
+      const data = listing(hostUid, { listingId, ...overrides });
+      for (const field of omittedFields) delete data[field];
+      await assertFails(setDoc(doc(hostDb, `listings/${listingId}`), data));
+    });
+  }
+
+  await t.test('allows the maximum amenities array size', async () => {
+    await assertSucceeds(createListing(hostDb, hostUid, 'listing-at-limits', {
+      amenities: Array(30).fill('wifi'),
+    }));
+  });
+
+  await t.test('allows the maximum house-rules array size', async () => {
+    await assertSucceeds(createListing(hostDb, hostUid, 'listing-max-house-rules', {
+      amenities: [],
+      houseRules: Array(15).fill('x'.repeat(200)),
+    }));
+  });
+
+  await t.test('allows inclusive scalar field limits', async () => {
+    await assertSucceeds(createListing(hostDb, hostUid, 'listing-max-scalar-limits', {
+      title: 'x'.repeat(100),
+      description: 'x'.repeat(2000),
+      country: 'x'.repeat(100),
+      city: 'x'.repeat(100),
+      region: 'x'.repeat(100),
+      areaDescription: 'x'.repeat(200),
+      guestCapacity: 10,
+      bedrooms: 10,
+      beds: 15,
+      bathrooms: 10,
+      amenities: [],
+      houseRules: [],
+    }));
+    await assertSucceeds(createListing(hostDb, hostUid, 'listing-minimum-limits', {
+      title: 'x'.repeat(10),
+      description: 'x'.repeat(50),
+      country: 'xx',
+      city: 'xx',
+      region: 'x',
+      areaDescription: 'x',
+      guestCapacity: 1,
+      bedrooms: 0,
+      beds: 1,
+      bathrooms: 1,
+      amenities: [],
+      houseRules: ['x'.repeat(5)],
+    }));
+  });
+});
+
+test('listing updates validate content and preserve owner, status, and timestamps', async (t) => {
+  const hostUid = 'listing-update-host';
+  await seedHostConsent(hostUid);
+  const hostDb = authenticatedDb(hostUid);
+  const listingRef = doc(hostDb, 'listings/listing-update');
+  await assertSucceeds(createListing(hostDb, hostUid, 'listing-update'));
+
+  await t.test('valid content changes update updatedAt at request time', async () => {
+    await assertSucceeds(updateDoc(listingRef, {
+      title: 'Updated listing title',
+      description: 'Updated description that remains long enough to satisfy all minimum requirements.',
+      amenities: ['wifi', 'kitchen', 'ac'],
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  for (const [label, updates] of [
+    ['listing ID', { listingId: 'different-id' }],
+    ['owner UID', { hostUid: 'different-owner' }],
+    ['status', { status: 'published' }],
+    ['createdAt', { createdAt: serverTimestamp() }],
+    ['publishedAt', { publishedAt: serverTimestamp() }],
+    ['pausedAt', { pausedAt: serverTimestamp() }],
+    ['archivedAt', { archivedAt: serverTimestamp() }],
+    ['unexpected field', { privateNotes: 'private' }],
+    ['invalid title', { title: 'Short' }],
+    ['invalid optional region type', { region: 5 }],
+    ['invalid area description length', { areaDescription: 'x'.repeat(201) }],
+    ['invalid house rule type', { houseRules: [5] }],
+    ['invalid house rule length', { houseRules: ['x'.repeat(4)] }],
+    ['updatedAt not request time', { updatedAt: Timestamp.fromDate(new Date('2000-01-01')) }],
+    ['updatedAt omitted', {}],
+  ]) {
+    await t.test(`cannot change ${label}`, async () => {
+      const update = { ...updates };
+      if (label !== 'updatedAt omitted' && !Object.hasOwn(update, 'updatedAt')) {
+        update.updatedAt = serverTimestamp();
+      }
+      await assertFails(updateDoc(listingRef, {
+        ...update,
+      }));
+    });
+  }
 });

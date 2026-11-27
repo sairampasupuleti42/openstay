@@ -1,0 +1,325 @@
+import { Injectable, inject } from '@angular/core';
+import { Auth } from '@angular/fire/auth';
+import {
+  Firestore,
+  Timestamp,
+  collection,
+  deleteField,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  startAfter,
+  Query,
+  QueryConstraint,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from '@angular/fire/firestore';
+import {
+  Listing,
+  ListingInput,
+  ListingUpdates,
+  validateListingInput,
+  validateListingData,
+} from '../models/listing.model';
+
+const EDITABLE_FIELDS = [
+  'title',
+  'description',
+  'accommodationType',
+  'country',
+  'city',
+  'region',
+  'areaDescription',
+  'guestCapacity',
+  'bedrooms',
+  'beds',
+  'bathrooms',
+  'amenities',
+  'houseRules',
+] as const;
+
+@Injectable()
+export class ListingService {
+  private readonly auth = inject(Auth);
+  private readonly firestore = inject(Firestore);
+
+  async createDraft(input: ListingInput): Promise<string> {
+    const uid = this.requireCurrentUid();
+    const validated = validateListingInput(input);
+    const listingRef = doc(collection(this.firestore, 'listings'));
+
+    await setDoc(listingRef, {
+      listingId: listingRef.id,
+      hostUid: uid,
+      ...validated,
+      status: 'draft',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      publishedAt: null,
+      pausedAt: null,
+      archivedAt: null,
+    });
+
+    return listingRef.id;
+  }
+
+  async getOwnListing(listingId: string): Promise<Listing | null> {
+    const uid = this.requireCurrentUid();
+    const snapshot = await getDoc(doc(this.firestore, 'listings', listingId));
+
+    if (!snapshot.exists()) return null;
+
+    const listing = validateListingData(snapshot.data(), snapshot.id);
+
+    if (listing.hostUid !== uid) {
+      throw new Error('NO_ACCESS');
+    }
+
+    return listing;
+  }
+
+  async getOwnListings(pageSize: number = 20, lastListing?: Listing): Promise<Listing[]> {
+    const uid = this.requireCurrentUid();
+    const constraints: QueryConstraint[] = [
+      where('hostUid', '==', uid),
+      orderBy('updatedAt', 'desc'),
+      limit(pageSize + 1),
+    ];
+
+    if (lastListing) {
+      constraints.push(startAfter(lastListing.updatedAt));
+    }
+
+    const q = query(collection(this.firestore, 'listings'), ...constraints);
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs
+      .slice(0, pageSize)
+      .map((doc) => validateListingData(doc.data(), doc.id));
+  }
+
+  async updateOwnDraft(listingId: string, updates: ListingUpdates): Promise<void> {
+    const uid = this.requireCurrentUid();
+
+    // Verify ownership first
+    const snapshot = await getDoc(doc(this.firestore, 'listings', listingId));
+    if (!snapshot.exists()) {
+      throw new Error('NO_SUCH_LISTING');
+    }
+
+    const listing = validateListingData(snapshot.data(), snapshot.id);
+    if (listing.hostUid !== uid) {
+      throw new Error('NO_ACCESS');
+    }
+
+    if (listing.status !== 'draft') {
+      throw new Error('LISTING_NOT_DRAFT');
+    }
+
+    const keys = Object.keys(updates);
+    const editableFields: readonly string[] = EDITABLE_FIELDS;
+
+    if (keys.some((key) => !editableFields.includes(key))) {
+      throw new Error('A listing field is not editable.');
+    }
+
+    const safeUpdates: Record<string, unknown> = {};
+    for (const key of keys) {
+      const field = key as keyof ListingUpdates;
+      const value = updates[field];
+
+      switch (field) {
+        case 'title':
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length < 10 || trimmed.length > 100) {
+              throw new Error('Enter a listing title of 10–100 characters.');
+            }
+            safeUpdates['title'] = trimmed;
+          }
+          break;
+
+        case 'description':
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length < 50 || trimmed.length > 2000) {
+              throw new Error('Enter a listing description of 50–2,000 characters.');
+            }
+            safeUpdates['description'] = trimmed;
+          }
+          break;
+
+        case 'accommodationType':
+          if (
+            typeof value === 'string'
+            && ['private_room', 'shared_room', 'entire_home', 'guest_house', 'farm_stay', 'other'].includes(
+              value,
+            )
+          ) {
+            safeUpdates['accommodationType'] = value;
+          } else {
+            throw new Error('Select an accommodation type.');
+          }
+          break;
+
+        case 'country':
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length < 2 || trimmed.length > 100) {
+              throw new Error('Enter a country of 2–100 characters.');
+            }
+            safeUpdates['country'] = trimmed;
+          }
+          break;
+
+        case 'city':
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length < 2 || trimmed.length > 100) {
+              throw new Error('Enter a city of 2–100 characters.');
+            }
+            safeUpdates['city'] = trimmed;
+          }
+          break;
+
+        case 'region':
+          if (value === undefined) {
+            safeUpdates['region'] = deleteField();
+          } else if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length < 1 || trimmed.length > 100) {
+              throw new Error('The region must be 100 characters or fewer.');
+            }
+            safeUpdates['region'] = trimmed;
+          }
+          break;
+
+        case 'areaDescription':
+          if (value === undefined) {
+            safeUpdates['areaDescription'] = deleteField();
+          } else if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length < 1 || trimmed.length > 200) {
+              throw new Error('The area description must be 200 characters or fewer.');
+            }
+            safeUpdates['areaDescription'] = trimmed;
+          }
+          break;
+
+        case 'guestCapacity':
+          if (typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 10) {
+            safeUpdates['guestCapacity'] = value;
+          } else {
+            throw new Error('Enter guest capacity from 1–10.');
+          }
+          break;
+
+        case 'bedrooms':
+          if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 10) {
+            safeUpdates['bedrooms'] = value;
+          } else {
+            throw new Error('Enter bedrooms from 0–10.');
+          }
+          break;
+
+        case 'beds':
+          if (typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 15) {
+            safeUpdates['beds'] = value;
+          } else {
+            throw new Error('Enter beds from 1–15.');
+          }
+          break;
+
+        case 'bathrooms':
+          if (typeof value === 'number' && value >= 1 && value <= 10) {
+            safeUpdates['bathrooms'] = value;
+          } else {
+            throw new Error('Enter bathrooms from 1–10.');
+          }
+          break;
+
+        case 'amenities':
+          if (Array.isArray(value) && value.length <= 30) {
+            const approved = [
+              'wifi', 'kitchen', 'ac', 'heating', 'tv', 'laundry', 'parking', 'pool', 'gym',
+              'pet_friendly', 'hot_water', 'elevator', 'bathtub', 'shower', 'dishwasher',
+              'microwave', 'oven', 'refrigerator', 'freezer', 'balcony', 'garden', 'workspace',
+              'iron', 'games', 'bbq', 'outdoor_furniture', 'fireplace', 'safe', 'crib', 'high_chair',
+            ];
+            if (value.every((amenity) => typeof amenity === 'string' && approved.includes(amenity))) {
+              safeUpdates['amenities'] = [...value];
+            } else {
+              throw new Error('An amenity is not approved.');
+            }
+          } else {
+            throw new Error('Select up to 30 amenities.');
+          }
+          break;
+
+        case 'houseRules':
+          if (Array.isArray(value) && value.length <= 15) {
+            if (
+              value.every(
+                (rule) => typeof rule === 'string' && rule.length >= 5 && rule.length <= 200,
+              )
+            ) {
+              safeUpdates['houseRules'] = value.map((rule) => rule.trim());
+            } else {
+              throw new Error('Each house rule must be 5–200 characters.');
+            }
+          } else {
+            throw new Error('Enter up to 15 house rules.');
+          }
+          break;
+      }
+    }
+
+    safeUpdates['updatedAt'] = serverTimestamp();
+
+    await updateDoc(doc(this.firestore, 'listings', listingId), safeUpdates);
+  }
+
+  async getPublishedListing(listingId: string): Promise<Listing | null> {
+    const snapshot = await getDoc(doc(this.firestore, 'listings', listingId));
+
+    if (!snapshot.exists()) return null;
+
+    const listing = validateListingData(snapshot.data(), snapshot.id);
+
+    if (listing.status !== 'published') {
+      return null;
+    }
+
+    return listing;
+  }
+
+  async getPublishedListings(pageSize: number = 20, lastListing?: Listing): Promise<Listing[]> {
+    const constraints: QueryConstraint[] = [
+      where('status', '==', 'published'),
+      orderBy('publishedAt', 'desc'),
+      limit(pageSize + 1),
+    ];
+
+    if (lastListing) {
+      constraints.push(startAfter(lastListing.publishedAt));
+    }
+
+    const q = query(collection(this.firestore, 'listings'), ...constraints);
+    const snapshot = await getDocs(q);
+
+    return snapshot.docs
+      .slice(0, pageSize)
+      .map((doc) => validateListingData(doc.data(), doc.id));
+  }
+
+  private requireCurrentUid(): string {
+    const uid = this.auth.currentUser?.uid;
+    if (!uid) throw new Error('NO_SIGNED_IN_USER');
+    return uid;
+  }
+}
