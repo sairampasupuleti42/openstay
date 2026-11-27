@@ -268,9 +268,10 @@ completed. A stay whose exclusive `endDate` is on or before the current UTC
 date is grouped as past-dated; cancelled requests never appear in the
 upcoming-accepted section. Detail pages expose screened public participant
 names and city/country, existing listing links and the existing trusted
-cancellation action. Messaging is shown only for accepted stays and still
-requires backend authorization. Existing accept/decline/cancel logic is not
-duplicated.
+cancellation action. The authenticated dashboard and global navigation link
+to `/messages` and `/notifications`; request details link directly to a
+conversation only for accepted stays, with backend authorization still
+required. Existing accept/decline/cancel logic is not duplicated.
 
 Composite indexes in `firebase/firestore.indexes.json` support the
 participant/date request queries, participant-array/updated-time conversation
