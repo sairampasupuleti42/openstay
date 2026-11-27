@@ -1,0 +1,133 @@
+<section class="onboarding-page">
+  <div class="onboarding-panel">
+    @if (isLoadingProfile()) {
+      <p class="intro" role="status">Loading your host profile…</p>
+    } @else if (isComplete()) {
+      <p class="eyebrow">You’re all set</p>
+      <h1>Welcome to hosting.</h1>
+      <p class="intro" role="status">
+        Your host profile has been created privately. You can continue using
+        Openstay as a traveller.
+      </p>
+      @if (isWithdrawn()) {
+        <section class="consent" aria-labelledby="resume-heading">
+          <h2 id="resume-heading">Resume hosting</h2>
+          <p>{{ termsText }}</p>
+          <p class="privacy-note">{{ privacyWarning }}</p>
+          <mat-checkbox [formControl]="form.controls.consent">
+            I agree to the current host participation terms ({{ termsVersion }}).
+          </mat-checkbox>
+          @if (form.controls.consent.touched && form.controls.consent.invalid) {
+            <p class="field-error" role="alert">
+              Please agree to the terms before resuming hosting.
+            </p>
+          }
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="isResuming()"
+            (click)="resumeHosting()"
+          >
+            {{ isResuming() ? 'Resuming…' : 'Agree and resume hosting' }}
+          </button>
+        </section>
+      }
+      @if (canWithdraw()) {
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="isWithdrawing()"
+          (click)="withdrawConsent()"
+        >
+          {{ isWithdrawing() ? 'Withdrawing…' : 'Withdraw host participation consent' }}
+        </button>
+      }
+      @if (errorMessage()) {
+        <p class="form-error" role="alert">{{ errorMessage() }}</p>
+      }
+      <a mat-flat-button class="submit-button" routerLink="/dashboard">
+        Back to your traveller experience
+      </a>
+    } @else {
+      <p class="eyebrow">A different way to connect</p>
+      <h1>Make room for a meaningful stay.</h1>
+      <p class="intro">
+        Hosting is a chance to welcome travellers and share a little of
+        what makes your community special. It’s completely voluntary and
+        free to participate—there’s no pressure to host.
+      </p>
+      <p class="privacy-note">{{ privacyWarning }}</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <mat-form-field appearance="outline">
+          <mat-label>Public host name</mat-label>
+          <input
+            matInput
+            formControlName="displayName"
+            autocomplete="name"
+            maxlength="100"
+            required
+            aria-describedby="display-name-error"
+          />
+          @if (form.controls.displayName.touched && form.controls.displayName.invalid) {
+            <mat-error id="display-name-error">Enter a name of up to 100 characters.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Introduction</mat-label>
+          <textarea
+            matInput
+            formControlName="introduction"
+            rows="4"
+            maxlength="500"
+            aria-describedby="introduction-count introduction-error"
+            placeholder="What would you enjoy sharing with a traveller?"
+          ></textarea>
+          <mat-hint id="introduction-count" align="end">
+            {{ form.controls.introduction.value.length }}/500
+          </mat-hint>
+          @if (form.controls.introduction.touched && form.controls.introduction.invalid) {
+            <mat-error id="introduction-error">Keep your introduction to 500 characters or fewer.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Languages you speak</mat-label>
+          <input
+            matInput
+            formControlName="languages"
+            autocomplete="off"
+            aria-describedby="languages-help languages-error"
+            placeholder="en, mi, ja"
+          />
+          <mat-hint id="languages-help">Enter up to 10 unique language codes, separated by commas.</mat-hint>
+          @if (form.controls.languages.touched && form.controls.languages.invalid) {
+            <mat-error id="languages-error">Use up to 10 unique language codes such as en or mi.</mat-error>
+          }
+        </mat-form-field>
+
+        <section class="consent" aria-labelledby="consent-heading">
+          <h2 id="consent-heading">Host participation</h2>
+          <p>{{ termsText }}</p>
+          <mat-checkbox formControlName="consent">
+            I have read and agree to the host participation terms ({{ termsVersion }}).
+          </mat-checkbox>
+          @if (form.controls.consent.touched && form.controls.consent.invalid) {
+            <p class="field-error" id="consent-error" role="alert">
+              Please agree to the host participation terms to continue.
+            </p>
+          }
+        </section>
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+        <button mat-flat-button class="submit-button" type="submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Saving your host profile…' : 'Start hosting' }}
+        </button>
+        <a class="back-link" routerLink="/dashboard">Not now — back to traveller experience</a>
+      </form>
+    }
+  </div>
+</section>

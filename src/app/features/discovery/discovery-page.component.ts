@@ -6,48 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 @Component({
   selector: 'app-discovery-page',
   imports: [FormsModule, RouterLink, MatButtonModule],
-  template: `
-    <section class="discovery">
-      <p class="eyebrow">Explore</p>
-      <h1>Find a place to belong</h1>
-      <p class="intro">
-        Search by destination and find people who can make your trip feel local.
-      </p>
-      <form class="search-panel" (ngSubmit)="search()">
-        <label>
-          <span>Destination</span>
-          <input
-            name="destination"
-            type="search"
-            placeholder="City or region"
-            [ngModel]="destination()"
-            (ngModelChange)="destination.set($event)"
-          />
-        </label>
-        <button mat-flat-button type="submit">Search hosts</button>
-      </form>
-      <div class="empty-state" role="status">
-        <span class="empty-icon" aria-hidden="true">⌂</span>
-        <h2>
-          {{
-            destination()
-              ? 'A local connection is on its way'
-              : 'Your next host is closer than you think'
-          }}
-        </h2>
-        <p>
-          @if (destination()) {
-            We’re getting ready to help you find a host in {{ destination() }}.
-            In the meantime, explore the Openstay community story.
-          } @else {
-            Host discovery is coming soon. In the meantime, explore the Openstay
-            community story.
-          }
-        </p>
-        <a mat-stroked-button routerLink="/">Back home</a>
-      </div>
-    </section>
-  `,
+  templateUrl: './discovery-page.component.html',
   styles: `
     :host { display: block; min-height: calc(100vh - 76px); background: linear-gradient(145deg, var(--openstay-warm-white), var(--openstay-cream)); }
     .discovery { max-width: 980px; margin: 0 auto; padding: clamp(64px, 10vw, 112px) 24px; text-align: center; }

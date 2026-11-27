@@ -9,42 +9,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 @Component({
   selector: 'app-profile-setup',
   imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
-  template: `
-    <section class="onboarding-page">
-      <div class="onboarding-panel">
-        <p class="eyebrow">Your traveller profile</p>
-        <h1>Make it personal</h1>
-        <p class="intro">Share a little about yourself so the Openstay community can get to know you.</p>
-        <form [formGroup]="form" (ngSubmit)="submit()">
-          <mat-form-field appearance="outline">
-            <mat-label>Your name</mat-label>
-            <input matInput formControlName="displayName" autocomplete="name" required />
-            @if (form.controls.displayName.touched && form.controls.displayName.invalid) {
-              <mat-error>Please enter your name.</mat-error>
-            }
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>City or region</mat-label>
-            <input matInput formControlName="city" placeholder="City or region" autocomplete="address-level2" required />
-            @if (form.controls.city.touched && form.controls.city.invalid) {
-              <mat-error>Please enter a city or region.</mat-error>
-            }
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Tell us about yourself</mat-label>
-            <textarea matInput formControlName="bio" rows="4" maxlength="500" placeholder="What do you enjoy about travelling?"></textarea>
-            <mat-hint align="end">{{ form.controls.bio.value.length }}/500</mat-hint>
-          </mat-form-field>
-          @if (errorMessage()) {
-            <p class="error" role="alert">{{ errorMessage() }}</p>
-          }
-          <button mat-flat-button class="submit-button" type="submit" [disabled]="isSubmitting()">
-            {{ isSubmitting() ? 'Saving…' : 'Continue to dashboard' }}
-          </button>
-        </form>
-      </div>
-    </section>
-  `,
+  templateUrl: './profile-setup.component.html',
   styles: `
     :host { display: block; min-height: calc(100vh - 76px); background: var(--openstay-cream); }
     .onboarding-page { min-height: calc(100vh - 76px); display: grid; place-items: center; padding: 48px 20px; }

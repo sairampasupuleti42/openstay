@@ -7,30 +7,7 @@ import { UserProfile } from '../../core/models/user.model';
 @Component({
   selector: 'app-dashboard-page',
   imports: [RouterLink, MatButtonModule],
-  template: `
-    <section class="dashboard">
-      <div class="dashboard-content">
-        <p class="eyebrow">Your Openstay</p>
-        <h1>Welcome, {{ profile()?.displayName || 'traveller' }}.</h1>
-        @if (profile(); as traveller) {
-          @if (traveller.city) {
-            <p class="home-base">Based in {{ traveller.city }}</p>
-          }
-          @if (traveller.bio) {
-            <p class="bio">{{ traveller.bio }}</p>
-          }
-        }
-        <div class="actions">
-          <a mat-flat-button routerLink="/explore">Explore Openstay</a>
-          <a mat-stroked-button routerLink="/hosting">Start hosting</a>
-          <button mat-stroked-button type="button" (click)="logOut()">Sign out</button>
-        </div>
-        @if (errorMessage()) {
-          <p class="error" role="alert">{{ errorMessage() }}</p>
-        }
-      </div>
-    </section>
-  `,
+  templateUrl: './dashboard-page.component.html',
   styles: `
     :host { display: block; min-height: calc(100vh - 76px); background: var(--openstay-cream); }
     .dashboard { display: grid; min-height: calc(100vh - 76px); place-items: center; padding: 48px 20px; }
