@@ -23,6 +23,13 @@ export const routes: Routes = [
         (module) => module.DiscoveryPageComponent,
       ),
   },
+  {
+    path: 'listings/:listingId',
+    loadComponent: () =>
+      import('./features/discovery/public-listing-detail-page.component').then(
+        (module) => module.PublicListingDetailPageComponent,
+      ),
+  },
   { path: 'auth', children: authenticationRoutes },
   {
     path: 'onboarding',

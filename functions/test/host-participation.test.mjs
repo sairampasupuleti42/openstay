@@ -460,7 +460,7 @@ test('old terms can be withdrawn and reaccepted; suspended accounts can only wit
   assert.equal((await db.doc(`hostPrivate/${uid}`).get()).data().termsDigest, termsDigest);
 });
 
-test('rules accept callable-issued consent and deny fresh reads after withdrawal', async () => {
+test('host profile document reads remain private before and after consent withdrawal', async () => {
   const uid = 'callable-public-visibility';
   await seedActiveUser(uid);
   const now = new Date();
@@ -470,7 +470,7 @@ test('rules accept callable-issued consent and deny fresh reads after withdrawal
   });
   const profileRef = doc(clientDb, `hostProfiles/${uid}`);
   const accepted = await recordParticipationEvent(request(uid, 'visibility-accept-01'), 'accepted');
-  assert.equal((await getDocFromServer(profileRef)).exists(), true);
+  await assert.rejects(getDocFromServer(profileRef), { code: 'permission-denied' });
   await recordParticipationEvent(
     request(uid, 'visibility-withdraw-01', 'withdrawn', accepted.eventId), 'withdrawn',
   );

@@ -239,15 +239,8 @@ service cloud.firestore {
         return user != null && user.accountStatus == 'active';
       }
 
-      function isPublicHostProfile() {
-        return validHostProfile(resource.data)
-          && resource.data.visibility == 'public'
-          && hasActiveAccount()
-          && hasCurrentHostConsent();
-      }
-
-      allow get: if isOwner() || isPublicHostProfile();
-      allow list: if isPublicHostProfile();
+      allow get: if isOwner();
+      allow list: if false;
       allow create: if isOwner()
         && request.auth.token.email_verified == true
         && hasActiveAccount()
@@ -516,14 +509,6 @@ service cloud.firestore {
         return user != null && user.accountStatus == 'active';
       }
 
-      function isPublishedListing() {
-        let hostUid = resource.data.get('hostUid', null);
-        return resource.data.status == 'published'
-          && hostUid is string
-          && hasActiveAccount(hostUid)
-          && hasCurrentHostConsent(hostUid);
-      }
-
       function validNewDraft() {
         let listing = request.resource.data;
         return listing.hostUid == request.auth.uid
@@ -558,7 +543,7 @@ service cloud.firestore {
           && validListing(listing);
       }
 
-      allow get: if (request.auth != null && isOwner()) || isPublishedListing();
+      allow get: if request.auth != null && isOwner();
       allow list: if isOwner();
       allow create: if request.auth != null
         && hasActiveAccount(request.auth.uid)

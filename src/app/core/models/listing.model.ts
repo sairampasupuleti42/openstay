@@ -49,6 +49,45 @@ export interface ListingInput {
   houseRules: string[];
 }
 
+export interface PublicListingSummary {
+  listingId: string;
+  title: string;
+  country: string;
+  city: string;
+  region?: string;
+  accommodationType: AccommodationType;
+  guestCapacity: number;
+}
+
+export interface PublicHostProfile {
+  displayName: string;
+  introduction?: string;
+  languages: string[];
+}
+
+export interface PublicListingDetails extends PublicListingSummary {
+  description: string;
+  bedrooms: number;
+  beds: number;
+  bathrooms: number;
+  amenities: string[];
+  houseRules: string[];
+  host: PublicHostProfile | null;
+}
+
+export interface PublicListingFilters {
+  country?: string;
+  city?: string;
+  accommodationType?: AccommodationType;
+  minimumGuests?: number;
+}
+
+export interface PublicListingPage {
+  items: PublicListingSummary[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 export type ListingUpdates = Partial<
   Pick<
     Listing,

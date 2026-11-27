@@ -269,9 +269,52 @@ describe('ListingService', () => {
     expect(firestoreMocks.limit.mock.calls).toEqual([[1], [20]]);
   });
 
-  it('does not expose non-published listings through the public listing lookup', async () => {
-    firestoreMocks.getDoc.mockResolvedValueOnce(snapshot(listingData({ status: 'draft' })));
-    await expect(service.getPublishedListing(listingId)).resolves.toBeNull();
+  it('queries public listing pages through the trusted discovery callable', async () => {
+    const page = { items: [], nextCursor: null, hasMore: false };
+    const call = vi.fn().mockResolvedValue({ data: page });
+    functionsMocks.httpsCallable.mockReturnValueOnce(call);
+    const filters = {
+      country: 'New Zealand',
+      city: 'Wellington',
+      accommodationType: 'private_room' as const,
+      minimumGuests: 2,
+    };
+
+    await expect(service.searchPublishedListings(filters, 8, 'cursor-1')).resolves.toEqual(page);
+    expect(functionsMocks.httpsCallable).toHaveBeenCalledWith(
+      expect.anything(),
+      'searchPublishedListings',
+    );
+    expect(call).toHaveBeenCalledWith({ filters, pageSize: 8, cursor: 'cursor-1' });
+    expect(firestoreMocks.getDocs).not.toHaveBeenCalled();
+  });
+
+  it('loads public listing details through the sanitized detail callable', async () => {
+    const details = {
+      listingId,
+      title: 'A valid listing title',
+      description: 'A comfortably sized public description without private contact information.',
+      country: 'New Zealand',
+      city: 'Wellington',
+      accommodationType: 'private_room',
+      guestCapacity: 2,
+      bedrooms: 1,
+      beds: 1,
+      bathrooms: 1,
+      amenities: ['wifi'],
+      houseRules: [],
+      host: { displayName: 'Host', languages: ['en'] },
+    };
+    const call = vi.fn().mockResolvedValue({ data: details });
+    functionsMocks.httpsCallable.mockReturnValueOnce(call);
+
+    await expect(service.getPublicListingDetails(listingId)).resolves.toEqual(details);
+    expect(functionsMocks.httpsCallable).toHaveBeenCalledWith(
+      expect.anything(),
+      'getPublicListingDetails',
+    );
+    expect(call).toHaveBeenCalledWith({ listingId });
+    expect(firestoreMocks.getDoc).not.toHaveBeenCalled();
   });
 
   it('rejects protected field updates without writing and preserves optional-field deletion', async () => {
@@ -322,9 +365,9 @@ describe('ListingService', () => {
   });
 
   it('uses trusted lifecycle callables and preserves the idempotency key', async () => {
-    await service.publishListing(listingId, 'publish-service-request-001');
+    await service.publishListing(listingId, 'publish-service-request-001', true);
     await service.pauseListing(listingId, 'pause-service-request-01');
-    await service.resumeListing(listingId, 'resume-service-request-01');
+    await service.resumeListing(listingId, 'resume-service-request-01', true);
     await service.archiveListing(listingId, 'archive-service-request-01');
 
     expect(functionsMocks.httpsCallable.mock.calls.map((call) => call[1])).toEqual([
@@ -334,10 +377,25 @@ describe('ListingService', () => {
       'archiveListing',
     ]);
     expect(functionsMocks.getFunctions).toHaveBeenCalledWith({}, 'us-central1');
+    expect(functionsMocks.httpsCallable.mock.results[0].value).toHaveBeenCalledWith({
+      listingId,
+      idempotencyKey: 'publish-service-request-001',
+      publicContentReviewed: true,
+    });
+    expect(functionsMocks.httpsCallable.mock.results[1].value).toHaveBeenCalledWith({
+      listingId,
+      idempotencyKey: 'pause-service-request-01',
+    });
+    expect(functionsMocks.httpsCallable.mock.results[2].value).toHaveBeenCalledWith({
+      listingId,
+      idempotencyKey: 'resume-service-request-01',
+      publicContentReviewed: true,
+    });
   });
 
   it('rejects invalid lifecycle request keys before calling a Function', async () => {
-    await expect(service.publishListing(listingId, 'short')).rejects.toThrow('request is invalid');
+    await expect(service.publishListing(listingId, 'short', true))
+      .rejects.toThrow('request is invalid');
     expect(functionsMocks.httpsCallable).not.toHaveBeenCalled();
   });
 });

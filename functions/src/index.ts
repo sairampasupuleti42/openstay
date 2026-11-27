@@ -12,4 +12,8 @@ export {
   publishListing,
   resumeListing,
 } from './hosting/listing-lifecycle.js';
+export {
+  getPublicListingDetails,
+  searchPublishedListings,
+} from './hosting/public-listings.js';
 export { pauseListingsOnAccountSuspension } from './hosting/account-suspension.js';

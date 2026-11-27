@@ -96,7 +96,7 @@ async function seedListing(uid, listingId, overrides = {}) {
 }
 
 function actionRequest(uid, listingId, idempotencyKey) {
-  return request(uid, { listingId, idempotencyKey });
+  return request(uid, { listingId, idempotencyKey, publicContentReviewed: true });
 }
 
 test('executes all allowed transitions and makes matching retries idempotent', async () => {
@@ -170,6 +170,19 @@ test('executes all allowed transitions and makes matching retries idempotent', a
   }
 });
 
+test('rejects publishing a listing with a residential address in area description', async () => {
+  const uid = 'lifecycle-address-area';
+  const listingId = 'lifecycle-address-area-listing';
+  await seedHost(uid);
+  await seedListing(uid, listingId, { areaDescription: '10 rue de Rivoli, Paris' });
+
+  await assert.rejects(
+    transitionListing(actionRequest(uid, listingId, 'publish-address-area-01'), 'publish', db),
+    { code: 'failed-precondition', details: { reason: 'private-content-not-allowed' } },
+  );
+  assert.equal((await db.doc(`listings/${listingId}`).get()).data().status, 'draft');
+});
+
 test('rejects every invalid lifecycle transition and repeated action with a new key', async () => {
   const transitions = [
     ['draft', 'pause'],
@@ -208,6 +221,43 @@ test('rejects every invalid lifecycle transition and repeated action with a new 
   }
 });
 
+test('rejects publication and resumption when listing text contains private details', async () => {
+  for (const [label, field, value] of [
+    ['email', 'description', 'Contact me at host@example.com to arrange your stay in this welcoming place.'],
+    ['phone', 'description', 'Call +1 (415) 555-0134 for this welcoming place and a comfortable local visit.'],
+    ['street address', 'houseRules', ['10 Main Street is the residential entrance for this lovely place.']],
+    ['coordinates', 'description', 'Find this private home at -36.848500,174.763300 near the city centre.'],
+  ]) {
+    const slug = label.replaceAll(' ', '-');
+    const uid = `lifecycle-private-copy-${slug}`;
+    const listingId = `private-copy-${slug}`;
+    await seedHost(uid);
+    await seedListing(uid, listingId, { [field]: value });
+    await assert.rejects(
+      transitionListing(
+        actionRequest(uid, listingId, `private-copy-${slug}-request-001`),
+        'publish',
+        db,
+      ),
+      { code: 'failed-precondition', details: { reason: 'private-content-not-allowed' } },
+    );
+    assert.equal((await db.doc(`listings/${listingId}`).get()).data().status, 'draft');
+  }
+
+  const uid = 'lifecycle-private-copy-resume';
+  const listingId = 'private-copy-resume';
+  await seedHost(uid);
+  await seedListing(uid, listingId, {
+    status: 'paused',
+    description: 'Contact host@example.com to enjoy this comfortable and welcoming place.',
+  });
+  await assert.rejects(
+    transitionListing(actionRequest(uid, listingId, 'private-copy-resume-request-001'), 'resume', db),
+    { code: 'failed-precondition', details: { reason: 'private-content-not-allowed' } },
+  );
+  assert.equal((await db.doc(`listings/${listingId}`).get()).data().status, 'paused');
+});
+
 test('validates authentication, strict input, ownership, account and consent prerequisites', async () => {
   const uid = 'lifecycle-auth';
   const listingId = 'lifecycle-auth-listing';
@@ -233,6 +283,21 @@ test('validates authentication, strict input, ownership, account and consent pre
     }), 'publish', db),
     { code: 'invalid-argument' },
   );
+  for (const [action, idempotencyKey] of [
+    ['publish', 'publish-without-review-001'],
+    ['resume', 'resume-without-review-0001'],
+  ]) {
+    await assert.rejects(
+      transitionListing(request(uid, {
+        listingId,
+        idempotencyKey,
+      }), action, db),
+      {
+        code: 'failed-precondition',
+        details: { reason: 'publication-review-required' },
+      },
+    );
+  }
   await assert.rejects(
     transitionListing(request(uid, {
       listingId: `${listingId}/other`,
@@ -806,10 +871,12 @@ test('account administration helpers are not exported as public Functions', () =
   assert.deepEqual(exported, [
     'acceptHostParticipation',
     'archiveListing',
+    'getPublicListingDetails',
     'pauseListing',
     'pauseListingsOnAccountSuspension',
     'publishListing',
     'resumeListing',
+    'searchPublishedListings',
     'withdrawHostParticipation',
   ]);
 });

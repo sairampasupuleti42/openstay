@@ -23,12 +23,14 @@ import {
   Listing,
   ListingInput,
   ListingUpdates,
+  PublicListingDetails,
+  PublicListingFilters,
+  PublicListingPage,
   validateListingInput,
   validateListingData,
 } from '../models/listing.model';
 import { environment } from '../../../environments/environment';
 
-let listingFunctions: ReturnType<typeof import('firebase/functions').getFunctions> | undefined;
 const FUNCTIONS_REGION = 'us-central1';
 type LifecycleCallableName =
   | 'publishListing'
@@ -58,11 +60,12 @@ function validatePageSize(pageSize: number): void {
   }
 }
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class ListingService {
   private readonly auth = inject(Auth);
   private readonly firebaseApp = inject(FirebaseApp);
   private readonly firestore = inject(Firestore);
+  private listingFunctions?: ReturnType<typeof import('firebase/functions').getFunctions>;
 
   async createDraft(input: ListingInput): Promise<string> {
     const uid = this.requireCurrentUid();
@@ -302,16 +305,34 @@ export class ListingService {
     await updateDoc(doc(this.firestore, 'listings', listingId), safeUpdates);
   }
 
-  publishListing(listingId: string, idempotencyKey: string): Promise<void> {
-    return this.runLifecycleAction('publishListing', listingId, idempotencyKey);
+  publishListing(
+    listingId: string,
+    idempotencyKey: string,
+    publicContentReviewed: true,
+  ): Promise<void> {
+    return this.runLifecycleAction(
+      'publishListing',
+      listingId,
+      idempotencyKey,
+      publicContentReviewed,
+    );
   }
 
   pauseListing(listingId: string, idempotencyKey: string): Promise<void> {
     return this.runLifecycleAction('pauseListing', listingId, idempotencyKey);
   }
 
-  resumeListing(listingId: string, idempotencyKey: string): Promise<void> {
-    return this.runLifecycleAction('resumeListing', listingId, idempotencyKey);
+  resumeListing(
+    listingId: string,
+    idempotencyKey: string,
+    publicContentReviewed: true,
+  ): Promise<void> {
+    return this.runLifecycleAction(
+      'resumeListing',
+      listingId,
+      idempotencyKey,
+      publicContentReviewed,
+    );
   }
 
   archiveListing(listingId: string, idempotencyKey: string): Promise<void> {
@@ -329,18 +350,28 @@ export class ListingService {
     return 'Something went wrong. Please try again.';
   }
 
-  async getPublishedListing(listingId: string): Promise<Listing | null> {
-    const snapshot = await getDoc(doc(this.firestore, 'listings', listingId));
+  async searchPublishedListings(
+    filters: PublicListingFilters,
+    pageSize = 12,
+    cursor: string | null = null,
+  ): Promise<PublicListingPage> {
+    const { sdk, functions } = await this.getListingFunctions();
+    const search = sdk.httpsCallable<
+      { filters: PublicListingFilters; pageSize: number; cursor: string | null },
+      PublicListingPage
+    >(functions, 'searchPublishedListings');
+    const result = await search({ filters, pageSize, cursor });
+    return result.data;
+  }
 
-    if (!snapshot.exists()) return null;
-
-    const listing = validateListingData(snapshot.data(), snapshot.id);
-
-    if (listing.status !== 'published') {
-      return null;
-    }
-
-    return listing;
+  async getPublicListingDetails(listingId: string): Promise<PublicListingDetails | null> {
+    const { sdk, functions } = await this.getListingFunctions();
+    const getDetails = sdk.httpsCallable<
+      { listingId: string },
+      PublicListingDetails | null
+    >(functions, 'getPublicListingDetails');
+    const result = await getDetails({ listingId });
+    return result.data;
   }
 
   private requireCurrentUid(): string {
@@ -353,22 +384,39 @@ export class ListingService {
     callableName: LifecycleCallableName,
     listingId: string,
     idempotencyKey: string,
+    publicContentReviewed?: true,
   ): Promise<void> {
     if (!listingId || !/^[A-Za-z0-9-]{16,128}$/.test(idempotencyKey)) {
       throw new Error('The listing action request is invalid.');
     }
+    if (
+      (callableName === 'publishListing' || callableName === 'resumeListing')
+      && publicContentReviewed !== true
+    ) {
+      throw new Error('Review the public listing text before publishing or resuming.');
+    }
 
+    const { sdk, functions } = await this.getListingFunctions();
+    const data = {
+      listingId,
+      idempotencyKey,
+      ...(publicContentReviewed === true ? { publicContentReviewed: true } : {}),
+    };
+    const call = sdk.httpsCallable<
+      typeof data,
+      { listingId: string; status: string }
+    >(functions, callableName);
+    await call(data);
+  }
+
+  private async getListingFunctions() {
     const sdk = await import('firebase/functions');
-    if (!listingFunctions) {
-      listingFunctions = sdk.getFunctions(this.firebaseApp, FUNCTIONS_REGION);
+    if (!this.listingFunctions) {
+      this.listingFunctions = sdk.getFunctions(this.firebaseApp, FUNCTIONS_REGION);
       if (environment.useEmulators) {
-        sdk.connectFunctionsEmulator(listingFunctions, '127.0.0.1', 5001);
+        sdk.connectFunctionsEmulator(this.listingFunctions, '127.0.0.1', 5001);
       }
     }
-    const call = sdk.httpsCallable<
-      { listingId: string; idempotencyKey: string },
-      { listingId: string; status: string }
-    >(listingFunctions, callableName);
-    await call({ listingId, idempotencyKey });
+    return { sdk, functions: this.listingFunctions };
   }
 }

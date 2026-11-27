@@ -13,6 +13,7 @@ import {
   HOST_PARTICIPATION_TERMS_DIGEST,
   HOST_PARTICIPATION_TERMS_VERSION,
 } from './host-participation.js';
+import { isSafePublicText } from './public-listings.js';
 
 const FUNCTIONS_REGION = 'us-central1';
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9-]{16,128}$/;
@@ -113,7 +114,7 @@ export async function transitionListing(
     throw new HttpsError('failed-precondition', 'Verify your email before managing listings.');
   }
 
-  const input = validateRequestData(request.data);
+  const input = validateRequestData(request.data, action);
   const userRef = db.doc(`users/${uid}`);
   const hostProfileRef = db.doc(`hostProfiles/${uid}`);
   const consentRef = db.doc(`hostPrivate/${uid}`);
@@ -167,7 +168,6 @@ export async function transitionListing(
     if (!isValidListing(listing, input.listingId)) {
       throw failedPrecondition('invalid-listing', 'The saved listing is incomplete or invalid.');
     }
-
     if (requestSnapshot.exists) {
       const previousRequest = requestSnapshot.data();
       if (
@@ -209,6 +209,16 @@ export async function transitionListing(
       );
     }
 
+    if (
+      (action === 'publish' || action === 'resume')
+      && !hasSafePublicContent(listing)
+    ) {
+      throw failedPrecondition(
+        'private-content-not-allowed',
+        'Remove contact details, exact addresses, or coordinates before publishing this listing.',
+      );
+    }
+
     const lifecycleFields: Record<string, unknown> = {
       status: nextStatus,
       updatedAt: FieldValue.serverTimestamp(),
@@ -235,13 +245,19 @@ export async function transitionListing(
   });
 }
 
-function validateRequestData(data: unknown): { listingId: string; idempotencyKey: string } {
+function validateRequestData(
+  data: unknown,
+  action: ListingLifecycleAction,
+): { listingId: string; idempotencyKey: string } {
   if (
     typeof data !== 'object'
     || data === null
     || Array.isArray(data)
-    || Object.keys(data).length !== 2
-    || Object.keys(data).some((key) => key !== 'listingId' && key !== 'idempotencyKey')
+    || Object.keys(data).some((key) =>
+      key !== 'listingId'
+      && key !== 'idempotencyKey'
+      && key !== 'publicContentReviewed',
+    )
   ) {
     throw new HttpsError('invalid-argument', 'The listing action request is invalid.');
   }
@@ -255,6 +271,21 @@ function validateRequestData(data: unknown): { listingId: string; idempotencyKey
     || !IDEMPOTENCY_KEY.test(input['idempotencyKey'])
   ) {
     throw new HttpsError('invalid-argument', 'The listing action request key is invalid.');
+  }
+  if (
+    Object.hasOwn(input, 'publicContentReviewed')
+    && input['publicContentReviewed'] !== true
+  ) {
+    throw new HttpsError('invalid-argument', 'The public content review acknowledgment is invalid.');
+  }
+  if (
+    (action === 'publish' || action === 'resume')
+    && input['publicContentReviewed'] !== true
+  ) {
+    throw failedPrecondition(
+      'publication-review-required',
+      'Review the public listing text before publishing or resuming.',
+    );
   }
   return {
     listingId: input['listingId'],
@@ -380,6 +411,21 @@ function isValidListing(
     return false;
   }
   return true;
+}
+
+function hasSafePublicContent(listing: Record<string, unknown>): boolean {
+  const values = [
+    listing['title'],
+    listing['description'],
+    listing['country'],
+    listing['city'],
+    listing['region'],
+    listing['areaDescription'],
+    ...(Array.isArray(listing['houseRules']) ? listing['houseRules'] : []),
+  ];
+  return values.every((value) =>
+    value === undefined || (typeof value === 'string' && isSafePublicText(value)),
+  );
 }
 
 function isBoundedString(value: unknown, min: number, max: number): value is string {

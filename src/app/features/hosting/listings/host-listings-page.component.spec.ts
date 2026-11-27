@@ -119,14 +119,66 @@ describe('HostListingsPageComponent', () => {
     const fixture = TestBed.createComponent(HostListingsPageComponent);
     fixture.detectChanges();
     await fixture.whenStable();
-    await fixture.componentInstance.performAction(draft, 'publish');
+    fixture.componentInstance.requestPublicationReview(draft, 'publish');
+    fixture.componentInstance.confirmPublicationReview(draft, 'publish');
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(publishListing).toHaveBeenCalledWith('listing-1', expect.any(String));
+    expect(publishListing).toHaveBeenCalledWith('listing-1', expect.any(String), true);
     expect(getOwnListings).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.listings()[0].status).toBe('published');
     expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent)
       .toContain('Listing published.');
+  });
+
+  it('requires an explicit text review before publishing or resuming', async () => {
+    const draft = listing();
+    getOwnListings.mockResolvedValue([draft]);
+    const fixture = TestBed.createComponent(HostListingsPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.listings()).toHaveLength(1);
+    const publishButton = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'Publish');
+    expect(publishButton).toBeDefined();
+    publishButton!.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain(
+      'Automated checks can miss residential addresses or personal information.',
+    );
+    expect(publishListing).not.toHaveBeenCalled();
+
+    fixture.nativeElement.querySelector('.review-confirmation button').click();
+    await fixture.whenStable();
+    expect(publishListing).toHaveBeenCalledWith('listing-1', expect.any(String), true);
+
+    const paused = listing({ status: 'paused' });
+    getOwnListings.mockResolvedValue([paused]);
+    const pausedFixture = TestBed.createComponent(HostListingsPageComponent);
+    pausedFixture.detectChanges();
+    await pausedFixture.whenStable();
+    pausedFixture.detectChanges();
+    const resumeButton = Array.from((pausedFixture.nativeElement as HTMLElement).querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'Resume');
+    expect(resumeButton).toBeDefined();
+    resumeButton!.click();
+    pausedFixture.detectChanges();
+    expect(resumeListing).not.toHaveBeenCalled();
+    pausedFixture.nativeElement.querySelector('.review-confirmation button').click();
+    await pausedFixture.whenStable();
+    expect(resumeListing).toHaveBeenCalledWith('listing-1', expect.any(String), true);
+  });
+
+  it('does not dispatch publish or resume through the action handler without review', async () => {
+    const component = TestBed.createComponent(HostListingsPageComponent).componentInstance;
+    await component.performAction(listing(), 'publish');
+    await component.performAction(listing({ status: 'paused' }), 'resume');
+
+    expect(publishListing).not.toHaveBeenCalled();
+    expect(resumeListing).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toContain('Review the public listing text');
   });
 
   it('keeps the same request key after a backend error and displays the error', async () => {

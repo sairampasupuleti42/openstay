@@ -6,6 +6,7 @@ import { Listing, ListingStatus } from '../../../core/models/listing.model';
 import { ListingService } from '../../../core/services/listing.service';
 
 type ListingAction = 'publish' | 'pause' | 'resume' | 'archive';
+type PublicationAction = 'publish' | 'resume';
 
 @Component({
   selector: 'app-host-listings-page',
@@ -50,6 +51,7 @@ export class HostListingsPageComponent implements OnInit {
   readonly isLoadingMore = signal(false);
   readonly hasMore = signal(false);
   readonly pendingAction = signal<string | null>(null);
+  readonly publicationReview = signal<{ listingId: string; action: PublicationAction } | null>(null);
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
   private readonly requestKeys = new Map<string, string>();
@@ -85,6 +87,23 @@ export class HostListingsPageComponent implements OnInit {
     return this.pendingAction()?.startsWith(`${listingId}:`) ?? false;
   }
 
+  requestPublicationReview(listing: Listing, action: PublicationAction): void {
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    this.publicationReview.set({ listingId: listing.listingId, action });
+  }
+
+  confirmPublicationReview(listing: Listing, action: PublicationAction): void {
+    const review = this.publicationReview();
+    if (review?.listingId !== listing.listingId || review.action !== action) return;
+    this.publicationReview.set(null);
+    void this.performReviewedAction(listing, action);
+  }
+
+  cancelPublicationReview(): void {
+    this.publicationReview.set(null);
+  }
+
   actionLabel(listing: Listing, action: ListingAction): string {
     if (this.pendingAction() === `${listing.listingId}:${action}`) {
       return action === 'publish' ? 'Publishing…'
@@ -99,6 +118,32 @@ export class HostListingsPageComponent implements OnInit {
   }
 
   async performAction(listing: Listing, action: ListingAction): Promise<void> {
+    if (action === 'publish' || action === 'resume') {
+      this.errorMessage.set('Review the public listing text before publishing or resuming.');
+      return;
+    }
+    await this.runAction(listing, action);
+  }
+
+  private async performReviewedAction(
+    listing: Listing,
+    action: PublicationAction,
+  ): Promise<void> {
+    await this.runAction(listing, action, true);
+  }
+
+  private async runAction(
+    listing: Listing,
+    action: ListingAction,
+    publicContentReviewed?: true,
+  ): Promise<void> {
+    if (
+      (action === 'publish' || action === 'resume')
+      && publicContentReviewed !== true
+    ) {
+      this.errorMessage.set('Review the public listing text before publishing or resuming.');
+      return;
+    }
     const operationId = `${listing.listingId}:${action}`;
     if (this.pendingAction()) return;
 
@@ -110,13 +155,21 @@ export class HostListingsPageComponent implements OnInit {
     try {
       switch (action) {
         case 'publish':
-          await this.listingsService.publishListing(listing.listingId, idempotencyKey);
+          await this.listingsService.publishListing(
+            listing.listingId,
+            idempotencyKey,
+            true,
+          );
           break;
         case 'pause':
           await this.listingsService.pauseListing(listing.listingId, idempotencyKey);
           break;
         case 'resume':
-          await this.listingsService.resumeListing(listing.listingId, idempotencyKey);
+          await this.listingsService.resumeListing(
+            listing.listingId,
+            idempotencyKey,
+            true,
+          );
           break;
         case 'archive':
           await this.listingsService.archiveListing(listing.listingId, idempotencyKey);

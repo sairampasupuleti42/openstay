@@ -1,40 +1,109 @@
-<section class="discovery">
-  <p class="eyebrow">Explore</p>
-  <h1>Find a place to belong</h1>
-  <p class="intro">
-    Search by destination and find people who can make your trip feel local.
-  </p>
-  <form class="search-panel" (ngSubmit)="search()">
-    <label>
-      <span>Destination</span>
-      <input
-        name="destination"
-        type="search"
-        placeholder="City or region"
-        [ngModel]="destination()"
-        (ngModelChange)="destination.set($event)"
-      />
-    </label>
-    <button mat-flat-button type="submit">Search hosts</button>
+<main class="page">
+  <header class="intro">
+    <p class="eyebrow">Traveller discovery</p>
+    <h1>Find a place to belong</h1>
+    <p>Explore published stays by location, accommodation type, and the number of guests.</p>
+  </header>
+
+  <form class="search-panel" [formGroup]="form" (ngSubmit)="search()" aria-label="Search stays">
+    <mat-form-field appearance="outline">
+      <mat-label>Country</mat-label>
+      <input matInput formControlName="country" autocomplete="country-name" />
+      <mat-hint>Exact country match</mat-hint>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>City</mat-label>
+      <input matInput formControlName="city" autocomplete="address-level2" />
+      <mat-hint>Exact city match</mat-hint>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Accommodation type</mat-label>
+      <mat-select formControlName="accommodationType">
+        <mat-option value="">Any type</mat-option>
+        @for (option of accommodationOptions; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Minimum guests</mat-label>
+      <mat-select formControlName="minimumGuests">
+        <mat-option [value]="0">Any capacity</mat-option>
+        @for (guests of guestOptions; track guests) {
+          <mat-option [value]="guests">{{ guests }}+ guests</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <div class="search-actions">
+      <button class="primary-action" mat-flat-button type="submit">Search stays</button>
+      <button class="secondary-action" mat-stroked-button type="button" (click)="clearFilters()">
+        Clear filters
+      </button>
+    </div>
   </form>
-  <div class="empty-state" role="status">
-    <span class="empty-icon" aria-hidden="true">⌂</span>
-    <h2>
-      {{
-        destination()
-          ? 'A local connection is on its way'
-          : 'Your next host is closer than you think'
-      }}
-    </h2>
-    <p>
-      @if (destination()) {
-        We’re getting ready to help you find a host in {{ destination() }}.
-        In the meantime, explore the Openstay community story.
-      } @else {
-        Host discovery is coming soon. In the meantime, explore the Openstay
-        community story.
+
+  <section aria-labelledby="results-heading">
+    <header class="results-header">
+      <h2 id="results-heading">Published stays</h2>
+      @if (listings().length > 0) {
+        <p>{{ listings().length }} {{ listings().length === 1 ? 'stay' : 'stays' }} shown</p>
       }
-    </p>
-    <a mat-stroked-button routerLink="/">Back home</a>
-  </div>
-</section>
+    </header>
+
+    @if (isLoading() && listings().length === 0) {
+      <p class="state-panel" role="status">Loading published stays…</p>
+    } @else if (errorMessage()) {
+      <section class="state-panel" aria-labelledby="search-error-heading">
+        <h2 id="search-error-heading">We couldn’t load stays</h2>
+        <p class="error" role="alert">{{ errorMessage() }}</p>
+        <button class="secondary-action" mat-stroked-button type="button" (click)="retry()">
+          Try again
+        </button>
+      </section>
+    } @else if (listings().length === 0) {
+      <section class="state-panel" aria-labelledby="empty-search-heading">
+        <h2 id="empty-search-heading">
+          {{ searchSubmitted() ? 'No stays match those filters yet' : 'No published stays yet' }}
+        </h2>
+        <p>
+          @if (searchSubmitted()) {
+            Try a different city, country, accommodation type, or guest capacity.
+          } @else {
+            Check back soon to discover places shared by Openstay hosts.
+          }
+        </p>
+        @if (searchSubmitted()) {
+          <button class="secondary-action" mat-stroked-button type="button" (click)="clearFilters()">
+            Clear filters
+          </button>
+        }
+      </section>
+    } @else {
+      <div class="listing-grid" aria-label="Published stays">
+        @for (listing of listings(); track listing.listingId) {
+          <app-public-listing-card [listing]="listing" />
+        }
+      </div>
+    }
+
+    @if (isLoading() && listings().length > 0) {
+      <p class="state-panel" role="status">Refreshing stays…</p>
+    }
+    @if (isLoadingMore()) {
+      <p class="state-panel" role="status">Loading more stays…</p>
+    }
+    @if (hasMore() && !errorMessage()) {
+      <div class="load-more">
+        <button
+          class="secondary-action"
+          mat-stroked-button
+          type="button"
+          [disabled]="isLoadingMore()"
+          (click)="loadMore()"
+        >
+          Load more stays
+        </button>
+      </div>
+    }
+  </section>
+</main>

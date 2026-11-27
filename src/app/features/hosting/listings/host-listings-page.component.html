@@ -56,6 +56,30 @@
               {{ listing.updatedAt.toDate() | date: 'mediumDate' }}
             </time>
           </p>
+          @if (publicationReview()?.listingId === listing.listingId) {
+            <section class="review-confirmation" aria-label="Public listing review">
+              <p>
+                Review every public text field before continuing. Automated checks can miss
+                residential addresses or personal information.
+              </p>
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                (click)="confirmPublicationReview(listing, publicationReview()!.action)"
+              >
+                I reviewed it — {{ publicationReview()!.action === 'publish' ? 'publish' : 'resume' }}
+              </button>
+              <button
+                class="text-action"
+                mat-button
+                type="button"
+                (click)="cancelPublicationReview()"
+              >
+                Cancel
+              </button>
+            </section>
+          }
           <div class="card-actions">
             <a class="text-action" mat-button [routerLink]="['/hosting/listings', listing.listingId]">
               Preview
@@ -69,7 +93,7 @@
                 mat-button
                 type="button"
                 [disabled]="isActionPendingFor(listing.listingId)"
-                (click)="performAction(listing, 'publish')"
+                (click)="requestPublicationReview(listing, 'publish')"
               >
                 {{ actionLabel(listing, 'publish') }}
               </button>
@@ -107,7 +131,7 @@
                 mat-button
                 type="button"
                 [disabled]="isActionPendingFor(listing.listingId)"
-                (click)="performAction(listing, 'resume')"
+                (click)="requestPublicationReview(listing, 'resume')"
               >
                 {{ actionLabel(listing, 'resume') }}
               </button>

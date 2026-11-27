@@ -1,0 +1,92 @@
+<main class="page">
+  @if (isLoading()) {
+    <p class="state-panel" role="status">Loading stay details…</p>
+  } @else if (errorMessage()) {
+    <section class="state-panel" aria-labelledby="detail-error-heading">
+      <h1 id="detail-error-heading">Stay details unavailable</h1>
+      <p class="error" role="alert">{{ errorMessage() }}</p>
+      <div class="actions">
+        <button class="primary-action" mat-flat-button type="button" (click)="loadListing()">
+          Try again
+        </button>
+        <a mat-stroked-button routerLink="/explore">Back to explore</a>
+      </div>
+    </section>
+  } @else if (isUnavailable()) {
+    <section class="state-panel" aria-labelledby="detail-unavailable-heading">
+      <h1 id="detail-unavailable-heading">This stay is no longer available</h1>
+      <p class="muted">It may have been paused or removed from public discovery.</p>
+      <a class="primary-action" mat-flat-button routerLink="/explore">Explore other stays</a>
+    </section>
+  } @else if (listing(); as stay) {
+    <article class="panel" aria-labelledby="listing-title">
+      <p class="eyebrow">Openstay stay</p>
+      <h1 id="listing-title">{{ stay.title }}</h1>
+      <p class="location">
+        {{ stay.city }}, {{ stay.country }}
+        @if (stay.region) { · {{ stay.region }} }
+      </p>
+      <p class="description">{{ stay.description }}</p>
+
+      <dl class="facts">
+        <div class="fact">
+          <dt>Accommodation</dt>
+          <dd>{{ accommodationLabel(stay.accommodationType) }}</dd>
+        </div>
+        <div class="fact">
+          <dt>Guest capacity</dt>
+          <dd>Up to {{ stay.guestCapacity }}</dd>
+        </div>
+        <div class="fact">
+          <dt>Bedrooms · beds</dt>
+          <dd>{{ stay.bedrooms }} · {{ stay.beds }}</dd>
+        </div>
+        <div class="fact">
+          <dt>Bathrooms</dt>
+          <dd>{{ stay.bathrooms }}</dd>
+        </div>
+      </dl>
+
+      @if (stay.amenities.length > 0) {
+        <section aria-labelledby="amenities-heading">
+          <h2 id="amenities-heading">Amenities</h2>
+          <ul class="tag-list">
+            @for (amenity of stay.amenities; track amenity) {
+              <li>{{ accommodationLabel(amenity) }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (stay.houseRules.length > 0) {
+        <section aria-labelledby="rules-heading">
+          <h2 id="rules-heading">House rules</h2>
+          <ul class="rules">
+            @for (rule of stay.houseRules; track $index) {
+              <li>{{ rule }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      @if (stay.host; as host) {
+        <section aria-labelledby="host-heading">
+          <h2 id="host-heading">Your host</h2>
+          <div class="host">
+            <h3>{{ host.displayName }}</h3>
+            @if (host.introduction) {
+              <p>{{ host.introduction }}</p>
+            }
+            @if (host.languages.length > 0) {
+              <p class="host-languages">Languages: {{ host.languages.join(', ') }}</p>
+            }
+          </div>
+        </section>
+      }
+
+      <div class="actions">
+        <a class="primary-action" mat-flat-button routerLink="/explore">Back to explore</a>
+      </div>
+    </article>
+  }
+</main>

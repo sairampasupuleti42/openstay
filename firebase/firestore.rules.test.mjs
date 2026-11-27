@@ -637,7 +637,7 @@ test('host profile writes require an active account', async () => {
   await assertFails(setDoc(hostRef, hostProfile(uid)));
 });
 
-test('public host reads are denied after suspension', async () => {
+test('host profile document reads are denied to public clients', async () => {
   const uid = 'suspended-public-host';
   const owner = authenticatedDb(uid, true);
   const anonymous = testEnv.unauthenticatedContext().firestore();
@@ -646,7 +646,7 @@ test('public host reads are denied after suspension', async () => {
   await assertSucceeds(updateDoc(doc(owner, `hostProfiles/${uid}`), {
     visibility: 'public', updatedAt: serverTimestamp(),
   }));
-  await assertSucceeds(getDoc(doc(anonymous, `hostProfiles/${uid}`)));
+  await assertFails(getDoc(doc(anonymous, `hostProfiles/${uid}`)));
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await updateDoc(doc(context.firestore(), `users/${uid}`), { accountStatus: 'suspended' });
   });
@@ -688,7 +688,7 @@ test('host profile rules reject unknown fields and invalid types', async (t) => 
   }
 });
 
-test('public host profiles are readable publicly only after visibility changes', async () => {
+test('host profile documents are client-private even when profile visibility is public', async () => {
   const uid = 'host-visibility-owner';
   const ownerDb = authenticatedDb(uid, true);
   await seedHostConsent(uid);
@@ -703,7 +703,10 @@ test('public host profiles are readable publicly only after visibility changes',
     visibility: 'public',
     updatedAt: serverTimestamp(),
   }));
-  await assertSucceeds(getDoc(doc(anonymousDb, `hostProfiles/${uid}`)));
+  await assertSucceeds(getDoc(doc(ownerDb, `hostProfiles/${uid}`)));
+  await assertFails(getDoc(doc(anonymousDb, `hostProfiles/${uid}`)));
+  await assertFails(getDoc(doc(authenticatedDb('host-profile-outsider'), `hostProfiles/${uid}`)));
+  await assertFails(getDocs(collection(anonymousDb, 'hostProfiles')));
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await updateDoc(doc(context.firestore(), `hostPrivate/${uid}`), { termsDigest: 'old-digest' });
@@ -1011,7 +1014,7 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
     assert.ok(result.docs.every((snapshot) => snapshot.data().hostUid === hostUid));
   });
 
-  await t.test('eligible published listings are readable by ID, but public queries are denied', async () => {
+  await t.  test('published listing documents and queries are client-private', async () => {
     const publishedId = 'listing-published-1';
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(
@@ -1024,7 +1027,9 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
       );
     });
 
-    await assertSucceeds(getDoc(doc(anonymousDb, `listings/${publishedId}`)));
+    await assertFails(getDoc(doc(anonymousDb, `listings/${publishedId}`)));
+    await assertFails(getDoc(doc(authenticatedDb('published-listing-outsider'), `listings/${publishedId}`)));
+    await assertSucceeds(getDoc(doc(hostDb, `listings/${publishedId}`)));
 
     const publishedQuery = query(
       collection(anonymousDb, 'listings'),
@@ -1034,6 +1039,10 @@ test('listing writes enforce owner, eligibility, and lifecycle access', async (t
     );
     await assertFails(getDocs(publishedQuery));
     await assertFails(getDocs(collection(anonymousDb, 'listings')));
+    await assertFails(getDocs(query(
+      collection(authenticatedDb('published-listing-outsider'), 'listings'),
+      where('status', '==', 'published'),
+    )));
   });
 
   await t.test('anonymous users cannot directly read paused or archived listings', async () => {
@@ -1092,7 +1101,7 @@ test('listing query cursors preserve documents with matching timestamps', async 
   assert.deepEqual(second.docs.map((snapshot) => snapshot.id), ids.slice(2));
 });
 
-test('public listing reads require an active host with current consent', async (t) => {
+test('listing documents remain owner-only regardless of publication or host eligibility', async (t) => {
   const anonymousDb = testEnv.unauthenticatedContext().firestore();
   const cases = [
     ['suspended host', 'accountStatus', 'suspended'],
@@ -1116,7 +1125,9 @@ test('public listing reads require an active host with current consent', async (
       });
 
       const listingRef = doc(anonymousDb, `listings/${listingId}`);
-      await assertSucceeds(getDoc(listingRef));
+      await assertFails(getDoc(listingRef));
+      await assertFails(getDoc(doc(authenticatedDb('listing-public-outsider'), `listings/${listingId}`)));
+      await assertSucceeds(getDoc(doc(authenticatedDb(uid), `listings/${listingId}`)));
 
       await testEnv.withSecurityRulesDisabled(async (context) => {
         const collectionName = field === 'accountStatus' ? 'users' : 'hostPrivate';

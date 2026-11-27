@@ -154,12 +154,15 @@ describe('ListingEditorPageComponent', () => {
       country: 'New Zealand',
       city: 'Wellington',
     });
+    component.form.markAsDirty();
     createDraft.mockRejectedValueOnce(new Error('Your host consent is no longer current.'));
 
     await component.saveDraft();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]')?.textContent)
       .toContain('Your host consent is no longer current.');
+    expect(component.form.controls.title.value).toBe('A welcoming stay near the centre');
+    expect(component.form.dirty).toBe(true);
   });
 
   it('keeps unsaved edits visible and allows retry after an edit save failure', async () => {
