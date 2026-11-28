@@ -55,6 +55,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'account/blocked-users',
+    canActivate: [authenticatedGuard],
+    loadComponent: () =>
+      import('./features/trust/blocked-users-page.component').then(
+        (module) => module.BlockedUsersPageComponent,
+      ),
+  },
+  {
     path: 'requests',
     canActivate: [authenticatedGuard],
     children: [

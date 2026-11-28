@@ -3,6 +3,7 @@ import { FieldPath, FieldValue, getFirestore, Timestamp } from 'firebase-admin/f
 import { CallableRequest, HttpsError, onCall } from 'firebase-functions/v2/https';
 import { HOST_PARTICIPATION_TERMS_DIGEST, HOST_PARTICIPATION_TERMS_VERSION } from './host-participation.js';
 import { isSafePublicText } from './public-listings.js';
+import { readBlockRelationship } from '../trust/blocking.js';
 
 const options = { region: 'us-central1', enforceAppCheck: process.env['FUNCTIONS_EMULATOR'] !== 'true' };
 const idPattern = /^[a-f0-9]{64}$/;
@@ -243,7 +244,7 @@ export async function getOrCreateConversation(
 
   const requestRef = db.doc(`hostingRequests/${requestId}`);
   const conversationRef = db.doc(`conversations/${requestId}`);
-  const [requestSnapshot, conversationSnapshot, host, traveller] = await db.runTransaction(
+  const [requestSnapshot, conversationSnapshot, host, traveller, viewerBlockedOther] = await db.runTransaction(
     async (tx) => {
       const requestDoc = await tx.get(requestRef);
       const participants = assertRequestParticipants(requestDoc.data(), requestId);
@@ -262,12 +263,21 @@ export async function getOrCreateConversation(
           || !eligibleTraveller(actorDoc)) {
         throw new HttpsError('failed-precondition', 'The conversation participants are not currently eligible.');
       }
+      const relationship = await readBlockRelationship(
+        tx,
+        db,
+        uid,
+        uid === participants.hostUid ? participants.travellerUid : participants.hostUid,
+      );
       if (conversationDoc.exists) {
         if (!validConversation(conversationDoc.data(), requestId, participants.listingId,
           participants.hostUid, participants.travellerUid)) {
           throw new HttpsError('failed-precondition', 'The conversation requires attention.');
         }
       } else {
+        if (relationship.blocked) {
+          throw new HttpsError('failed-precondition', 'This interaction is unavailable.');
+        }
         if (requestDoc.data()?.['status'] !== 'accepted') {
           throw new HttpsError('failed-precondition', 'Messaging is available only for accepted stays.');
         }
@@ -275,7 +285,7 @@ export async function getOrCreateConversation(
           requestId, participants.listingId, participants.hostUid, participants.travellerUid,
         ));
       }
-      return [requestDoc, conversationDoc, hostDoc, travellerDoc] as const;
+      return [requestDoc, conversationDoc, hostDoc, travellerDoc, relationship.firstBlockedSecond] as const;
     },
   );
   const participants = assertRequestParticipants(requestSnapshot.data(), requestId);
@@ -283,9 +293,8 @@ export async function getOrCreateConversation(
     conversationId: requestId,
     requestId,
     listingId: participants.listingId,
-    hostUid: participants.hostUid,
-    travellerUid: participants.travellerUid,
     status: requestSnapshot.data()?.['status'],
+    viewerHasBlockedOther: viewerBlockedOther,
     otherParticipantName: (() => {
       const profile = uid === participants.hostUid ? traveller.data() : host.data();
       const name = profile?.['displayName'];
@@ -367,6 +376,9 @@ export async function sendMessage(
         throw new HttpsError('already-exists', 'This message submission key has already been used.');
       }
       return;
+    }
+    if ((await readBlockRelationship(tx, db, uid, recipientUid)).blocked) {
+      throw new HttpsError('failed-precondition', 'This interaction is unavailable.');
     }
     const now = Timestamp.now();
     const rateData = rate.data();

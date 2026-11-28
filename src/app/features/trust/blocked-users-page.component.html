@@ -1,0 +1,39 @@
+<main class="page">
+  <section class="panel">
+    <h1>Blocked users</h1>
+    <p class="muted">Blocking prevents new requests, acceptance, conversations, messages, and reviews. Existing request, stay, and conversation history remains available. Blocking does not cancel a stay.</p>
+    @if (loading() && users().length === 0) {
+      <p class="state" role="status">Loading blocked users…</p>
+    }
+    @if (error()) {
+      <div class="state">
+        <p class="error" role="alert">{{ error() }}</p>
+        <button mat-button type="button" (click)="load()">Try again</button>
+      </div>
+    }
+    @if (success()) { <p role="status">{{ success() }}</p> }
+    @if (!loading() && !error() && users().length === 0) {
+      <p class="state">You have not blocked anyone.</p>
+    }
+    @if (users().length > 0) {
+      <div class="list" aria-label="Blocked users">
+        @for (user of users(); track user.uid) {
+          <article class="entry">
+            <h2>{{ user.displayName }}</h2>
+            <button mat-stroked-button type="button"
+              [disabled]="unblockingUid() !== ''"
+              (click)="unblock(user)">
+              {{ unblockingUid() === user.uid ? 'Unblocking…' : 'Unblock' }}
+            </button>
+          </article>
+        }
+      </div>
+    }
+    @if (cursor() && !loading() && !error()) {
+      <button mat-stroked-button type="button" [disabled]="loadingMore()" (click)="load(true)">
+        {{ loadingMore() ? 'Loading…' : 'Load more' }}
+      </button>
+    }
+    <a mat-button routerLink="/dashboard">Back to dashboard</a>
+  </section>
+</main>

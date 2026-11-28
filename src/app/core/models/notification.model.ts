@@ -8,7 +8,12 @@ export type NotificationType =
   | 'traveller_request_accepted'
   | 'traveller_request_declined'
   | 'traveller_stay_cancelled'
-  | 'new_message';
+  | 'new_message'
+  | 'stay_completion_requested'
+  | 'stay_completion_disputed'
+  | 'stay_completion_window_expired'
+  | 'stay_completed'
+  | 'stay_review_received';
 
 export interface StayNotification {
   notificationId: string;

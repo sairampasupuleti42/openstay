@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { AuthService } from '../../core/auth/auth.service';
 import { ConversationMessage } from '../../core/models/conversation.model';
+import { BlockService } from '../../core/services/block.service';
 import { ConversationService } from '../../core/services/conversation.service';
 
 @Component({
@@ -35,6 +36,7 @@ import { ConversationService } from '../../core/services/conversation.service';
 export class ConversationDetailPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly service = inject(ConversationService);
+  private readonly blocks = inject(BlockService);
   private readonly auth = inject(AuthService);
   private unsubscribeMessages?: () => void;
   private olderHistoryLoaded = false;
@@ -44,12 +46,14 @@ export class ConversationDetailPageComponent implements OnInit, OnDestroy {
 
   readonly conversationId = signal('');
   readonly otherParticipantName = signal('Openstay member');
+  readonly viewerHasBlockedOther = signal(false);
   readonly status = signal('');
   readonly messages = signal<ConversationMessage[]>([]);
   readonly text = signal('');
   readonly loading = signal(true);
   readonly loadingOlder = signal(false);
   readonly sending = signal(false);
+  readonly blocking = signal(false);
   readonly hasOlder = signal(false);
   readonly cursor = signal<QueryDocumentSnapshot<DocumentData> | null>(null);
   readonly error = signal('');
@@ -73,6 +77,7 @@ export class ConversationDetailPageComponent implements OnInit, OnDestroy {
       const conversation = await this.service.open(this.requestId);
       this.conversationId.set(conversation.conversationId);
       this.otherParticipantName.set(conversation.otherParticipantName);
+      this.viewerHasBlockedOther.set(conversation.viewerHasBlockedOther);
       this.status.set(conversation.status);
       this.unsubscribeMessages = this.service.watchMessages(
         this.requestId,
@@ -127,7 +132,7 @@ export class ConversationDetailPageComponent implements OnInit, OnDestroy {
 
   async send(): Promise<void> {
     const text = this.text().normalize('NFKC').replace(/\r\n?/g, '\n').trim();
-    if (this.sending() || this.status() !== 'accepted') return;
+    if (this.sending() || this.status() !== 'accepted' || this.viewerHasBlockedOther()) return;
     if (!text || text.length > 2000) {
       this.sendError.set('Enter a message of up to 2,000 characters.');
       return;
@@ -153,6 +158,25 @@ export class ConversationDetailPageComponent implements OnInit, OnDestroy {
       this.sendError.set(this.service.errorMessage(error));
     } finally {
       this.sending.set(false);
+    }
+  }
+
+  async blockParticipant(): Promise<void> {
+    if (!this.requestId || this.blocking() || this.viewerHasBlockedOther()) return;
+    if (!window.confirm(
+      `Block ${this.otherParticipantName()}? New requests, acceptance, conversations, messages, and reviews will be prevented. Existing history remains available, and an accepted stay will not be cancelled.`,
+    )) return;
+    this.blocking.set(true);
+    this.sendError.set('');
+    this.success.set('');
+    try {
+      await this.blocks.blockRequest(this.requestId);
+      this.viewerHasBlockedOther.set(true);
+      this.success.set('This participant is blocked from future interactions. Existing history remains available.');
+    } catch (error) {
+      this.sendError.set(this.blocks.errorMessage(error));
+    } finally {
+      this.blocking.set(false);
     }
   }
 

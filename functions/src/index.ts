@@ -25,6 +25,13 @@ export {
   decideHostingRequest,
 } from './hosting/hosting-requests.js';
 export {
+  initiateStayCompletion,
+  confirmStayCompletion,
+  disputeStayCompletion,
+  submitStayReview,
+  expireStayCompletionWindows,
+} from './hosting/stay-completion.js';
+export {
   openConversation,
   sendConversationMessage,
   listConversations,
@@ -37,3 +44,9 @@ export {
   markNotificationRead,
   markAllNotificationsRead,
 } from './hosting/notifications.js';
+export {
+  blockUser,
+  blockRequestParticipant,
+  unblockUser,
+  listBlockedUsers,
+} from './trust/blocking.js';

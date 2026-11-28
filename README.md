@@ -12,9 +12,13 @@ API inventory, security approach, milestones, and review checklist are in
 [docs/phase-0-architecture.md](docs/phase-0-architecture.md).
 
 Implementation includes host listing management, initial public discovery,
-and the M4.1 hosting request foundation and M4.2 host decisions. The roadmap
-remains a proposal; booking, messaging, availability calendars and completion
-remain unimplemented.
+M4.1 hosting requests, M4.2 host decisions and stays, M4.3 messaging and
+notifications, and M5.1 mutual stay completion and reviews. The request remains
+the authoritative stay record; separate bookings and availability calendars
+are not implemented. M5.2 adds participant blocking and private trust-feature
+foundations. Identity verification and report intake are unavailable; Openstay
+does not claim to verify identities or provide a staffed safety-response
+service.
 
 ## Current implementation
 
@@ -36,13 +40,14 @@ Travellers can submit a request for a published listing, view their request
 history, and cancel pending requests. Hosts can view incoming requests and
 accept or decline them; acceptance confirms the stay, and either participant
 can cancel a confirmed stay. Submitting a request alone does not confirm a
-stay. The request remains the stay record; separate bookings, completion,
-messaging, and availability calendars are not implemented.
+stay. The request remains the stay record. M5.1 completion requires both
+participants to confirm after checkout, and reviews are eligible only after
+that mutual confirmation.
 
 See [listing and request architecture](docs/listings-and-hosting-requests-architecture.md)
 for the implemented behavior, callable contracts, privacy boundaries, and
-limitations. Photo uploads and an independent moderation/reporting workflow
-also remain unimplemented.
+limitations. Photo uploads and the authorized staff moderation, investigation,
+appeal, and report-resolution workflows remain unimplemented.
 
 ### Prerequisites
 
@@ -96,16 +101,23 @@ and in the M3.3 implementation record.
 
 - **Content safety:** Screening is heuristic and host confirmation is a
   self-attestation, not proof of review or independent moderation. Implement
-  and staff independent moderation, reporting, and abuse-handling processes
-  before public launch; sensitive or harmful text can still evade screening.
+  and staff independent moderation and abuse-handling processes before public
+  launch; sensitive or harmful text can still evade screening. M5.2 does not
+  provide report intake; reports are not an operational safety service until
+  M5.3 provides authorized staff and resolution workflows.
 - **Discovery and future features:** Initial discovery supports exact country
   and city, accommodation type, and minimum guest filters with bounded
   pagination. Acceptance prevents overlapping confirmed stays, but there is
   no availability calendar or date-based discovery. Remaining discovery
   acceptance, including privacy review and cost measurement, belongs to M4.
   M4 feature development may proceed; this is not production deployment
-  approval. Photos, availability calendars, booking records, completion, and
-  messaging require separate implementation and approval.
+  approval. Photos and availability calendars remain deferred. M5.1 publishes
+  anonymous ratings; optional review notes are private to the author. Review
+  moderation and dispute resolution remain deferred to later safety work.
+  M5.2 blocking prevents future interactions, preserves existing history, and
+  does not cancel accepted stays. Verification provider integration and
+  operational report handling are deferred; staff authorization remains M5.3
+  scope.
 - **Development deployment (2026-11-27):** Hosting, Firestore rules, and index
   definitions were deployed to `open-stay`; the listed composite indexes
   report `READY`. Functions deployment previously failed because required APIs

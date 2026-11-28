@@ -14,6 +14,13 @@
         <div class="header-actions">
           <a mat-stroked-button [routerLink]="['/requests', requestId]">View stay details</a>
           <a mat-button routerLink="/messages">All conversations</a>
+          @if (viewerHasBlockedOther()) {
+            <p role="status">You blocked this participant. Existing history remains available.</p>
+          } @else {
+            <button mat-button type="button" [disabled]="blocking()" (click)="blockParticipant()">
+              {{ blocking() ? 'Blocking…' : 'Block participant' }}
+            </button>
+          }
         </div>
       </header>
       @if (error()) {
@@ -44,7 +51,9 @@
           </article>
         }
       </div>
-      @if (status() === 'accepted') {
+      @if (status() === 'accepted' && viewerHasBlockedOther()) {
+        <p class="state muted">You blocked this participant. Existing messages remain available, but you cannot send new messages.</p>
+      } @else if (status() === 'accepted') {
         <form class="composer" (submit)="$event.preventDefault(); send()">
           <label for="message-text">Your message</label>
           <textarea

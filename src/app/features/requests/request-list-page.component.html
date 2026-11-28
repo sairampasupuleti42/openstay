@@ -20,6 +20,15 @@
           <p>{{ request.guestCount }} guest(s) ·
             {{ request.status === 'accepted' ? 'Accepted' : request.status }}
           </p>
+          @if (request.status === 'accepted' && request.completion.status === 'completed') {
+            <p>Completed by mutual participant confirmation.</p>
+          } @else if (request.status === 'accepted' && request.completion.reason === 'disputed') {
+            <p>Completion disputed — stay remains incomplete.</p>
+          } @else if (request.status === 'accepted' && request.completion.reason === 'response_window_expired') {
+            <p>Confirmation window expired — stay remains incomplete.</p>
+          } @else if (request.status === 'accepted' && request.completion.reason === 'awaiting_confirmation') {
+            <p>{{ request.completion.viewerConfirmed ? 'Awaiting the other participant’s confirmation.' : 'Your confirmation is needed.' }}</p>
+          }
           <a mat-stroked-button [routerLink]="['/requests', request.requestId]">View details</a>
           <a mat-button [routerLink]="['/listings', request.listingId]">View listing</a>
         </article>

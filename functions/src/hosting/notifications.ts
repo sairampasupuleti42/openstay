@@ -15,7 +15,12 @@ type NotificationType =
   | 'traveller_request_accepted'
   | 'traveller_request_declined'
   | 'traveller_stay_cancelled'
-  | 'new_message';
+  | 'new_message'
+  | 'stay_completion_requested'
+  | 'stay_completion_disputed'
+  | 'stay_completion_window_expired'
+  | 'stay_completed'
+  | 'stay_review_received';
 
 interface NotificationContent {
   type: NotificationType;
@@ -58,6 +63,31 @@ const content: Record<NotificationType, NotificationContent> = {
     type: 'new_message',
     title: 'New message',
     message: 'You received a new message about your stay.',
+  },
+  stay_completion_requested: {
+    type: 'stay_completion_requested',
+    title: 'Confirm your stay',
+    message: 'The other participant confirmed the stay. Please confirm or dispute it.',
+  },
+  stay_completion_disputed: {
+    type: 'stay_completion_disputed',
+    title: 'Stay completion disputed',
+    message: 'The stay remains incomplete because a participant disputed completion.',
+  },
+  stay_completion_window_expired: {
+    type: 'stay_completion_window_expired',
+    title: 'Confirmation window expired',
+    message: 'The stay remains incomplete because the confirmation window expired.',
+  },
+  stay_completed: {
+    type: 'stay_completed',
+    title: 'Stay completed',
+    message: 'Both participants confirmed that the stay happened and concluded.',
+  },
+  stay_review_received: {
+    type: 'stay_review_received',
+    title: 'New stay review',
+    message: 'A participant submitted a review about a completed stay.',
   },
 };
 
@@ -225,6 +255,47 @@ export async function processRequestTransitionNotification(
     notificationContent = hostCancelled
       ? content['traveller_stay_cancelled']
       : content['host_stay_cancelled'];
+  } else if (transition['action'] === 'completion_initiated'
+      && transition['fromCompletionStatus'] === 'not_started'
+      && transition['toCompletionStatus'] === 'pending'
+      && (transition['actorUid'] === request['hostUid']
+        || transition['actorUid'] === request['travellerUid'])) {
+    recipientUid = transition['actorUid'] === request['hostUid']
+      ? request['travellerUid']
+      : request['hostUid'];
+    notificationContent = content['stay_completion_requested'];
+  } else if (transition['action'] === 'completion_confirmed'
+      && transition['toCompletionStatus'] === 'completed'
+      && (transition['actorUid'] === request['hostUid']
+        || transition['actorUid'] === request['travellerUid'])) {
+    recipientUid = transition['actorUid'] === request['hostUid']
+      ? request['travellerUid']
+      : request['hostUid'];
+    notificationContent = content['stay_completed'];
+  } else if (transition['action'] === 'completion_disputed'
+      && transition['toCompletionStatus'] === 'pending'
+      && (transition['actorUid'] === request['hostUid']
+        || transition['actorUid'] === request['travellerUid'])) {
+    recipientUid = transition['actorUid'] === request['hostUid']
+      ? request['travellerUid']
+      : request['hostUid'];
+    notificationContent = content['stay_completion_disputed'];
+  } else if (transition['action'] === 'completion_window_expired'
+      && transition['completionReason'] === 'response_window_expired'
+      && (transition['actorUid'] === request['hostUid']
+        || transition['actorUid'] === request['travellerUid'])) {
+    recipientUid = transition['actorUid'];
+    notificationContent = content['stay_completion_window_expired'];
+  } else if (transition['action'] === 'review_submitted'
+      && transition['fromStatus'] === 'completed'
+      && transition['toStatus'] === 'completed'
+      && (transition['actorUid'] === request['hostUid']
+        || transition['actorUid'] === request['travellerUid'])
+      && (transition['subjectUid'] === request['hostUid']
+        || transition['subjectUid'] === request['travellerUid'])
+      && transition['actorUid'] !== transition['subjectUid']) {
+    recipientUid = transition['subjectUid'];
+    notificationContent = content['stay_review_received'];
   } else {
     return;
   }

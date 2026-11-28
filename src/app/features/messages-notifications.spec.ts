@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { AuthService } from '../core/auth/auth.service';
 import { RealtimeMessagePage } from '../core/models/conversation.model';
 import { ConversationService } from '../core/services/conversation.service';
+import { BlockService } from '../core/services/block.service';
 import { NotificationService } from '../core/services/notification.service';
 import { ConversationDetailPageComponent } from './messages/conversation-detail-page.component';
 import { ConversationListPageComponent } from './messages/conversation-list-page.component';
@@ -17,6 +18,7 @@ describe('M4.3 messaging and notification pages', () => {
   const listConversations = vi.fn();
   const openConversation = vi.fn();
   const sendMessage = vi.fn();
+  const blockUser = vi.fn();
   const markConversationRead = vi.fn();
   const watchMessages = vi.fn();
   const loadOlderMessages = vi.fn();
@@ -45,8 +47,10 @@ describe('M4.3 messaging and notification pages', () => {
       listingId: 'listing-1',
       status: 'accepted',
       otherParticipantName: 'Host',
+      viewerHasBlockedOther: false,
     });
     sendMessage.mockResolvedValue({ messageId: 'message-1' });
+    blockUser.mockResolvedValue(undefined);
     markConversationRead.mockResolvedValue(undefined);
     markNotificationRead.mockResolvedValue(undefined);
     watchMessages.mockImplementation((_id, next) => {
@@ -105,6 +109,13 @@ describe('M4.3 messaging and notification pages', () => {
             markRead: markConversationRead,
             watchMessages,
             loadOlder: loadOlderMessages,
+            errorMessage: (error: unknown) => error instanceof Error ? error.message : 'Error',
+          },
+        },
+        {
+          provide: BlockService,
+          useValue: {
+            blockRequest: blockUser,
             errorMessage: (error: unknown) => error instanceof Error ? error.message : 'Error',
           },
         },
@@ -220,6 +231,24 @@ describe('M4.3 messaging and notification pages', () => {
 
     expect(loadOlderMessages).toHaveBeenNthCalledWith(1, requestId, recentCursor);
     expect(loadOlderMessages).toHaveBeenNthCalledWith(2, requestId, olderCursor);
+    fixture.destroy();
+  });
+
+  it('confirms blocking in a conversation and disables future messages without hiding history', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const fixture = TestBed.createComponent(ConversationDetailPageComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const component = fixture.componentInstance;
+    await component.blockParticipant();
+    expect(blockUser).not.toHaveBeenCalled();
+    await component.blockParticipant();
+    fixture.detectChanges();
+    expect(blockUser).toHaveBeenCalledWith('host-1');
+    expect(fixture.nativeElement.textContent).toContain('Existing messages remain available');
+    expect(fixture.nativeElement.textContent).not.toContain('Send message');
+    expect(fixture.nativeElement.textContent).toContain('Coordinate your arrival here.');
+    confirm.mockRestore();
     fixture.destroy();
   });
 });

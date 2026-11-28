@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { FirebaseApp } from '@angular/fire/app';
 import { environment } from '../../../environments/environment';
-import { HostingRequestDetails, HostingRequestInput, HostingRequestPage } from '../models/hosting-request.model';
+import {
+  HostingRequestDetails,
+  HostingRequestInput,
+  HostingRequestPage,
+  StayCompletionState,
+} from '../models/hosting-request.model';
 
 @Injectable({ providedIn: 'root' })
 export class HostingRequestService {
@@ -31,6 +36,34 @@ export class HostingRequestService {
     )({ requestId, action });
   }
 
+  async initiateCompletion(requestId: string): Promise<StayCompletionState> {
+    return this.completionCall('initiateStayCompletion', requestId);
+  }
+
+  async confirmCompletion(requestId: string): Promise<StayCompletionState> {
+    return this.completionCall('confirmStayCompletion', requestId);
+  }
+
+  async disputeCompletion(requestId: string): Promise<StayCompletionState> {
+    return this.completionCall('disputeStayCompletion', requestId);
+  }
+
+  async submitReview(
+    requestId: string,
+    rating: number,
+    text: string,
+  ): Promise<{ reviewId: string; submitted: true }> {
+    const { sdk, functions } = await this.getFunctions();
+    return (await sdk.httpsCallable<
+      { requestId: string; rating: number; text?: string },
+      { reviewId: string; submitted: true }
+    >(functions, 'submitStayReview')({
+      requestId,
+      rating,
+      ...(text.trim() ? { text } : {}),
+    })).data;
+  }
+
   errorMessage(error: unknown): string {
     return error instanceof Error && error.message.trim() ? error.message : 'Something went wrong. Please try again.';
   }
@@ -42,5 +75,16 @@ export class HostingRequestService {
       if (environment.useEmulators) sdk.connectFunctionsEmulator(this.functions, '127.0.0.1', 5001);
     }
     return { sdk, functions: this.functions };
+  }
+
+  private async completionCall(
+    name: 'initiateStayCompletion' | 'confirmStayCompletion' | 'disputeStayCompletion',
+    requestId: string,
+  ): Promise<StayCompletionState> {
+    const { sdk, functions } = await this.getFunctions();
+    return (await sdk.httpsCallable<
+      { requestId: string },
+      StayCompletionState
+    >(functions, name)({ requestId })).data;
   }
 }

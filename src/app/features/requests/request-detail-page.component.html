@@ -21,10 +21,94 @@
       @if (request.otherParticipantName) {
         <p>{{ request.viewerIsHost ? 'Traveller' : 'Host' }}: {{ request.otherParticipantName }}</p>
       }
+      @if (request.viewerHasBlockedOther) {
+        <p role="status">You blocked this participant. Existing history remains available; future interactions are disabled.</p>
+      } @else {
+        <button mat-button type="button" [disabled]="blockingParticipant()" (click)="blockParticipant(request)">
+          {{ blockingParticipant() ? 'Blocking…' : 'Block ' + (request.otherParticipantName || 'participant') }}
+        </button>
+      }
       @if (request.status === 'accepted') {
         <button mat-flat-button type="button" [disabled]="openingConversation()" (click)="openConversation()">
           {{ openingConversation() ? 'Opening…' : 'Message ' + (request.otherParticipantName || 'participant') }}
         </button>
+      }
+      @if (request.status === 'accepted') {
+        <section aria-labelledby="completion-heading">
+          <h2 id="completion-heading">Stay completion</h2>
+          @if (request.completion.status === 'not_started') {
+            @if (canStartCompletion()) {
+              <p>Confirm that the stay happened and concluded. The other participant must also confirm within seven days.</p>
+              <button mat-flat-button type="button" [disabled]="completionActing()" (click)="initiateCompletion()">
+                {{ completionActing() ? 'Saving…' : 'Confirm stay completed' }}
+              </button>
+            } @else {
+              <p>Completion confirmation becomes available after the scheduled checkout date has passed.</p>
+            }
+          } @else if (request.completion.status === 'pending') {
+            @if (request.completion.reason === 'disputed') {
+              <p role="status">Completion is disputed. This stay remains incomplete and is not eligible for reviews.</p>
+            } @else if (request.completion.reason === 'response_window_expired') {
+              <p role="status">The seven-day response window expired. This stay remains incomplete; there is no automatic completion.</p>
+              <button mat-button type="button" [disabled]="completionActing()" (click)="disputeCompletion()">
+                Dispute completion
+              </button>
+            } @else {
+              @if (request.completion.viewerConfirmed) {
+                <p role="status">You confirmed. Waiting for the other participant until {{ request.completion.responseDeadline }}.</p>
+              } @else {
+                <p>The other participant confirmed. Please independently confirm or dispute within seven days.</p>
+                <button mat-flat-button type="button" [disabled]="completionActing()" (click)="confirmCompletion()">
+                  {{ completionActing() ? 'Saving…' : 'Confirm stay completed' }}
+                </button>
+              }
+              <button mat-button type="button" [disabled]="completionActing()" (click)="disputeCompletion()">
+                Dispute completion
+              </button>
+            }
+          } @else {
+            <p role="status">Both participants confirmed that the stay happened and concluded.</p>
+          }
+        </section>
+      }
+      @if (request.completion.status === 'completed') {
+        <section aria-labelledby="review-heading">
+          <h2 id="review-heading">Stay review</h2>
+          @if (request.viewerHasBlockedOther) {
+            <p>New reviews are unavailable for a blocked participant.</p>
+          } @else if (request.viewerReviewSubmitted) {
+            <p role="status">Your review was submitted.</p>
+          } @else {
+            <label for="review-rating">Rating</label>
+            <select id="review-rating" [value]="reviewRating()" (change)="setReviewRating($event)">
+              <option value="5">5 — Excellent</option>
+              <option value="4">4 — Good</option>
+              <option value="3">3 — Okay</option>
+              <option value="2">2 — Poor</option>
+              <option value="1">1 — Very poor</option>
+            </select>
+            <label for="review-text">Optional private review note</label>
+            <textarea id="review-text" maxlength="1000" [value]="reviewText()" (input)="setReviewText($event)"></textarea>
+            <p>Your rating is public. Your note is visible only to you and is not published. Do not include private information.</p>
+            <button mat-flat-button type="button" [disabled]="reviewActing()" (click)="submitReview()">
+              {{ reviewActing() ? 'Submitting…' : 'Submit review' }}
+            </button>
+          }
+        </section>
+      }
+      @if (request.otherParticipantReviewStats; as stats) {
+        <p>Openstay rating: {{ stats.averageRating }} / 5 ({{ stats.reviewCount }} reviews)</p>
+      }
+      @if (request.otherParticipantReviews.length > 0) {
+        <section aria-labelledby="participant-reviews-heading">
+          <h2 id="participant-reviews-heading">Recent participant reviews</h2>
+          @for (review of request.otherParticipantReviews; track $index) {
+            <article>
+              <p>Rating: {{ review.rating }} / 5</p>
+              @if (review.text) { <p class="message">{{ review.text }}</p> }
+            </article>
+          }
+        </section>
       }
       @if (success()) { <p role="status">{{ success() }}</p> }
       @if (actionError()) { <p class="error" role="alert">{{ actionError() }}</p> }
@@ -34,10 +118,13 @@
         <button mat-button type="button" [disabled]="acting()" (click)="decide('decline')">Decline request</button>
       }
       @if ((request.status === 'pending' && !request.viewerIsHost) || request.status === 'accepted') {
-        @if (request.status === 'accepted') { <p>Either participant can cancel this stay, with no time cutoff.</p> }
-        <button mat-button type="button" [disabled]="acting()" (click)="decide('cancel')">
-          {{ request.status === 'accepted' ? 'Cancel stay' : 'Cancel request' }}
-        </button>
+        @if (request.status === 'accepted' && request.completion.status !== 'completed') {
+          <p>Either participant can cancel this stay, with no time cutoff.</p>
+          <button mat-button type="button" [disabled]="acting()" (click)="decide('cancel')">Cancel stay</button>
+        }
+        @if (request.status === 'pending') {
+          <button mat-button type="button" [disabled]="acting()" (click)="decide('cancel')">Cancel request</button>
+        }
       }
       <h2>Introduction</h2>
       <p class="message">{{ request.introductoryMessage }}</p>

@@ -57,6 +57,111 @@ test('hosting requests are participant-readable but never client-writable', asyn
     await assertFails(getDoc(doc(db, `hostingRequests/${id}/events/event-1`)));
     await assertFails(setDoc(doc(db, `hostingRequests/${id}/events/forged`), { action: 'accept' }));
   }
+  await assertFails(updateDoc(doc(traveller, `hostingRequests/${id}`), {
+    completionStatus: 'completed',
+    hostConfirmedAt: serverTimestamp(),
+    travellerConfirmedAt: serverTimestamp(),
+    completedAt: serverTimestamp(),
+  }));
+});
+
+test('stay review records are author-private and only published projections are public', async () => {
+  const authorUid = 'review-author';
+  const subjectUid = 'review-subject';
+  const reviewId = 'e'.repeat(64);
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await Promise.all([
+      setDoc(doc(db, `stayReviews/${reviewId}`), {
+        reviewId,
+        requestId: 'f'.repeat(64),
+        authorUid,
+        subjectUid,
+        rating: 5,
+        text: 'Private review record',
+        status: 'published',
+        createdAt: serverTimestamp(),
+        publishedAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, 'stayReviews/unpublished-review'), {
+        reviewId: 'unpublished-review',
+        authorUid,
+        subjectUid,
+        rating: 1,
+        text: null,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+        publishedAt: null,
+      }),
+      setDoc(doc(db, `publishedStayReviews/${reviewId}`), {
+        reviewId,
+        subjectUid,
+        rating: 5,
+        text: null,
+        status: 'published',
+        publishedAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, 'publishedStayReviews/unpublished-review'), {
+        reviewId: 'unpublished-review',
+        subjectUid,
+        rating: 1,
+        text: 'Not public',
+        status: 'pending',
+        publishedAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, 'publishedStayReviews/legacy-text-review'), {
+        subjectUid,
+        rating: 5,
+        text: 'Private stay details',
+        status: 'published',
+        publishedAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, `profileReviewStats/${subjectUid}`), {
+        uid: subjectUid,
+        reviewCount: 1,
+        ratingTotal: 5,
+        updatedAt: serverTimestamp(),
+      }),
+    ]);
+  });
+
+  const author = authenticatedDb(authorUid);
+  const other = authenticatedDb('review-other');
+  const anon = testEnv.unauthenticatedContext().firestore();
+  await assertSucceeds(getDoc(doc(author, `stayReviews/${reviewId}`)));
+  await assertSucceeds(getDoc(doc(author, 'stayReviews/unpublished-review')));
+  await assertFails(getDoc(doc(other, `stayReviews/${reviewId}`)));
+  await assertFails(getDoc(doc(anon, `stayReviews/${reviewId}`)));
+  await assertFails(getDoc(doc(anon, 'stayReviews/unpublished-review')));
+  await assertFails(getDoc(doc(anon, `publishedStayReviews/unpublished-review`)));
+  await assertFails(getDoc(doc(anon, 'publishedStayReviews/legacy-text-review')));
+  await assertSucceeds(getDoc(doc(anon, `publishedStayReviews/${reviewId}`)));
+  await assertSucceeds(getDocs(query(
+    collection(anon, 'publishedStayReviews'),
+    where('status', '==', 'published'),
+    where('subjectUid', '==', subjectUid),
+    where('text', '==', null),
+    orderBy('publishedAt', 'desc'),
+  )));
+  await assertFails(getDocs(query(
+    collection(anon, 'publishedStayReviews'),
+    where('status', '==', 'published'),
+    where('subjectUid', '==', subjectUid),
+  )));
+  await assertFails(getDocs(collection(anon, 'publishedStayReviews')));
+  await assertSucceeds(getDoc(doc(anon, `profileReviewStats/${subjectUid}`)));
+  await assertFails(setDoc(doc(author, 'profileReviewStats/forged'), {
+    uid: 'forged',
+    reviewCount: 100,
+    ratingTotal: 500,
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(author, 'publishedStayReviews/forged'), {
+    reviewId: 'forged',
+    subjectUid,
+    rating: 5,
+    status: 'published',
+  }));
 });
 
 test('conversation and notification data is participant- or recipient-only and never client-writable', async () => {
@@ -111,9 +216,10 @@ test('conversation and notification data is participant- or recipient-only and n
     ]);
   });
 
-  const host = authenticatedDb(hostUid);
-  const traveller = authenticatedDb(travellerUid);
+  const host = authenticatedDb(hostUid, true);
+  const traveller = authenticatedDb(travellerUid, true);
   const outsider = authenticatedDb(outsiderUid);
+  const unverifiedTraveller = authenticatedDb(travellerUid, false);
   const anon = testEnv.unauthenticatedContext().firestore();
   for (const db of [host, traveller]) {
     await assertSucceeds(getDoc(doc(db, `conversations/${requestId}`)));
@@ -127,6 +233,27 @@ test('conversation and notification data is participant- or recipient-only and n
     await assertFails(getDoc(doc(db, `conversations/${requestId}`)));
     await assertFails(getDocs(collection(db, `conversations/${requestId}/messages`)));
   }
+  await assertFails(getDoc(doc(unverifiedTraveller, `conversations/${requestId}`)));
+  await assertFails(getDocs(collection(unverifiedTraveller, `conversations/${requestId}/messages`)));
+
+  const lockPath = `hostPrivate/${hostUid}/listingLifecycleState/current`;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), lockPath), {
+      leaseExpiresAt: Timestamp.fromMillis(Date.now() - 60_000),
+    });
+  });
+  await assertSucceeds(getDocs(collection(traveller, `conversations/${requestId}/messages`)));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await updateDoc(doc(context.firestore(), lockPath), {
+      leaseExpiresAt: Timestamp.fromMillis(Date.now() + 60_000),
+    });
+  });
+  await assertFails(getDoc(doc(host, `conversations/${requestId}`)));
+  await assertFails(getDocs(collection(traveller, `conversations/${requestId}/messages`)));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await deleteDoc(doc(context.firestore(), lockPath));
+  });
+
   await assertSucceeds(getDoc(doc(traveller, `notifications/${notificationId}`)));
   await assertSucceeds(getDocs(query(
     collection(traveller, 'notifications'),
@@ -305,31 +432,118 @@ test('creates an initial public, private, and username profile atomically', asyn
   await assertSucceeds(getDoc(doc(db, 'usernames/traveller_1')));
 });
 
-test('public profile reads expose only the declared public schema', async (t) => {
+test('account profiles, including legacy verification state, are owner-readable only', async (t) => {
   const uid = 'public-profile-owner';
   await assertSucceeds(createAccount(authenticatedDb(uid), uid, 'public_user'));
 
-  await t.test('unauthenticated users can read a valid public profile', async () => {
+  await t.test('owners retain access while anonymous and unrelated users cannot read', async () => {
     const db = testEnv.unauthenticatedContext().firestore();
-    await assertSucceeds(getDoc(doc(db, `users/${uid}`)));
+    await assertFails(getDoc(doc(db, `users/${uid}`)));
+    await assertSucceeds(getDoc(doc(authenticatedDb(uid), `users/${uid}`)));
+    await assertFails(getDoc(doc(authenticatedDb('unrelated-profile-reader'), `users/${uid}`)));
   });
 
-  await t.test('email and unexpected legacy fields are not publicly readable', async () => {
+  await t.test('legacy status and unexpected fields are never exposed to other users', async () => {
     const legacyUid = 'legacy-public-profile';
     await testEnv.withSecurityRulesDisabled(async (context) => {
       await setDoc(
         doc(context.firestore(), `users/${legacyUid}`),
-        profile(legacyUid, 'legacy_user', {
-          email: 'legacy@example.com',
-          emailVerified: false,
-        }),
+        profile(legacyUid, 'legacy_user', { verificationStatus: 'verified', accountStatus: 'suspended' }),
       );
     });
 
     const anonymousDb = testEnv.unauthenticatedContext().firestore();
     await assertFails(getDoc(doc(anonymousDb, `users/${legacyUid}`)));
-    await assertSucceeds(getDoc(doc(authenticatedDb(legacyUid), `users/${legacyUid}`)));
+    await assertFails(getDoc(doc(authenticatedDb('unrelated-legacy-reader'), `users/${legacyUid}`)));
+    const ownerSnapshot = await getDoc(doc(authenticatedDb(legacyUid), `users/${legacyUid}`));
+    assert.equal(ownerSnapshot.data().verificationStatus, 'verified');
   });
+});
+
+test('trust and safety records are client-immutable and expose only a reporter status projection', async () => {
+  const reporterUid = 'trust-report-reporter';
+  const reportedUid = 'trust-report-subject';
+  const reportId = 'a'.repeat(64);
+  const blockPath = `userBlocks/${reporterUid}/blocked/${reportedUid}`;
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await Promise.all([
+      setDoc(doc(db, `reports/${reportId}`), {
+        reporterUid,
+        targetType: 'user',
+        targetId: reportedUid,
+        category: 'private-category',
+        description: 'Private report description',
+        status: 'submitted',
+        createdAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, `reportStatuses/${reportId}`), {
+        reporterUid,
+        status: 'submitted',
+        createdAt: serverTimestamp(),
+      }),
+      setDoc(doc(db, `verificationCases/${reportId}`), {
+        subjectUid: reporterUid,
+        status: 'pending',
+        providerReference: 'private-provider-reference',
+      }),
+      setDoc(doc(db, `verificationEvents/${reportId}`), {
+        caseId: reportId,
+        eventType: 'request_created',
+        actorUid: reporterUid,
+      }),
+      setDoc(doc(db, blockPath), {
+        ownerUid: reporterUid,
+        blockedUid: reportedUid,
+        createdAt: serverTimestamp(),
+      }),
+    ]);
+  });
+
+  const reporter = authenticatedDb(reporterUid, true);
+  const other = authenticatedDb('trust-report-other', true);
+  const reported = authenticatedDb(reportedUid, true);
+  const anon = testEnv.unauthenticatedContext().firestore();
+  await assertSucceeds(getDoc(doc(reporter, `reportStatuses/${reportId}`)));
+  await assertFails(getDoc(doc(other, `reportStatuses/${reportId}`)));
+  await assertFails(getDoc(doc(reported, `reportStatuses/${reportId}`)));
+  await assertFails(getDoc(doc(anon, `reportStatuses/${reportId}`)));
+  for (const db of [reporter, other, reported, anon]) {
+    await assertFails(getDoc(doc(db, `reports/${reportId}`)));
+    await assertFails(getDoc(doc(db, `verificationCases/${reportId}`)));
+    await assertFails(getDoc(doc(db, `verificationEvents/${reportId}`)));
+  }
+  await assertSucceeds(getDoc(doc(reporter, blockPath)));
+  await assertFails(getDoc(doc(other, blockPath)));
+  await assertFails(getDoc(doc(reported, blockPath)));
+  await assertFails(getDoc(doc(anon, blockPath)));
+
+  const forged = {
+    reporterUid,
+    status: 'submitted',
+    createdAt: serverTimestamp(),
+  };
+  for (const db of [reporter, other, anon]) {
+    await assertFails(setDoc(doc(db, `reports/${'b'.repeat(64)}`), {
+      ...forged, targetType: 'user', targetId: reportedUid, description: 'Forged',
+    }));
+    await assertFails(updateDoc(doc(db, `reports/${reportId}`), { description: 'Changed' }));
+    await assertFails(deleteDoc(doc(db, `reports/${reportId}`)));
+    await assertFails(setDoc(doc(db, `reportStatuses/${'e'.repeat(64)}`), forged));
+    await assertFails(updateDoc(doc(db, `reportStatuses/${reportId}`), { status: 'resolved' }));
+    await assertFails(deleteDoc(doc(db, `reportStatuses/${reportId}`)));
+    await assertFails(setDoc(doc(db, `verificationCases/${'c'.repeat(64)}`), { status: 'verified' }));
+    await assertFails(updateDoc(doc(db, `verificationCases/${reportId}`), { status: 'verified' }));
+    await assertFails(deleteDoc(doc(db, `verificationCases/${reportId}`)));
+    await assertFails(setDoc(doc(db, `verificationEvents/${'d'.repeat(64)}`), { status: 'verified' }));
+    await assertFails(updateDoc(doc(db, `verificationEvents/${reportId}`), { status: 'verified' }));
+    await assertFails(deleteDoc(doc(db, `verificationEvents/${reportId}`)));
+    await assertFails(setDoc(doc(db, `userBlocks/${reporterUid}/blocked/forged-${db === reporter ? 'owner' : 'other'}`), {
+      ownerUid: reporterUid, blockedUid: 'forged', createdAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(db, blockPath), { blockedUid: 'forged' }));
+    await assertFails(deleteDoc(doc(db, blockPath)));
+  }
 });
 
 test('private profiles are readable and writable only by their owner', async (t) => {

@@ -285,13 +285,216 @@ recipient read paths described above. Notifications, counts, conversations,
 messages and message rate-limit state are never client-writable. Existing
 M4.1/M4.2 request lifecycle rules remain unchanged.
 
-This milestone does not add a completion transition, date availability,
-attachments, message editing, moderation/reporting, retention jobs, or
-payment features. Notification counters serialize updates per recipient and
-may become a write hotspot at high message volume. Accepted schedules still
-read the existing full confirmed subcollection; its scale limitation is
-unchanged. All verification for this milestone is emulator/local only; no
-production Firebase access or deployment was performed.
+## M5.1 stay completion and reviews
+
+The accepted `hostingRequests/{requestId}` document remains the authoritative
+stay record. There is no separate booking or stay collection, and existing
+accepted requests require no migration: absent completion fields project as
+`not_started`. Client writes to requests and their event subcollections remain
+denied.
+
+### Mutual completion policy and state
+
+Completion can begin only after the scheduled checkout date has passed, using
+the current UTC date and the request's exclusive `endDate`. The first
+participant to confirm that the stay happened and concluded starts a
+server-timestamped seven-day response window. The other participant must
+independently confirm before the deadline. The server never completes a stay
+automatically, and a moderator cannot provide or substitute for either
+confirmation.
+
+| Field | Meaning |
+|---|---|
+| `completionStatus` | `pending` or `completed`; absent/`not_started` before initiation |
+| `completionReason` | `awaiting_confirmation`, `disputed`, or `response_window_expired` while pending |
+| `completionInitiatedAt` | Server timestamp of the first participant confirmation |
+| `completionResponseDeadline` | Server timestamp exactly seven days after initiation |
+| `hostConfirmedAt`, `travellerConfirmedAt` | Trusted timestamps for each participant's independent confirmation |
+| `completionDisputedAt`, `completionDisputedByUid` | Trusted dispute metadata; no narrative is collected |
+| `completedAt` | Set only atomically with the second timely confirmation |
+
+If a dispute occurs, the stay remains pending with reason `disputed`; M5.1 has
+no dispute resolution or reopen operation. If the second participant does not
+confirm by the deadline, the stay remains pending with reason
+`response_window_expired`. A trusted scheduled sweep runs every five minutes
+and processes up to 1,000 overdue requests per invocation; participant reads
+and completion actions also materialize expiry. The stored reason and
+notification can therefore lag the deadline during scheduling delays or
+backlogs, but trusted confirmation rejects late responses immediately. Expiry
+does not complete the stay or reopen eligibility. A future authorized
+moderation workflow may investigate and explicitly reopen confirmation, but
+must never mark the stay completed on behalf of participants.
+
+The `initiateStayCompletion`, `confirmStayCompletion`, and
+`disputeStayCompletion` callables require verified authentication, an active
+participant account, the accepted uncancelled request, valid checkout dates,
+current host participation consent, and no active host lifecycle lock. These
+checks run in Firestore transactions with the request state, preventing
+concurrent dispute/confirmation/cancellation races. Repeated first
+confirmations and repeated disputes are idempotent; the response deadline
+cannot be extended by retries. Cancelling an accepted but incomplete stay
+clears its completion substate. A completed stay cannot be cancelled.
+
+Each successful action appends a server-only event under the existing
+`hostingRequests/{requestId}/events/{eventId}` history. Generic notifications
+tell only the other participant that confirmation is requested, completion
+was disputed, or mutual completion occurred. An expiry notification goes to
+the initiating participant. No dispute narrative or review content is placed
+in notifications.
+
+### Reviews and public aggregate
+
+`submitStayReview` accepts a 1–5 integer rating and optional text up to 1,000
+characters only after mutual completion. The author and subject are derived
+from the stored participant UIDs; a user cannot review themselves or a
+nonparticipant. A SHA-256 ID derived from request ID and author UID enforces
+one review per participant per stay under concurrent submissions. Identical
+retries return the original result; conflicting retries fail.
+
+`stayReviews/{reviewId}` is the private authoritative review record. Its
+author alone may read it; clients cannot write it. Optional bounded review text
+is stored only in this private record and is never published in M5.1.
+Submission immediately publishes a minimal anonymous rating document at
+`publishedStayReviews/{reviewId}` containing subject UID, rating, a null text
+field, publication time, and status. It omits author UID, request ID, exact
+dates, listing details, and conversation content. Public reads/queries require
+`status == published` and `text == null`, so existing projections containing
+text are not publicly readable or returned by the detail callable. Any
+existing text-bearing projections require a separately authorized migration
+or moderation decision; no migration is performed here. There is no editing,
+reply, like, or moderator workflow in M5.1.
+
+`profileReviewStats/{uid}` is written in the same transaction as the review
+and public projection. It contains only the profile UID, received-review
+count, rating total, and update timestamp; it is publicly readable and never
+client-writable. The participant rating summary is returned by the existing
+participant-only request detail callable and shown in the request detail UI.
+That callable also returns up to five recent published rating projections for
+the other participant, validated and stripped to rating, null text, and
+publication time. It does not expose the author UID or linked stay. Composite
+indexes support this query and the scheduled overdue-request sweep.
+Storage remains deny-all; no evidence or media is introduced.
+
+The Angular request detail page initiates, confirms, or disputes completion
+and submits reviews. The existing host/traveller request dashboards display
+pending, disputed, expired, and mutually completed states without describing
+pending stays as completed. There is no new stay dashboard or profile
+collection.
+
+Functions emulator tests cover both participant orders, concurrent and
+idempotent confirmation, pre-checkout rejection, seven-day expiry, disputes,
+account/consent/lock changes, cancellation races, duplicate/self/nonparticipant
+reviews, public projection privacy, and aggregates. Rules tests cover denied
+client lifecycle writes, author-only private reviews, published-only public
+projection reads, and immutable public aggregates. Angular request-page tests
+cover completion and review states. No production access, deployment, or
+migration was performed.
+
+Notification counters still serialize updates per recipient and may become a
+write hotspot at high volume. Accepted schedules still read the existing full
+confirmed subcollection; its scale limitation is unchanged.
+
+## M5.2 trust, verification foundations, and blocking
+
+M5.2 implements participant blocking and privacy boundaries for future trust
+features. It does not implement a public feed, member directory, staff console,
+staff registration, report intake, investigation, appeals, or an operational
+safety-response service. Staff authorization and moderation workflows remain
+M5.3 scope.
+
+### Identity-verification and report schemas
+
+`functions/src/trust/models.ts` defines provider-neutral TypeScript shapes for
+`verificationCases/{caseId}` and `verificationEvents/{eventId}`. These are
+schema and integration-boundary types only: M5.2 does not create records,
+accept verification requests, record provider outcomes, approve cases, or
+display verification status. No client-supplied state is trusted. Provider
+integration is deferred pending explicit approval of the provider, data
+processing, security, and retention terms. No identity documents, ID numbers,
+facial images, provider callbacks, or unnecessary sensitive attributes are
+collected or stored. A legacy `users/{uid}.verificationStatus` field may remain
+for profile-schema compatibility, but it is not evidence of verification and
+is never used as a badge or public trust claim.
+
+The same file defines private report and reporter-status projection types for
+`reports/{reportId}` and `reportStatuses/{reportId}`. These types do not
+constitute an intake workflow: M5.2 has no report-submission callable or UI,
+target-validation policy, categories, duplicate handling, or rate limit.
+Report intake stays unavailable until M5.3 provides authorized, staffed
+resolution. Reports are not monitored or resolved by this release, and
+Openstay does not provide an emergency response service.
+
+Firestore Rules deny all client reads and writes to verification cases,
+verification events, and full report records. A `reportStatuses/{reportId}`
+document, if written by a future trusted workflow, is readable only by its
+authenticated, verified-email reporter and only when it contains exactly
+`reporterUid`, `status: submitted`, and `createdAt`. Clients cannot list or
+write status projections. The reported person and unrelated users cannot read
+report details or reporter identity. No verification or report notifications
+are emitted. `firebase/storage.rules` remains deny-all; no evidence or media
+storage is enabled.
+
+### Blocking behavior and callables
+
+Blocks are stored as deterministic
+`userBlocks/{ownerUid}/blocked/{targetUid}` documents with trusted
+`ownerUid`, `blockedUid`, and server `createdAt` fields. `blockUser` and
+`unblockUser` accept only `targetUid`; the owner is always derived from
+authenticated, verified-email callable context. Both operations are
+idempotent, reject self-blocks and invalid targets, and require an active
+account. `blockRequestParticipant` accepts only `requestId`, verifies that the
+caller is a stored host or traveller, and derives the target UID on the server
+so request and conversation screens do not expose participant UIDs solely for
+blocking controls. `listBlockedUsers` returns the caller's bounded,
+document-ID-ordered pages of blocked UID and screened display-name pairs.
+These callables enforce App Check outside the Functions emulator.
+
+Either direction of a block makes the relationship ineligible for new
+interactions. Functions transactions recheck both deterministic block
+documents when creating requests, accepting pending requests, creating
+conversations, sending new messages, and submitting reviews. Thus a block
+committed concurrently with one of these operations causes the interaction
+transaction to retry or fail instead of bypassing the block. Existing
+conversations remain readable according to the existing participant and
+eligibility rules, but new messages are denied. A successful idempotent retry
+of a message already stored before the block may return that existing result;
+it does not create another message.
+
+Blocking does not delete or rewrite requests, conversations, messages, or
+accepted stays, and does not create notifications revealing the action. It
+does not silently cancel a pending or accepted request. Explicit
+decline/cancellation and M5.1 completion behavior remain governed by their
+existing workflows; participants can still complete or explicitly cancel an
+accepted stay under those rules. Reviews cannot be newly submitted while
+either direction of block exists. Unblocking restores only future eligibility;
+it does not recreate a denied operation or any history. The caller's own block
+state is returned to participant screens; the other participant's private
+block action is not exposed.
+
+Block documents are readable only by their owner and cannot be written
+directly by clients. No new composite index is required; the bounded block
+listing orders by document ID. The account document at `users/{uid}` is now
+owner-readable only because Firestore Rules cannot redact the legacy
+`verificationStatus` and `accountStatus` fields from public reads. This is a
+deliberate compatibility change: public listing, request, and conversation
+callable projections continue to return only explicitly screened fields and
+do not expose verification or restriction state. Existing clients that relied
+on direct reads of another member's full user document must use an approved
+public projection instead. User profile writes still cannot modify the legacy
+verification state.
+
+### M5.2 validation and boundaries
+
+Functions emulator tests cover block authentication, target derivation,
+idempotency, directionality, request and message enforcement, transaction
+races, history retention, and accepted-stay completion/review behavior.
+Firestore Rules tests cover reporter-only minimal status reads, private
+verification/report data, owner-only block reads, denied client writes, and
+owner-only user profiles. Angular tests cover block/unblock management,
+confirmation, blocked interaction states, explicit loading/error/success
+states, and honest unavailable verification/report messaging. No index
+changes, production migration, deployment, or production access were part of
+M5.2.
 
 ## Listing workflow and routes
 
@@ -434,23 +637,28 @@ the asynchronous pause worker.
   `functions/test/host-participation.test.mjs`,
   `functions/test/public-listings.test.mjs`, and
   `functions/test/hosting-requests.test.mjs`,
-  `functions/test/conversations.test.mjs`, and
-  `functions/test/notifications.test.mjs`. It covers lifecycle retries and
+  `functions/test/conversations.test.mjs`,
+  `functions/test/notifications.test.mjs`,
+  `functions/test/stay-completion.test.mjs`, and
+  `functions/test/trust-foundations.test.mjs`. It covers lifecycle retries and
   concurrency, authorization failures, malformed inputs, App Check, bounded
   withdrawal and suspension behavior, published-only search, filtering,
   pagination, public projection safety, stale lifecycle visibility, and
   private/unsafe host or listing text, request validation, participant
   authorization, concurrent conversation creation and message submission,
   cancellation races, message rate limits, notification event recipients,
-  duplicate delivery, read-counter consistency, pagination and projections.
+  duplicate delivery, read-counter consistency, pagination and projections,
+  as well as M5.2 blocking authorization, interaction enforcement, and privacy
+  foundations.
   Firestore Rules tests cover participant-only request/conversation/message
   reads, recipient-only notification reads and denial of direct writes.
 - Angular coverage is in the host listing page, editor, detail, and
   `ListingService` specs, plus request, messaging and notification page specs.
   Firestore rule behavior remains covered by
   `firebase/firestore.rules.test.mjs`.
-- Photo uploads, photo readiness requirements, date availability, completion,
-  message edits/attachments, moderation, retention jobs and payments remain
+- Photo uploads, photo readiness requirements, date availability, message
+  edits/attachments, staff moderation and authorization, report intake and
+  resolution, verification workflows, retention jobs and payments remain
   deferred.
   The current M3.3.1 schema has no photo fields, so publication validates the
   existing listing fields and does not require photos.

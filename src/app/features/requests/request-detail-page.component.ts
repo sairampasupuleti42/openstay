@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HostingRequestDetails } from '../../core/models/hosting-request.model';
+import { BlockService } from '../../core/services/block.service';
 import { ConversationService } from '../../core/services/conversation.service';
 import { HostingRequestService } from '../../core/services/hosting-request.service';
 
@@ -21,6 +22,7 @@ export class RequestDetailPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly service = inject(HostingRequestService);
+  private readonly blocks = inject(BlockService);
   private readonly conversations = inject(ConversationService);
   readonly details = signal<HostingRequestDetails | null>(null);
   readonly loading = signal(true);
@@ -28,7 +30,12 @@ export class RequestDetailPageComponent implements OnInit {
   readonly actionError = signal('');
   readonly success = signal('');
   readonly acting = signal(false);
+  readonly completionActing = signal(false);
+  readonly reviewActing = signal(false);
+  readonly reviewRating = signal(5);
+  readonly reviewText = signal('');
   readonly openingConversation = signal(false);
+  readonly blockingParticipant = signal(false);
   private requestId = '';
 
   ngOnInit(): void {
@@ -81,6 +88,99 @@ export class RequestDetailPageComponent implements OnInit {
       this.actionError.set(this.conversations.errorMessage(error));
     } finally {
       this.openingConversation.set(false);
+    }
+  }
+
+  async blockParticipant(request: HostingRequestDetails): Promise<void> {
+    if (this.blockingParticipant() || request.viewerHasBlockedOther) return;
+    if (!window.confirm(
+      `Block ${request.otherParticipantName || 'this participant'}? This prevents new requests, acceptance, conversations, messages, and reviews. Existing history remains available, and an accepted stay will not be cancelled.`,
+    )) return;
+    this.blockingParticipant.set(true);
+    this.actionError.set('');
+    this.success.set('');
+    try {
+      await this.blocks.blockRequest(this.requestId);
+      this.success.set('This participant is blocked from future interactions. Existing history remains available.');
+      await this.load();
+    } catch (error) {
+      this.actionError.set(this.blocks.errorMessage(error));
+    } finally {
+      this.blockingParticipant.set(false);
+    }
+  }
+
+  canStartCompletion(): boolean {
+    const request = this.details();
+    return request?.status === 'accepted'
+      && request.completion.status === 'not_started'
+      && request.endDate < new Date().toISOString().slice(0, 10);
+  }
+
+  canConfirmCompletion(): boolean {
+    const completion = this.details()?.completion;
+    return completion?.status === 'pending'
+      && completion.reason === 'awaiting_confirmation'
+      && !completion.viewerConfirmed;
+  }
+
+  async initiateCompletion(): Promise<void> {
+    await this.updateCompletion(() => this.service.initiateCompletion(this.requestId));
+  }
+
+  async confirmCompletion(): Promise<void> {
+    await this.updateCompletion(() => this.service.confirmCompletion(this.requestId));
+  }
+
+  async disputeCompletion(): Promise<void> {
+    if (!window.confirm('Dispute completion? This stay will remain incomplete and cannot be reviewed.')) return;
+    await this.updateCompletion(() => this.service.disputeCompletion(this.requestId));
+  }
+
+  setReviewRating(event: Event): void {
+    const value = Number((event.target as HTMLSelectElement).value);
+    if (Number.isInteger(value) && value >= 1 && value <= 5) this.reviewRating.set(value);
+  }
+
+  setReviewText(event: Event): void {
+    this.reviewText.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  async submitReview(): Promise<void> {
+    const request = this.details();
+    if (this.reviewActing() || request?.completion.status !== 'completed'
+        || request.viewerReviewSubmitted || request.viewerHasBlockedOther) return;
+    this.reviewActing.set(true);
+    this.actionError.set('');
+    this.success.set('');
+    try {
+      await this.service.submitReview(this.requestId, this.reviewRating(), this.reviewText());
+      this.success.set('Your review was submitted.');
+      this.reviewText.set('');
+      await this.load();
+    } catch (error) {
+      this.actionError.set(this.service.errorMessage(error));
+    } finally {
+      this.reviewActing.set(false);
+    }
+  }
+
+  private async updateCompletion(
+    action: () => Promise<unknown>,
+  ): Promise<void> {
+    if (this.completionActing()) return;
+    this.completionActing.set(true);
+    this.actionError.set('');
+    this.success.set('');
+    try {
+      await action();
+      this.success.set('Stay completion status updated.');
+      await this.load();
+    } catch (error) {
+      this.actionError.set(this.service.errorMessage(error));
+      await this.load();
+    } finally {
+      this.completionActing.set(false);
     }
   }
 }

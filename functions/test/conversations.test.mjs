@@ -6,6 +6,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HOST_PARTICIPATION_TERMS_DIGEST, HOST_PARTICIPATION_TERMS_VERSION } from '../lib/hosting/host-participation.js';
 import { getOrCreateConversation, listParticipantConversations, markRead, sendMessage } from '../lib/hosting/conversations.js';
 import { transitionRequest } from '../lib/hosting/hosting-requests.js';
+import { removeBlock, setBlock } from '../lib/trust/blocking.js';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST || process.env.GCLOUD_PROJECT !== 'demo-openstay') {
   throw new Error('Conversation tests require the demo-openstay Firestore emulator.');
@@ -122,6 +123,72 @@ test('messaging requires an accepted stay and validates identity, text and idemp
     requestId, text: 'Different content', idempotencyKey: key('repeat'),
   }), db), { code: 'already-exists' });
   assert.equal((await db.doc(`conversations/${requestId}`).get()).data().unreadByUid[travellerUid], 1);
+});
+
+test('blocks in either direction prevent new conversations and messages but preserve history reads', async () => {
+  const { hostUid, travellerUid, requestId } = await seed('blocked-messaging');
+  await setBlock(call(hostUid, { targetUid: travellerUid }), db);
+  await assert.rejects(getOrCreateConversation(call(hostUid, { requestId }), db), {
+    code: 'failed-precondition',
+  });
+  assert.equal((await db.doc(`conversations/${requestId}`).get()).exists, false);
+
+  await removeBlock(call(hostUid, { targetUid: travellerUid }), db);
+  await getOrCreateConversation(call(hostUid, { requestId }), db);
+  await setBlock(call(hostUid, { targetUid: travellerUid }), db);
+  const history = await getOrCreateConversation(call(travellerUid, { requestId }), db);
+  assert.equal(history.created, false);
+  assert.equal(history.viewerHasBlockedOther, false);
+  await assert.rejects(sendMessage(call(travellerUid, {
+    requestId, text: 'After the block', idempotencyKey: key('blocked-host-first'),
+  }), db), { code: 'failed-precondition' });
+  assert.equal((await listParticipantConversations(call(travellerUid, { cursor: null }), db)).items.length, 1);
+  await markRead(call(travellerUid, { requestId }), db);
+
+  await removeBlock(call(hostUid, { targetUid: travellerUid }), db);
+  await setBlock(call(travellerUid, { targetUid: hostUid }), db);
+  await assert.rejects(sendMessage(call(hostUid, {
+    requestId, text: 'After the reverse block', idempotencyKey: key('blocked-traveller-first'),
+  }), db), { code: 'failed-precondition' });
+  assert.equal((await db.collection(`conversations/${requestId}/messages`).get()).size, 0);
+});
+
+test('a concurrent block conflicts with message sending and wins on retry', async () => {
+  const { hostUid, travellerUid, requestId } = await seed('block-message-race');
+  await getOrCreateConversation(call(hostUid, { requestId }), db);
+  let releaseReads;
+  let announceReads;
+  const pairRead = new Promise((resolve) => { announceReads = resolve; });
+  const gate = new Promise((resolve) => { releaseReads = resolve; });
+  let blockReads = 0;
+  const racingDb = {
+    doc: db.doc.bind(db),
+    collection: db.collection.bind(db),
+    runTransaction: (callback) => db.runTransaction((transaction) => callback(new Proxy(transaction, {
+      get(target, property) {
+        if (property === 'get') {
+          return async (reference) => {
+            if (reference.path.includes('/blocked/')) {
+              blockReads += 1;
+              if (blockReads === 2) announceReads();
+              if (blockReads <= 2) await gate;
+            }
+            return target.get(reference);
+          };
+        }
+        const value = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    }))),
+  };
+  const sending = sendMessage(call(travellerUid, {
+    requestId, text: 'Racing message', idempotencyKey: key('block-race'),
+  }), racingDb);
+  await pairRead;
+  await setBlock(call(hostUid, { targetUid: travellerUid }), db);
+  releaseReads();
+  await assert.rejects(sending, { code: 'failed-precondition' });
+  assert.equal((await db.collection(`conversations/${requestId}/messages`).get()).size, 0);
 });
 
 test('declined, cancelled, suspended and withdrawn participants cannot send messages', async () => {

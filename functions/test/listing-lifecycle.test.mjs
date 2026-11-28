@@ -871,10 +871,17 @@ test('account administration helpers are not exported as public Functions', () =
   assert.deepEqual(exported, [
     'acceptHostParticipation',
     'archiveListing',
+    'blockRequestParticipant',
+    'blockUser',
+    'confirmStayCompletion',
     'createHostingRequest',
     'decideHostingRequest',
+    'disputeStayCompletion',
+    'expireStayCompletionWindows',
     'getHostingRequest',
     'getPublicListingDetails',
+    'initiateStayCompletion',
+    'listBlockedUsers',
     'listConversations',
     'listHostHostingRequests',
     'listTravellerHostingRequests',
@@ -891,8 +898,12 @@ test('account administration helpers are not exported as public Functions', () =
     'resumeListing',
     'searchPublishedListings',
     'sendConversationMessage',
+    'submitStayReview',
+    'unblockUser',
     'withdrawHostParticipation',
   ]);
+  assert.equal(exported.some((name) =>
+    /Verification|Report/i.test(name)), false);
 });
 
 test('all lifecycle callable wrappers enforce App Check and the hosting Functions region', () => {

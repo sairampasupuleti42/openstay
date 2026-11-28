@@ -17,8 +17,16 @@
       <a mat-stroked-button routerLink="/requests/incoming">Incoming requests and stays</a>
       <a mat-stroked-button routerLink="/messages">Messages</a>
       <a mat-stroked-button routerLink="/notifications">Notifications</a>
+      <a mat-stroked-button routerLink="/account/blocked-users">Blocked users</a>
       <button mat-stroked-button type="button" (click)="logOut()">Sign out</button>
     </div>
+    <section aria-labelledby="trust-availability-heading">
+      <h2 id="trust-availability-heading">Trust and safety availability</h2>
+      <h3>Identity verification</h3>
+      <p>Identity verification is not available. Openstay does not currently verify identities and does not collect identity documents. Profile fields are not proof of verification.</p>
+      <h3>Safety reports</h3>
+      <p>Report intake is not available yet. Reports are not monitored or resolved, and Openstay does not provide an emergency response service.</p>
+    </section>
     @if (errorMessage()) {
       <p class="error" role="alert">{{ errorMessage() }}</p>
     }

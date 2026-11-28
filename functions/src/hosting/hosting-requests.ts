@@ -3,6 +3,8 @@ import { FieldPath, FieldValue, getFirestore, Timestamp } from 'firebase-admin/f
 import { CallableRequest, HttpsError, onCall } from 'firebase-functions/v2/https';
 import { HOST_PARTICIPATION_TERMS_DIGEST, HOST_PARTICIPATION_TERMS_VERSION } from './host-participation.js';
 import { isSafePublicText, isValidPublicListing } from './public-listings.js';
+import { expireCompletionWindow, projectCompletion } from './stay-completion.js';
+import { readBlockRelationship } from '../trust/blocking.js';
 
 const options = { region: 'us-central1', enforceAppCheck: process.env['FUNCTIONS_EMULATOR'] !== 'true' };
 const idPattern = /^[^/]{1,150}$/;
@@ -158,6 +160,9 @@ export async function createRequest(request: CallableRequest<unknown>, db: Fireb
     }
     const hostUid = listing.hostUid;
     if (hostUid === uid) throw new HttpsError('failed-precondition', 'You cannot request your own listing.');
+    if ((await readBlockRelationship(tx, db, uid, hostUid)).blocked) {
+      throw new HttpsError('failed-precondition', 'This interaction is unavailable.');
+    }
     if (typeof listing['guestCapacity'] !== 'number' || !Number.isInteger(listing['guestCapacity'])
         || listing['guestCapacity'] < guestCount || listing['guestCapacity'] > 10) {
       throw new HttpsError('invalid-argument', 'The guest count exceeds the listing capacity.');
@@ -261,6 +266,10 @@ export async function transitionRequest(request: CallableRequest<unknown>, db: F
     if (action === 'cancel' && data['status'] === 'pending' && uid !== travellerUid) {
       throw new HttpsError('permission-denied', 'Only the traveller can cancel a pending request.');
     }
+    if (action === 'cancel' && data['status'] === 'accepted'
+        && data['completionStatus'] === 'completed') {
+      throw new HttpsError('failed-precondition', 'A completed stay cannot be cancelled.');
+    }
     const target = action === 'accept' ? 'accepted' : action === 'decline' ? 'declined' : 'cancelled';
     if (data['status'] === target && data['lastAction'] === action && data['lastActorUid'] === uid) {
       if (action === 'accept') {
@@ -297,6 +306,9 @@ export async function transitionRequest(request: CallableRequest<unknown>, db: F
       if (!listingData || !isValidPublicListing(listingData, listingId) || listingData.hostUid !== hostUid
           || traveller.data()?.['accountStatus'] !== 'active' || !eligibleHost(hostUid, host, consent, lock)) {
         throw new HttpsError('failed-precondition', 'This listing or its participants are no longer eligible.');
+      }
+      if ((await readBlockRelationship(tx, db, hostUid, travellerUid)).blocked) {
+        throw new HttpsError('failed-precondition', 'This interaction is unavailable.');
       }
       assertActiveReservation(reservation, travellerUid, listingId, startDate, endDate, requestId, isLegacyRequest);
       if (!calendarDate(startDate) || !calendarDate(endDate) || endDate <= startDate
@@ -360,6 +372,17 @@ export async function transitionRequest(request: CallableRequest<unknown>, db: F
     }
     tx.update(ref, {
       status: target, lastAction: action, lastActorUid: uid, updatedAt: FieldValue.serverTimestamp(),
+      ...(action === 'cancel' && data['status'] === 'accepted' ? {
+        completionStatus: 'not_started',
+        completionReason: null,
+        completionInitiatedAt: FieldValue.delete(),
+        completionResponseDeadline: FieldValue.delete(),
+        hostConfirmedAt: FieldValue.delete(),
+        travellerConfirmedAt: FieldValue.delete(),
+        completionDisputedAt: FieldValue.delete(),
+        completionDisputedByUid: FieldValue.delete(),
+        completedAt: FieldValue.delete(),
+      } : {}),
     });
     tx.create(ref.collection('events').doc(), {
       action, actorUid: uid, fromStatus: data['status'], toStatus: target, at: FieldValue.serverTimestamp(),
@@ -376,14 +399,57 @@ async function activeCaller(request: CallableRequest<unknown>, db: FirebaseFires
   return uid;
 }
 
-function project(doc: FirebaseFirestore.DocumentSnapshot) {
+function project(doc: FirebaseFirestore.DocumentSnapshot, viewerUid: string) {
   const data = doc.data();
   if (!data) throw new HttpsError('not-found', 'This request could not be found.');
+  const { hostUid, travellerUid } = participantsForProjection(data);
   return {
     requestId: doc.id, listingId: data['listingId'], startDate: data['startDate'], endDate: data['endDate'],
     guestCount: data['guestCount'], introductoryMessage: data['introductoryMessage'], status: data['status'],
+    completion: projectCompletion(data, viewerUid, hostUid, travellerUid),
     createdAt: data['createdAt'] instanceof Timestamp ? data['createdAt'].toDate().toISOString() : null,
     updatedAt: data['updatedAt'] instanceof Timestamp ? data['updatedAt'].toDate().toISOString() : null,
+  };
+}
+
+function participantsForProjection(data: FirebaseFirestore.DocumentData) {
+  if (typeof data['hostUid'] !== 'string' || typeof data['travellerUid'] !== 'string'
+      || data['hostUid'] === data['travellerUid']) {
+    throw new HttpsError('failed-precondition', 'This request has invalid participant information.');
+  }
+  return { hostUid: data['hostUid'] as string, travellerUid: data['travellerUid'] as string };
+}
+
+function publicReviewStats(
+  data: FirebaseFirestore.DocumentData | undefined,
+  uid: string,
+): { reviewCount: number; averageRating: number } | null {
+  if (!data) return null;
+  const reviewCount = data['reviewCount'];
+  const ratingTotal = data['ratingTotal'];
+  if (data['uid'] !== uid || !Number.isInteger(reviewCount) || reviewCount < 1
+      || !Number.isInteger(ratingTotal) || ratingTotal < reviewCount || ratingTotal > reviewCount * 5) {
+    throw new HttpsError('failed-precondition', 'The participant review summary requires attention.');
+  }
+  return { reviewCount, averageRating: Math.round((ratingTotal / reviewCount) * 10) / 10 };
+}
+
+function publicReviewProjection(
+  doc: FirebaseFirestore.QueryDocumentSnapshot,
+  expectedSubjectUid: string,
+) {
+  const data = doc.data();
+  if (data['reviewId'] !== doc.id || data['subjectUid'] !== expectedSubjectUid
+      || data['status'] !== 'published' || !Number.isInteger(data['rating'])
+      || data['rating'] < 1 || data['rating'] > 5
+      || data['text'] !== null
+      || !(data['publishedAt'] instanceof Timestamp)) {
+    throw new HttpsError('failed-precondition', 'A participant review projection requires attention.');
+  }
+  return {
+    rating: data['rating'],
+    text: null,
+    publishedAt: (data['publishedAt'] as Timestamp).toDate().toISOString(),
   };
 }
 
@@ -410,7 +476,11 @@ export async function listRequests(
   }
   const snapshot = await query.get();
   const docs = snapshot.docs.slice(0, pageSize);
-  return { items: docs.map(project), nextCursor: snapshot.size > pageSize ? docs[docs.length - 1].id : null };
+  const refreshed = await Promise.all(docs.map((doc) => expireCompletionWindow(db, doc.ref)));
+  return {
+    items: refreshed.map((doc) => project(doc, uid)),
+    nextCursor: snapshot.size > pageSize ? docs[docs.length - 1].id : null,
+  };
 }
 
 export async function getRequest(request: CallableRequest<unknown>, db: FirebaseFirestore.Firestore) {
@@ -420,15 +490,30 @@ export async function getRequest(request: CallableRequest<unknown>, db: Firebase
   if (typeof requestId !== 'string' || !requestIdPattern.test(requestId)) {
     throw new HttpsError('invalid-argument', 'The request ID is invalid.');
   }
-  const snapshot = await db.doc(`hostingRequests/${requestId}`).get();
+  const requestRef = db.doc(`hostingRequests/${requestId}`);
+  let snapshot = await requestRef.get();
   const data = snapshot.data();
   if (!data || (data['hostUid'] !== uid && data['travellerUid'] !== uid)) {
     throw new HttpsError('not-found', 'This request could not be found.');
   }
-  const [listing, traveller, otherParticipant] = await Promise.all([
-    db.doc(`listings/${data['listingId']}`).get(),
-    db.doc(`users/${data['travellerUid']}`).get(),
-    db.doc(`users/${data[data['hostUid'] === uid ? 'travellerUid' : 'hostUid']}`).get(),
+  snapshot = await expireCompletionWindow(db, requestRef);
+  const currentData = snapshot.data();
+  if (!currentData) throw new HttpsError('not-found', 'This request could not be found.');
+  const otherParticipantUid = currentData[currentData['hostUid'] === uid ? 'travellerUid' : 'hostUid'];
+  const [listing, traveller, otherParticipant, review, reviewStats, publishedReviews, ownBlock] = await Promise.all([
+    db.doc(`listings/${currentData['listingId']}`).get(),
+    db.doc(`users/${currentData['travellerUid']}`).get(),
+    db.doc(`users/${otherParticipantUid}`).get(),
+    db.doc(`stayReviews/${createHash('sha256').update(JSON.stringify([requestId, uid])).digest('hex')}`).get(),
+    db.doc(`profileReviewStats/${otherParticipantUid}`).get(),
+    db.collection('publishedStayReviews')
+      .where('status', '==', 'published')
+      .where('subjectUid', '==', otherParticipantUid)
+      .where('text', '==', null)
+      .orderBy('publishedAt', 'desc')
+      .limit(5)
+      .get(),
+    db.doc(`userBlocks/${uid}/blocked/${otherParticipantUid}`).get(),
   ]);
   const listingData = listing.data();
   const title = listingData?.['title'];
@@ -437,8 +522,13 @@ export async function getRequest(request: CallableRequest<unknown>, db: Firebase
   const city = listingData?.['city'];
   const country = listingData?.['country'];
   return {
-    ...project(snapshot),
-    viewerIsHost: data['hostUid'] === uid,
+    ...project(snapshot, uid),
+    viewerIsHost: currentData['hostUid'] === uid,
+    viewerHasBlockedOther: ownBlock.exists,
+    viewerReviewSubmitted: review.exists,
+    otherParticipantReviewStats: publicReviewStats(reviewStats.data(), otherParticipantUid),
+    otherParticipantReviews: publishedReviews.docs.map((doc) =>
+      publicReviewProjection(doc, otherParticipantUid)),
     listingTitle: typeof title === 'string' && isSafePublicText(title) ? title : null,
     listingLocation: typeof city === 'string' && isSafePublicText(city)
       && typeof country === 'string' && isSafePublicText(country) ? `${city}, ${country}` : null,

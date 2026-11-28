@@ -118,6 +118,90 @@ test('message notifications are deterministic and never contain message contents
   assert.equal((await db.doc(`notificationCounts/${travellerUid}`).get()).data().unreadCount, 1);
 });
 
+test('completion and review notifications are generic, recipient-scoped and idempotent', async () => {
+  const { hostUid, travellerUid } = await seedUsers('completion');
+  const reqId = requestId('completion');
+  const request = { requestId: reqId, hostUid, travellerUid, status: 'accepted' };
+  const cases = [
+    {
+      eventId: 'completion-started',
+      event: {
+        action: 'completion_initiated',
+        actorUid: hostUid,
+        fromCompletionStatus: 'not_started',
+        toCompletionStatus: 'pending',
+      },
+      recipientUid: travellerUid,
+      type: 'stay_completion_requested',
+    },
+    {
+      eventId: 'completion-finished',
+      event: {
+        action: 'completion_confirmed',
+        actorUid: travellerUid,
+        toCompletionStatus: 'completed',
+      },
+      recipientUid: hostUid,
+      type: 'stay_completed',
+    },
+    {
+      eventId: 'completion-disputed',
+      event: {
+        action: 'completion_disputed',
+        actorUid: travellerUid,
+        toCompletionStatus: 'pending',
+      },
+      recipientUid: hostUid,
+      type: 'stay_completion_disputed',
+    },
+    {
+      eventId: 'completion-expired',
+      event: {
+        action: 'completion_window_expired',
+        actorUid: hostUid,
+        completionReason: 'response_window_expired',
+      },
+      recipientUid: hostUid,
+      type: 'stay_completion_window_expired',
+    },
+    {
+      eventId: 'review-submitted',
+      event: {
+        action: 'review_submitted',
+        actorUid: hostUid,
+        subjectUid: travellerUid,
+        reviewId: 'review-id',
+        fromStatus: 'completed',
+        toStatus: 'completed',
+      },
+      recipientUid: travellerUid,
+      type: 'stay_review_received',
+    },
+  ];
+  for (const item of cases) {
+    await processRequestTransitionNotification({
+      requestId: reqId,
+      eventId: item.eventId,
+      event: item.event,
+      request,
+    }, db);
+    await processRequestTransitionNotification({
+      requestId: reqId,
+      eventId: item.eventId,
+      event: item.event,
+      request,
+    }, db);
+    const saved = (await db.doc(`notifications/${notificationId(
+      `hostingRequests/${reqId}/events/${item.eventId}`,
+    )}`).get()).data();
+    assert.equal(saved.recipientUid, item.recipientUid);
+    assert.equal(saved.type, item.type);
+    assert.equal(saved.requestId, reqId);
+    assert.equal('reviewId' in saved, false);
+    assert.equal('review text' in saved, false);
+  }
+});
+
 test('notification read operations are owner-only, idempotent and count-consistent', async () => {
   const { hostUid, travellerUid } = await seedUsers('read');
   const reqId = requestId('read');

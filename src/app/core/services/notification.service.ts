@@ -32,6 +32,11 @@ const notificationTypes: NotificationType[] = [
   'traveller_request_declined',
   'traveller_stay_cancelled',
   'new_message',
+  'stay_completion_requested',
+  'stay_completion_disputed',
+  'stay_completion_window_expired',
+  'stay_completed',
+  'stay_review_received',
 ];
 
 @Injectable({ providedIn: 'root' })

@@ -6,6 +6,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { HOST_PARTICIPATION_TERMS_DIGEST, HOST_PARTICIPATION_TERMS_VERSION } from '../lib/hosting/host-participation.js';
 import { recordParticipationEvent } from '../lib/hosting/host-participation.js';
 import { createRequest, getRequest, listRequests, transitionRequest } from '../lib/hosting/hosting-requests.js';
+import { removeBlock, setBlock } from '../lib/trust/blocking.js';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST || process.env.GCLOUD_PROJECT !== 'demo-openstay') {
   throw new Error('Hosting request tests require the demo-openstay Firestore emulator.');
@@ -290,6 +291,64 @@ test('acceptance rechecks listing, capacity, consent, account status and dates',
   await db.doc(`hostingRequests/${requestId}`).update({ endDate: '2030-02-30' });
   await assert.rejects(decide(), { code: 'failed-precondition' });
   assert.equal((await db.doc(`hostingRequests/${requestId}`).get()).data().status, 'pending');
+});
+
+test('blocks in either direction prevent new requests and pending acceptance without cancelling stays', async () => {
+  const { host, traveller, listingId } = await seed('blocking');
+  await setBlock(call(traveller, { targetUid: host }), db);
+  await assert.rejects(createRequest(call(traveller, input(listingId)), db), {
+    code: 'failed-precondition',
+  });
+  await removeBlock(call(traveller, { targetUid: host }), db);
+
+  const pending = await createRequest(call(traveller, input(listingId)), db);
+  await setBlock(call(host, { targetUid: traveller }), db);
+  await assert.rejects(transitionRequest(call(host, {
+    requestId: pending.requestId, action: 'accept',
+  }), db), { code: 'failed-precondition' });
+  assert.equal((await db.doc(`hostingRequests/${pending.requestId}`).get()).data().status, 'pending');
+
+  await removeBlock(call(host, { targetUid: traveller }), db);
+  await transitionRequest(call(host, { requestId: pending.requestId, action: 'accept' }), db);
+  await setBlock(call(traveller, { targetUid: host }), db);
+  assert.equal((await db.doc(`hostingRequests/${pending.requestId}`).get()).data().status, 'accepted');
+  await transitionRequest(call(traveller, { requestId: pending.requestId, action: 'cancel' }), db);
+  assert.equal((await db.doc(`hostingRequests/${pending.requestId}`).get()).data().status, 'cancelled');
+});
+
+test('a concurrent block conflicts with hosting-request creation and wins on retry', async () => {
+  const { host, traveller, listingId } = await seed('block-create-race');
+  let releaseReads;
+  let announceReads;
+  const pairRead = new Promise((resolve) => { announceReads = resolve; });
+  const gate = new Promise((resolve) => { releaseReads = resolve; });
+  let blockReads = 0;
+  const racingDb = {
+    doc: db.doc.bind(db),
+    collection: db.collection.bind(db),
+    runTransaction: (callback) => db.runTransaction((transaction) => callback(new Proxy(transaction, {
+      get(target, property) {
+        if (property === 'get') {
+          return async (reference) => {
+            if (reference.path.includes('/blocked/')) {
+              blockReads += 1;
+              if (blockReads === 2) announceReads();
+              if (blockReads <= 2) await gate;
+            }
+            return target.get(reference);
+          };
+        }
+        const value = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    }))),
+  };
+  const creation = createRequest(call(traveller, input(listingId)), racingDb);
+  await pairRead;
+  await setBlock(call(host, { targetUid: traveller }), db);
+  releaseReads();
+  await assert.rejects(creation, { code: 'failed-precondition' });
+  assert.equal((await db.collection('hostingRequests').where('listingId', '==', listingId).get()).size, 0);
 });
 
 test('concurrent cancellation and acceptance result in one consistent transition', async () => {

@@ -18,12 +18,20 @@ service cloud.firestore {
         && consent.eventId is string;
     }
 
+    function noActiveConversationHostLock(hostUid) {
+      let lockPath = /databases/$(database)/documents/hostPrivate/$(hostUid)/listingLifecycleState/current;
+      let lock = exists(lockPath) ? get(lockPath).data : null;
+      return lock == null
+        || (lock.leaseExpiresAt is timestamp && lock.leaseExpiresAt <= request.time);
+    }
+
     function canReadConversation(conversationId) {
       let conversationPath = /databases/$(database)/documents/conversations/$(conversationId);
       let conversation = exists(conversationPath) ? get(conversationPath).data : null;
       let requestPath = /databases/$(database)/documents/hostingRequests/$(conversationId);
       let hostingRequest = exists(requestPath) ? get(requestPath).data : null;
       return request.auth != null
+        && request.auth.token.email_verified == true
         && conversation != null
         && conversation.conversationId == conversationId
         && conversation.requestId == conversationId
@@ -40,7 +48,8 @@ service cloud.firestore {
         && hostingRequest.listingId == conversation.listingId
         && activeConversationAccount(conversation.hostUid)
         && activeConversationAccount(conversation.travellerUid)
-        && currentConversationHostConsent(conversation.hostUid);
+        && currentConversationHostConsent(conversation.hostUid)
+        && noActiveConversationHostLock(conversation.hostUid);
     }
 
     match /users/{userId} {
@@ -156,11 +165,7 @@ service cloud.firestore {
         return request.auth.token.email_verified == true;
       }
 
-      function isPublicProfile() {
-        return validPublicProfile(resource.data);
-      }
-
-      allow read: if isOwner() || isPublicProfile();
+      allow read: if isOwner();
       allow create: if isOwner() && validNewProfile();
       allow update: if isOwner()
         && isVerified()
@@ -624,6 +629,71 @@ service cloud.firestore {
 
     match /notificationCounts/{userId} {
       allow get: if request.auth != null && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+    }
+
+    match /stayReviews/{reviewId} {
+      allow get, list: if request.auth != null
+        && resource.data.authorUid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    match /publishedStayReviews/{reviewId} {
+      allow get, list: if resource.data.status == 'published'
+        && resource.data.text == null;
+      allow create, update, delete: if false;
+    }
+
+    match /profileReviewStats/{userId} {
+      function validReviewStats() {
+        return resource.data.keys().hasOnly([
+            'uid',
+            'reviewCount',
+            'ratingTotal',
+            'updatedAt'
+          ])
+          && resource.data.uid == userId
+          && resource.data.reviewCount is int
+          && resource.data.reviewCount >= 1
+          && resource.data.ratingTotal is int
+          && resource.data.ratingTotal >= resource.data.reviewCount
+          && resource.data.ratingTotal <= resource.data.reviewCount * 5
+          && resource.data.updatedAt is timestamp;
+      }
+
+      allow get: if validReviewStats();
+      allow list, create, update, delete: if false;
+    }
+
+    match /userBlocks/{ownerUid}/blocked/{targetUid} {
+      allow get, list: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.uid == ownerUid
+        && resource.data.ownerUid == ownerUid
+        && resource.data.blockedUid == targetUid;
+      allow create, update, delete: if false;
+    }
+
+    match /verificationCases/{caseId} {
+      allow read, write: if false;
+    }
+
+    match /verificationEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    match /reports/{reportId} {
+      allow read, write: if false;
+    }
+
+    match /reportStatuses/{reportId} {
+      allow get: if request.auth != null
+        && request.auth.token.email_verified == true
+        && resource.data.keys().hasOnly(['reporterUid', 'status', 'createdAt'])
+        && resource.data.keys().hasAll(['reporterUid', 'status', 'createdAt'])
+        && resource.data.reporterUid == request.auth.uid
+        && resource.data.status == 'submitted'
+        && resource.data.createdAt is timestamp;
       allow list, create, update, delete: if false;
     }
 

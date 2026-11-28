@@ -42,11 +42,19 @@ export class ConversationService {
     listingId: string;
     status: string;
     otherParticipantName: string;
+    viewerHasBlockedOther: boolean;
   }> {
     const { sdk, functions } = await this.getFunctions();
     return (await sdk.httpsCallable<
       { requestId: string },
-      { conversationId: string; requestId: string; listingId: string; status: string; otherParticipantName: string }
+      {
+        conversationId: string;
+        requestId: string;
+        listingId: string;
+        status: string;
+        otherParticipantName: string;
+        viewerHasBlockedOther: boolean;
+      }
     >(functions, 'openConversation')({ requestId })).data;
   }
 
