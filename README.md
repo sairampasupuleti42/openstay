@@ -80,6 +80,19 @@ emulator script explicitly uses that demo ID so it cannot access production
 Firebase resources. The `development` alias points to the `open-stay` Firebase
 project.
 
+For isolated local demo data, run `npm run seed:demo` with the Auth and
+Firestore emulator ports free. It creates five fictional accounts, listings,
+requests, conversations, messages and notifications and exports the emulator
+data to `.firebase/demo-seed`. It refuses nonempty emulators and only runs
+against the local `demo-openstay` Auth and Firestore emulators. It also refuses
+to overwrite an existing demo export. Start the emulators with
+`npx firebase emulators:start --project demo-openstay --import .firebase/demo-seed`
+to use the export. Demo login emails are `demo1@example.test` through
+`demo5@example.test`; their shared **local-only** password is
+`Openstay-demo-2026!`. These accounts and consent events are fictional and
+must never be used in a live project. Internal lifecycle collections and
+subcollections are generated as needed, not forced to five records each.
+
 The `open-stay` project has a registered Web App and a Cloud Firestore database
 in `asia-south1`. The verified Web App configuration is in
 `src/environments/environment.ts`. Its Firebase values, including the API key,

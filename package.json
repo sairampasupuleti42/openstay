@@ -13,7 +13,8 @@
     "test:inventory": "firebase emulators:exec --only firestore --project demo-openstay \"node --test functions/scripts/migrations/inventory-legacy-profiles.test.mjs\"",
     "migrate:profiles": "npm --prefix functions run migrate:profiles --",
     "emulators": "npm run build && npm --prefix functions run build && firebase emulators:start --project demo-openstay",
-    "emulators:export": "firebase emulators:export .firebase/emulator-data"
+    "emulators:export": "firebase emulators:export .firebase/emulator-data",
+    "seed:demo": "node -e \"if (require('node:fs').existsSync('.firebase/demo-seed')) { console.error('Demo export already exists; preserve or move it before creating another.'); process.exit(1); }\" && npm --prefix functions run build && firebase emulators:exec --only auth,firestore --project demo-openstay --export-on-exit .firebase/demo-seed \"node functions/scripts/seed-demo.mjs\""
   },
   "private": true,
   "packageManager": "npm@11.19.1",

@@ -14,7 +14,7 @@ import { provideFirestore, connectFirestoreEmulator, getFirestore } from '@angul
 import { provideStorage, connectStorageEmulator, getStorage } from '@angular/fire/storage';
 import { AppCheck, provideAppCheck } from '@angular/fire/app-check';
 import { initializeApp } from 'firebase/app';
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import { environment } from '../environments/environment';
 
 function initializeConfiguredFirebase() {
@@ -69,7 +69,7 @@ export const appConfig: ApplicationConfig = {
       : [
           provideAppCheck(() =>
             initializeAppCheck(inject(FirebaseApp), {
-              provider: new ReCaptchaV3Provider(environment.appCheckSiteKey),
+              provider: new ReCaptchaEnterpriseProvider(environment.appCheckSiteKey),
               isTokenAutoRefreshEnabled: true,
             }),
           ),
