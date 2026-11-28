@@ -35,7 +35,7 @@ const ACCOMMODATION_OPTIONS: { value: AccommodationType; label: string }[] = [
   templateUrl: './discovery-page.component.html',
   styles: `
     :host { display: block; min-height: calc(100vh - 76px); background: linear-gradient(145deg, var(--openstay-warm-white), var(--openstay-cream)); }
-    .page { width: min(100%, 1120px); margin: 0 auto; padding: 40px 16px 72px; }
+    .page { width: min(100%, var(--openstay-content-width)); margin: 0 auto; padding: clamp(36px, 5vw, 64px) 16px 72px; }
     .intro { max-width: 720px; margin: 0 auto 30px; text-align: center; }
     .eyebrow { color: var(--openstay-forest); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
     h1 { margin: 12px 0; font-size: clamp(38px, 7vw, 64px); line-height: 1.05; letter-spacing: -.035em; }
@@ -58,7 +58,8 @@ const ACCOMMODATION_OPTIONS: { value: AccommodationType; label: string }[] = [
     @media (max-width: 620px) {
       .search-panel { grid-template-columns: 1fr; }
       .search-actions { grid-column: auto; }
-      .search-actions button { flex: 1; }
+      .search-actions { flex-direction: column; }
+      .search-actions button { width: 100%; }
     }
   `,
 })

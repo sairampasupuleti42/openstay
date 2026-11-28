@@ -10,17 +10,41 @@
         <p class="bio">{{ traveller.bio }}</p>
       }
     }
-    <div class="actions">
-      <a mat-flat-button routerLink="/explore">Explore Openstay</a>
-      <a mat-stroked-button routerLink="/hosting">Start hosting</a>
-      <a mat-stroked-button routerLink="/requests/mine">My requests and stays</a>
-      <a mat-stroked-button routerLink="/requests/incoming">Incoming requests and stays</a>
-      <a mat-stroked-button routerLink="/messages">Messages</a>
-      <a mat-stroked-button routerLink="/notifications">Notifications</a>
-      <a mat-stroked-button routerLink="/account/blocked-users">Blocked users</a>
-      <button mat-stroked-button type="button" (click)="logOut()">Sign out</button>
+    <div class="dashboard-grid">
+      <section class="dashboard-card" aria-labelledby="travel-heading">
+        <h2 id="travel-heading">Your travels</h2>
+        <p>Find a stay and keep track of your requests.</p>
+        <div class="actions">
+          <a mat-flat-button routerLink="/explore">Explore Openstay</a>
+          <a mat-stroked-button routerLink="/requests/mine">My requests and stays</a>
+        </div>
+      </section>
+      <section class="dashboard-card" aria-labelledby="hosting-heading">
+        <h2 id="hosting-heading">Hosting</h2>
+        <p>Manage your hosting profile, listings and incoming requests.</p>
+        <div class="actions">
+          <a mat-stroked-button routerLink="/hosting">Start hosting</a>
+          <a mat-stroked-button routerLink="/requests/incoming">Incoming requests and stays</a>
+        </div>
+      </section>
+      <section class="dashboard-card" aria-labelledby="connections-heading">
+        <h2 id="connections-heading">Connections</h2>
+        <p>Keep up with your conversations and updates.</p>
+        <div class="actions">
+          <a mat-stroked-button routerLink="/messages">Messages</a>
+          <a mat-stroked-button routerLink="/notifications">Notifications</a>
+        </div>
+      </section>
+      <section class="dashboard-card" aria-labelledby="account-heading">
+        <h2 id="account-heading">Account</h2>
+        <p>Manage your account and blocked users.</p>
+        <div class="actions">
+          <a mat-stroked-button routerLink="/account/blocked-users">Blocked users</a>
+          <button mat-stroked-button type="button" (click)="logOut()">Sign out</button>
+        </div>
+      </section>
     </div>
-    <section aria-labelledby="trust-availability-heading">
+    <section class="trust-panel" aria-labelledby="trust-availability-heading">
       <h2 id="trust-availability-heading">Trust and safety availability</h2>
       <h3>Identity verification</h3>
       <p>Identity verification is not available. Openstay does not currently verify identities and does not collect identity documents. Profile fields are not proof of verification.</p>

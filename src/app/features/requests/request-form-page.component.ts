@@ -15,10 +15,14 @@ import { ListingService } from '../../core/services/listing.service';
   styles: `
     :host { display: block; background: var(--openstay-cream); min-height: 80vh; }
     .page { max-width: 720px; margin: auto; padding: 40px 20px; }
-    .panel { padding: 28px; border-radius: 22px; background: var(--openstay-warm-white); }
+    .panel { padding: clamp(20px, 5vw, 36px); border: 1px solid var(--openstay-border); border-radius: var(--openstay-card-radius); background: var(--openstay-warm-white); box-shadow: var(--openstay-soft-shadow); }
+    h1 { margin-top: 0; font-size: clamp(32px, 6vw, 48px); line-height: 1.1; }
     form { display: grid; gap: 12px; }
+    mat-form-field { width: 100%; }
     .error { color: #a4262c; }
     .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .actions a, .actions button { min-height: 48px; }
+    @media (max-width: 600px) { .actions { flex-direction: column; align-items: stretch; } }
   `,
 })
 export class RequestFormPageComponent implements OnInit {

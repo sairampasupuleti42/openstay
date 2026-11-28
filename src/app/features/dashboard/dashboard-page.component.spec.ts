@@ -26,6 +26,12 @@ describe('DashboardPageComponent trust availability', () => {
     expect(text).toContain('Report intake is not available yet.');
     expect(text).toContain('Reports are not monitored or resolved');
     expect(text).not.toContain('verified badge');
+    const links = Array.from(fixture.nativeElement.querySelectorAll('.dashboard-grid a') as NodeListOf<HTMLAnchorElement>)
+      .map((link) => link.getAttribute('href'));
+    expect(links).toEqual(expect.arrayContaining([
+      '/explore', '/hosting', '/requests/mine', '/requests/incoming',
+      '/messages', '/notifications', '/account/blocked-users',
+    ]));
     fixture.destroy();
   });
 });

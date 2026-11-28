@@ -3,13 +3,18 @@
   [routerLink]="['/listings', listing().listingId]"
   [attr.aria-label]="listing().title + ', ' + listing().city + ', ' + listing().country"
 >
-  <p class="location">
-    {{ listing().city }}, {{ listing().country }}
-    @if (listing().region) { · {{ listing().region }} }
-  </p>
-  <h2>{{ listing().title }}</h2>
-  <div class="facts">
-    <span class="type">{{ accommodationLabel(listing().accommodationType) }}</span>
-    <span class="capacity">Up to {{ listing().guestCapacity }} guests</span>
+  <div class="card-art" aria-hidden="true">
+    <span class="material-symbols-outlined">cottage</span>
+  </div>
+  <div class="card-content">
+    <p class="location">
+      {{ listing().city }}, {{ listing().country }}
+      @if (listing().region) { · {{ listing().region }} }
+    </p>
+    <h2>{{ listing().title }}</h2>
+    <div class="facts">
+      <span class="type">{{ accommodationLabel(listing().accommodationType) }}</span>
+      <span class="capacity">Up to {{ listing().guestCapacity }} guests</span>
+    </div>
   </div>
 </a>

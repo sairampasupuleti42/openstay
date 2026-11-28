@@ -43,6 +43,22 @@ describe('App', () => {
     expect(compiled.querySelector('.brand')?.textContent).toContain('Openstay');
   });
 
+  it('provides a skip link and session-appropriate mobile navigation', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.skip-link')?.getAttribute('href')).toBe('#main-content');
+    expect(compiled.querySelector('#main-content')?.getAttribute('tabindex')).toBe('-1');
+    expect(compiled.querySelector('.bottom-nav')?.textContent).toContain('Sign in');
+    expect(compiled.querySelector('.bottom-nav')?.textContent).not.toContain('Messages');
+
+    user$.next({ uid: 'signed-in-user' } as User);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.bottom-nav')?.textContent).toContain('Messages');
+    expect(compiled.querySelector('.bottom-nav')?.textContent).toContain('Dashboard');
+    expect(compiled.querySelector('.bottom-nav')?.textContent).not.toContain('Sign in');
+  });
+
   it('keeps all primary links available in the collapsible mobile navigation', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();

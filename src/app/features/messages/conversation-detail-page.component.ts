@@ -21,12 +21,12 @@ import { ConversationService } from '../../core/services/conversation.service';
     .header p, .timestamp, .muted { color: var(--openstay-muted); }
     .header-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
     .messages { display: grid; gap: 14px; min-height: 260px; max-height: 62vh; overflow-y: auto; padding: 20px clamp(14px, 4vw, 28px); }
-    .bubble { width: fit-content; max-width: min(82%, 620px); padding: 12px 15px; border-radius: 18px; background: #f0eee7; overflow-wrap: anywhere; }
-    .bubble.own { justify-self: end; background: #e4f1e9; }
+    .bubble { width: fit-content; max-width: min(88%, 620px); padding: 12px 15px; border-radius: 18px; background: var(--openstay-cream); overflow-wrap: anywhere; }
+    .bubble.own { justify-self: end; background: var(--openstay-sage); }
     .bubble p { margin: 0; white-space: pre-wrap; }
     .timestamp { display: block; margin-top: 7px; font-size: 12px; }
     .composer { display: grid; gap: 12px; padding: 18px clamp(14px, 4vw, 28px); border-top: 1px solid var(--openstay-border); }
-    textarea { box-sizing: border-box; width: 100%; min-height: 94px; resize: vertical; padding: 13px; border: 1px solid var(--openstay-border); border-radius: 14px; font: inherit; }
+    textarea { box-sizing: border-box; width: 100%; min-height: 94px; resize: vertical; padding: 13px; border: 1px solid var(--openstay-muted); border-radius: 14px; font: inherit; }
     .composer-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .send { background: var(--openstay-forest); color: #fff; }
     .state { margin: 18px; padding: 16px; border-radius: 16px; background: var(--openstay-cream); }

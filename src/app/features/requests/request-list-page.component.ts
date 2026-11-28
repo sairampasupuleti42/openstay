@@ -11,7 +11,9 @@ import { HostingRequestService } from '../../core/services/hosting-request.servi
   styles: `
     :host { display: block; background: var(--openstay-cream); min-height: 80vh; }
     .page { max-width: 900px; margin: auto; padding: 40px 20px; }
-    .card { padding: 24px; margin: 16px 0; border-radius: 20px; background: var(--openstay-warm-white); }
+    h1 { font-size: clamp(32px, 6vw, 48px); line-height: 1.1; }
+    .request-section { margin-top: 32px; }
+    .card { padding: 24px; margin: 16px 0; border: 1px solid var(--openstay-border); border-radius: 20px; background: var(--openstay-warm-white); box-shadow: var(--openstay-soft-shadow); }
     .error { color: #a4262c; }
   `,
 })

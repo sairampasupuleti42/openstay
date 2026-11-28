@@ -13,7 +13,14 @@ import { HostingRequestService } from '../../core/services/hosting-request.servi
   styles: `
     :host { display: block; background: var(--openstay-cream); min-height: 80vh; }
     .page { max-width: 720px; margin: auto; padding: 40px 20px; }
-    .panel { padding: 28px; border-radius: 22px; background: var(--openstay-warm-white); }
+    .panel { padding: clamp(20px, 5vw, 36px); border: 1px solid var(--openstay-border); border-radius: var(--openstay-card-radius); background: var(--openstay-warm-white); box-shadow: var(--openstay-soft-shadow); }
+    h1 { margin-top: 0; font-size: clamp(32px, 6vw, 48px); line-height: 1.1; }
+    .panel > section { margin: 24px 0; padding: 20px; border: 1px solid var(--openstay-border); border-radius: 16px; }
+    .panel > section h2 { margin-top: 0; }
+    .panel > button, .panel > a, section button { margin: 4px 8px 4px 0; }
+    label { display: block; margin: 16px 0 6px; font-weight: 700; }
+    select, textarea { display: block; width: 100%; min-height: 48px; padding: 12px; border: 1px solid var(--openstay-muted); border-radius: var(--openstay-radius-control); background: var(--openstay-surface); color: var(--openstay-charcoal); }
+    textarea { min-height: 100px; resize: vertical; }
     .message { white-space: pre-wrap; overflow-wrap: anywhere; }
     .error { color: #a4262c; }
   `,

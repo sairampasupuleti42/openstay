@@ -42,6 +42,25 @@ a,
 button {
   font: inherit;
 }
+img {
+  max-width: 100%;
+}
+input,
+textarea,
+select {
+  font: inherit;
+}
+textarea {
+  max-width: 100%;
+}
+h1,
+h2,
+h3,
+p,
+dd,
+li {
+  overflow-wrap: anywhere;
+}
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -62,4 +81,15 @@ a {
 ::selection {
   background: var(--openstay-lime);
   color: var(--openstay-charcoal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

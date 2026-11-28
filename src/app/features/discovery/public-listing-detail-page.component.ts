@@ -31,6 +31,9 @@ import { ListingService } from '../../core/services/listing.service';
     .actions a, .actions button { min-height: 46px; border-radius: 999px; }
     .primary-action { background: var(--openstay-forest); color: #fff; }
     .error { color: #a4262c; }
+    @media (max-width: 619px) {
+      .actions { flex-direction: column; align-items: stretch; }
+    }
     @media (min-width: 620px) {
       .page { padding: 56px 24px 88px; }
       .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }

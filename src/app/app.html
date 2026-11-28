@@ -1,3 +1,4 @@
+<a class="skip-link" href="#main-content">Skip to content</a>
 <mat-toolbar class="app-toolbar" [class.mobile-menu-open]="isMobileNavOpen()">
   <a class="brand" routerLink="/" aria-label="Openstay home">
     <img
@@ -128,7 +129,7 @@
   <p class="auth-error" role="alert">{{ signOutError() }}</p>
 }
 
-<main class="app-main">
+<main id="main-content" class="app-main" tabindex="-1">
   <router-outlet />
 </main>
 
@@ -136,3 +137,31 @@
   <span>Openstay</span>
   <span>Stay local. Connect globally.</span>
 </footer>
+
+<nav class="bottom-nav" aria-label="Mobile navigation">
+  <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" (click)="closeMobileNav()">
+    <span class="material-symbols-outlined" aria-hidden="true">home</span>
+    <span>Home</span>
+  </a>
+  <a routerLink="/explore" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileNav()">
+    <span class="material-symbols-outlined" aria-hidden="true">explore</span>
+    <span>Explore</span>
+  </a>
+  @if (session$ | async; as session) {
+    @if (session.user) {
+      <a routerLink="/messages" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileNav()">
+        <span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+        <span>Messages</span>
+      </a>
+      <a routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileNav()">
+        <span class="material-symbols-outlined" aria-hidden="true">person</span>
+        <span>Dashboard</span>
+      </a>
+    } @else {
+      <a routerLink="/auth/login" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMobileNav()">
+        <span class="material-symbols-outlined" aria-hidden="true">person</span>
+        <span>Sign in</span>
+      </a>
+    }
+  }
+</nav>

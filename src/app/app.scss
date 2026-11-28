@@ -1,3 +1,15 @@
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 8px;
+  left: 8px;
+  padding: 12px 16px;
+  border-radius: var(--openstay-radius-control);
+  background: var(--openstay-forest-dark);
+  color: #fff;
+  transform: translateY(-160%);
+}
+.skip-link:focus { transform: translateY(0); }
 .app-toolbar {
   position: sticky;
   top: 0;
@@ -35,6 +47,7 @@
 .nav-backdrop {
   display: none;
 }
+.bottom-nav { display: none; }
 .main-nav a,
 .main-nav .signout-link {
   height: 42px;
@@ -175,6 +188,37 @@
   .join-label-short { display: none; }
   .main-nav .install-link { gap: 8px; }
   .install-label { display: inline; }
+  .app-footer { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .bottom-nav {
+    position: fixed;
+    z-index: 9;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    justify-content: space-around;
+    padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--openstay-border);
+    background: var(--openstay-warm-white);
+    box-shadow: 0 -4px 20px rgba(28, 42, 35, 0.06);
+  }
+  .bottom-nav a {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 56px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: 14px;
+    color: var(--openstay-charcoal);
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .bottom-nav a.active { background: var(--openstay-sage); color: var(--openstay-forest-dark); }
+  .bottom-nav .material-symbols-outlined { font-size: 22px; }
 }
 @media (max-width: 640px) {
   .app-footer { flex-direction: column; gap: 8px; }
